@@ -1,0 +1,109 @@
+# データベースファイル
+*.db
+*.sqlite
+*.sqlite3
+instance/
+instance/*
+
+# 画像アップロードディレクトリ
+uploads/
+uploads/*
+
+# 環境設定ファイル
+.env
+.flaskenv
+config.py
+
+# Python関連
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+miniblog/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.tempminiblog/
+miniblog/
+miniblog/
+
+# その他
+admininfo.py
+reports/scrennshot/
+
+# Claude AI専用開発ファイル
+CLAUDE.md
+
+# デバッグメール（開発時のみ）
+debug_emails/
+
+# テスト用ファイル（除外）
+test_*.py
+simple_*.py
+
+# バックアップファイル（プライベートリポジトリなので重要なバックアップは保存）
+# backups/ → コメントアウトしてバックアップフォルダを含める
+backup_current_20250703_063229.sql
+# *.sql → コメントアウトして今日のSQLバックアップを含める
+# instance/miniblog_backup_20250705.db → 個別DBバックアップは含める
+# backups/miniblog_20250705.sql → 今日のSQLダンプを含める
+../mini-blog_backup_20250705.tar.gz

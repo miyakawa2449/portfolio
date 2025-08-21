@@ -1,0 +1,269 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ダッシュボード{% endblock %}
+{% block page_title %}ダッシュボード{% endblock %}
+
+{% block content %}
+<!-- 統計カード -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon">
+                <i class="fa fa-users"></i>
+            </div>
+            <div class="stats-number">{{ stats.user_count if stats.user_count is not none else 0 }}</div>
+            <div class="stats-label">ユーザー数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card success">
+            <div class="stats-icon">
+                <i class="fa fa-file-alt"></i>
+            </div>
+            <div class="stats-number">{{ stats.article_count if stats.article_count is not none else 0 }}</div>
+            <div class="stats-label">記事数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card warning">
+            <div class="stats-icon">
+                <i class="fa fa-tags"></i>
+            </div>
+            <div class="stats-number">{{ stats.category_count if stats.category_count is not none else 0 }}</div>
+            <div class="stats-label">カテゴリ数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card info">
+            <div class="stats-icon">
+                <i class="fa fa-comments"></i>
+            </div>
+            <div class="stats-number">{{ stats.comment_count if stats.comment_count is not none else 0 }}</div>
+            <div class="stats-label">コメント数</div>
+        </div>
+    </div>
+</div>
+
+<!-- 今月の統計 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="text-primary">{{ monthly_stats.articles_this_month if monthly_stats.articles_this_month is not none else 0 }}</h3>
+                <p class="text-muted mb-0">今月の記事投稿</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="text-success">{{ monthly_stats.users_this_month if monthly_stats.users_this_month is not none else 0 }}</h3>
+                <p class="text-muted mb-0">今月の新規ユーザー</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="text-info">{{ monthly_stats.comments_this_month if monthly_stats.comments_this_month is not none else 0 }}</h3>
+                <p class="text-muted mb-0">今月のコメント</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- メインコンテンツ -->
+<div class="row">
+    <!-- 最近の記事 -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fa fa-clock me-2"></i>最近の記事</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_data.recent_articles %}
+                    {% for article in recent_data.recent_articles %}
+                    <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{{ url_for('admin.edit_article', article_id=article.id) }}" class="text-decoration-none">
+                                    {{ article.title }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fa fa-user me-1"></i>{{ article.author.name if article.author else 'Unknown' }}
+                                <i class="fa fa-calendar ms-3 me-1"></i>{{ article.created_at.strftime('%Y-%m-%d %H:%M') if article.created_at else 'Unknown' }}
+                            </small>
+                        </div>
+                        {% if article.is_published is defined %}
+                        <span class="badge bg-{{ 'success' if article.is_published else 'secondary' }}">
+                            {{ '公開' if article.is_published else '下書き' }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">下書き</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="text-center">
+                        <a href="{{ url_for('admin.articles') }}" class="btn btn-outline-primary btn-sm">
+                            すべての記事を見る
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fa fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">記事がありません</h6>
+                        <p class="text-muted small">最初の記事を作成してみましょう</p>
+                        <a href="{{ url_for('admin.create_article') }}" class="btn btn-primary btn-sm">
+                            <i class="fa fa-plus me-1"></i>記事を作成
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- サイドバー -->
+    <div class="col-md-4">
+        <!-- セキュリティ状態 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fa fa-shield-alt me-2"></i>セキュリティ状態</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>2段階認証</span>
+                    {% if current_user.totp_enabled %}
+                        <span class="badge bg-success">✅ 有効</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">⚠️ 無効</span>
+                    {% endif %}
+                </div>
+                
+                {% if current_user.totp_enabled %}
+                    <div class="alert alert-success small">
+                        <i class="fa fa-check-circle me-1"></i>
+                        アカウントは2段階認証で保護されています
+                    </div>
+                    <a href="{{ url_for('totp_disable') }}" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="fa fa-times me-1"></i>2段階認証を無効化
+                    </a>
+                {% else %}
+                    <div class="alert alert-warning small">
+                        <i class="fa fa-exclamation-triangle me-1"></i>
+                        セキュリティ向上のため、2段階認証の有効化をお勧めします
+                    </div>
+                    <a href="{{ url_for('totp_setup') }}" class="btn btn-success btn-sm w-100">
+                        <i class="fa fa-shield-alt me-1"></i>2段階認証を有効化
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- クイックアクション -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fa fa-bolt me-2"></i>クイックアクション</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.create_article') }}" class="btn btn-primary btn-sm">
+                        <i class="fa fa-plus me-1"></i>新規記事作成
+                    </a>
+                    <a href="{{ url_for('admin.create_category') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fa fa-tag me-1"></i>カテゴリ作成
+                    </a>
+                    <a href="{{ url_for('admin.create_user') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa fa-user-plus me-1"></i>ユーザー作成
+                    </a>
+                    <a href="{{ url_for('admin.site_settings') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fa fa-cog me-1"></i>サイト設定
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- システム情報 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fa fa-info-circle me-2"></i>システム情報</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <div class="h6 mb-0">{{ recent_data.pending_comments }}</div>
+                            <small class="text-muted">承認待ちコメント</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h6 mb-0 text-success">稼働中</div>
+                        <small class="text-muted">システム状態</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if chart_data %}
+<!-- 月別記事投稿グラフ -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fa fa-chart-line me-2"></i>月別記事投稿数</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="articlesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts_extra %}
+{% if chart_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('articlesChart').getContext('2d');
+    const chartData = {{ chart_data | tojson }};
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.map(item => item.month),
+            datasets: [{
+                label: '記事数',
+                data: chartData.map(item => item.articles),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

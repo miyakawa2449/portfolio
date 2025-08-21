@@ -1,0 +1,488 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}一括SEO分析{% endblock %}
+{% block page_title %}一括SEO分析{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>ツール</li>
+<li><a href="{{ url_for('admin.seo_tools') }}">SEO対策ツール</a></li>
+<li>一括分析</li>
+{% endblock %}
+
+{% endblock %}
+
+{% block content %}
+<div class="batch-analysis">
+    
+    <!-- 分析設定 -->
+    <div class="analysis-controls">
+        <h5><i class="fas fa-cogs"></i> 分析設定</h5>
+        <form id="batchAnalysisForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="analysisScope" class="form-label">分析範囲</label>
+                        <select class="form-select" id="analysisScope" name="scope">
+                            <option value="all">全記事</option>
+                            <option value="published">公開記事のみ</option>
+                            <option value="draft">下書きのみ</option>
+                            <option value="category">特定カテゴリ</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="categorySelect" class="form-label">カテゴリ選択</label>
+                        <select class="form-select" id="categorySelect" name="category_id" disabled>
+                            <option value="">選択してください</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="maxArticles" class="form-label">最大分析数</label>
+                        <select class="form-select" id="maxArticles" name="max_articles">
+                            <option value="10">10記事</option>
+                            <option value="50" selected>50記事</option>
+                            <option value="100">100記事</option>
+                            <option value="0">制限なし</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="targetKeywords" class="form-label">共通ターゲットキーワード（オプション）</label>
+                        <input type="text" class="form-control" id="targetKeywords" name="target_keywords" 
+                               placeholder="キーワード1, キーワード2, ...">
+                        <div class="form-text">全記事に適用する共通キーワードをカンマ区切りで指定</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div>
+                            <button type="button" class="btn btn-primary" onclick="startBatchAnalysis()">
+                                <i class="fas fa-play"></i> 分析開始
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 進行状況 -->
+    <div class="progress-section" id="progressSection">
+        <h5><i class="fas fa-chart-line"></i> 分析進行状況</h5>
+        <div class="progress mb-3">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+        <div id="progressText">準備中...</div>
+        <div class="text-center mt-3">
+            <button type="button" class="btn btn-danger" onclick="cancelAnalysis()">
+                <i class="fas fa-stop"></i> 中止
+            </button>
+        </div>
+    </div>
+
+    <!-- 分析結果 -->
+    {% if results %}
+    <div class="results-section">
+        <h5><i class="fas fa-chart-bar"></i> 分析結果</h5>
+        
+        <!-- 統計サマリー -->
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ results.total_articles }}</div>
+                <div class="stat-label">分析記事数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ results.average_score }}</div>
+                <div class="stat-label">平均SEOスコア</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ results.excellent_count }}</div>
+                <div class="stat-label">優秀 (80+)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ results.good_count }}</div>
+                <div class="stat-label">良好 (60-79)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ results.needs_improvement }}</div>
+                <div class="stat-label">要改善 (60未満)</div>
+            </div>
+        </div>
+
+        <!-- スコア分布グラフ -->
+        <div class="chart-container">
+            <h6><i class="fas fa-chart-area"></i> SEOスコア分布</h6>
+            <div class="distribution-chart">
+                {% for range, count in results.score_distribution.items() %}
+                    {% set max_count = results.score_distribution.values() | list | max %}
+                    {% set height = (count / max_count * 120) if max_count > 0 else 0 %}
+                    <div class="chart-bar" 
+                         style="height: {{ height }}px" 
+                         data-count="{{ count }}記事 ({{ range }})"></div>
+                {% endfor %}
+            </div>
+            <div class="chart-labels">
+                {% for range in results.score_distribution.keys() %}
+                    <span>{{ range }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- フィルタ -->
+        <div class="filter-controls">
+            <label>表示フィルタ:</label>
+            <select class="form-select" style="width: auto;" onchange="filterResults(this.value)">
+                <option value="all">全て表示</option>
+                <option value="excellent">優秀 (80+)</option>
+                <option value="good">良好 (60-79)</option>
+                <option value="needs_improvement">要改善 (60未満)</option>
+            </select>
+            <select class="form-select" style="width: auto;" onchange="sortResults(this.value)">
+                <option value="score_desc">スコア順 (高→低)</option>
+                <option value="score_asc">スコア順 (低→高)</option>
+                <option value="title_asc">タイトル順</option>
+                <option value="date_desc">日付順 (新→古)</option>
+            </select>
+        </div>
+
+        <!-- 記事一覧 -->
+        <div class="article-list" id="articleList">
+            {% for article in results.articles %}
+                <div class="article-item" data-score="{{ article.seo_score }}" data-category="{{ article.category }}">
+                    <div class="article-info">
+                        <div class="article-title">{{ article.title }}</div>
+                        <div class="article-meta">
+                            <i class="fas fa-tag"></i> {{ article.category_name or '未分類' }} |
+                            <i class="fas fa-calendar"></i> {{ article.published_at.strftime('%Y-%m-%d') if article.published_at else '未公開' }} |
+                            <i class="fas fa-user"></i> {{ article.author_name }}
+                            {% if article.priority %}
+                                <span class="priority-badge priority-{{ article.priority }}">
+                                    {{ article.priority.upper() }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="score-display">
+                        <div class="score-circle 
+                            {% if article.seo_score >= 80 %}score-excellent
+                            {% elif article.seo_score >= 60 %}score-good
+                            {% elif article.seo_score >= 40 %}score-average
+                            {% else %}score-poor{% endif %}">
+                            {{ article.seo_score }}
+                        </div>
+                        <small>SEOスコア</small>
+                    </div>
+                    <div class="actions">
+                        <a href="{{ url_for('admin.seo_analyze_article', article_id=article.id) }}" 
+                           class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="fas fa-eye"></i> 詳細
+                        </a>
+                        <a href="{{ url_for('admin.edit_article', id=article.id) }}" 
+                           class="btn btn-sm btn-outline-secondary" target="_blank">
+                            <i class="fas fa-edit"></i> 編集
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- エクスポート -->
+        <div class="export-section">
+            <h6><i class="fas fa-download"></i> レポートエクスポート</h6>
+            <p>一括分析結果を様々な形式でエクスポートできます。</p>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-primary" onclick="exportCSV()">
+                    <i class="fas fa-file-csv"></i> CSV形式
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="exportJSON()">
+                    <i class="fas fa-file-code"></i> JSON形式
+                </button>
+                <button type="button" class="btn btn-outline-info" onclick="exportReport()">
+                    <i class="fas fa-file-pdf"></i> レポート形式
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 分析履歴 -->
+    <div class="results-section">
+        <h5><i class="fas fa-history"></i> 分析履歴</h5>
+        {% if batch_history %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>実行日時</th>
+                            <th>対象</th>
+                            <th>記事数</th>
+                            <th>平均スコア</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for history in batch_history %}
+                            <tr>
+                                <td>{{ history.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ history.scope_description }}</td>
+                                <td>{{ history.article_count }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if history.average_score >= 80 %}bg-success
+                                        {% elif history.average_score >= 60 %}bg-warning
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ history.average_score }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('admin.view_batch_result', batch_id=history.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> 表示
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">まだ一括分析を実行していません。</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+let analysisInProgress = false;
+let analysisAborted = false;
+
+// 分析範囲の変更処理
+document.getElementById('analysisScope').addEventListener('change', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    if (this.value === 'category') {
+        categorySelect.disabled = false;
+        categorySelect.required = true;
+    } else {
+        categorySelect.disabled = true;
+        categorySelect.required = false;
+    }
+});
+
+function startBatchAnalysis() {
+    if (analysisInProgress) {
+        alert('分析が進行中です');
+        return;
+    }
+
+    const form = document.getElementById('batchAnalysisForm');
+    const formData = new FormData(form);
+    
+    // 分析設定のバリデーション
+    if (formData.get('scope') === 'category' && !formData.get('category_id')) {
+        alert('カテゴリを選択してください');
+        return;
+    }
+
+    analysisInProgress = true;
+    analysisAborted = false;
+    
+    // UI更新
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressText').textContent = '分析を開始しています...';
+
+    // 分析開始
+    fetch(`{{ url_for('admin.seo_batch_analyze') }}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 進行状況をポーリング
+            pollAnalysisProgress(data.task_id);
+        } else {
+            throw new Error(data.message || '分析開始に失敗しました');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('分析開始エラー: ' + error.message);
+        analysisInProgress = false;
+        document.getElementById('progressSection').style.display = 'none';
+    });
+}
+
+function pollAnalysisProgress(taskId) {
+    if (analysisAborted) {
+        return;
+    }
+
+    fetch(`{{ url_for('admin.api_batch_analysis_progress') }}?task_id=${taskId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.completed) {
+            // 分析完了
+            analysisInProgress = false;
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressText').textContent = '分析完了！ページを更新しています...';
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else if (data.error) {
+            // エラー発生
+            analysisInProgress = false;
+            alert('分析エラー: ' + data.error);
+            document.getElementById('progressSection').style.display = 'none';
+        } else {
+            // 進行中
+            const progress = Math.round((data.current / data.total) * 100);
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = 
+                `${data.current}/${data.total}記事を分析中... (${progress}%)`;
+            
+            // 次のポーリング
+            setTimeout(() => pollAnalysisProgress(taskId), 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Progress polling error:', error);
+        // 続行を試みる
+        setTimeout(() => pollAnalysisProgress(taskId), 5000);
+    });
+}
+
+function cancelAnalysis() {
+    if (confirm('分析を中止しますか？')) {
+        analysisAborted = true;
+        analysisInProgress = false;
+        document.getElementById('progressSection').style.display = 'none';
+        // サーバーサイドでの中止処理も実装可能
+    }
+}
+
+function filterResults(filterType) {
+    const articles = document.querySelectorAll('.article-item');
+    
+    articles.forEach(article => {
+        const score = parseInt(article.dataset.score);
+        let show = true;
+        
+        switch(filterType) {
+            case 'excellent':
+                show = score >= 80;
+                break;
+            case 'good':
+                show = score >= 60 && score < 80;
+                break;
+            case 'needs_improvement':
+                show = score < 60;
+                break;
+            default:
+                show = true;
+        }
+        
+        article.style.display = show ? 'flex' : 'none';
+    });
+}
+
+function sortResults(sortType) {
+    const container = document.getElementById('articleList');
+    const articles = Array.from(container.querySelectorAll('.article-item'));
+    
+    articles.sort((a, b) => {
+        switch(sortType) {
+            case 'score_desc':
+                return parseInt(b.dataset.score) - parseInt(a.dataset.score);
+            case 'score_asc':
+                return parseInt(a.dataset.score) - parseInt(b.dataset.score);
+            case 'title_asc':
+                return a.querySelector('.article-title').textContent.localeCompare(b.querySelector('.article-title').textContent);
+            case 'date_desc':
+                // 日付順は複雑なので省略（実装時は記事データから日付を比較）
+                return 0;
+            default:
+                return 0;
+        }
+    });
+    
+    // 再配置
+    articles.forEach(article => container.appendChild(article));
+}
+
+function exportCSV() {
+    // CSV形式でエクスポート
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `{{ url_for('admin.export_batch_results') }}`;
+    form.style.display = 'none';
+    
+    const formatInput = document.createElement('input');
+    formatInput.name = 'format';
+    formatInput.value = 'csv';
+    form.appendChild(formatInput);
+    
+    const csrfInput = document.createElement('input');
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    form.appendChild(csrfInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function exportJSON() {
+    // JSON形式でエクスポート
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `{{ url_for('admin.export_batch_results') }}`;
+    form.style.display = 'none';
+    
+    const formatInput = document.createElement('input');
+    formatInput.name = 'format';
+    formatInput.value = 'json';
+    form.appendChild(formatInput);
+    
+    const csrfInput = document.createElement('input');
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    form.appendChild(csrfInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function exportReport() {
+    // レポート形式でエクスポート（将来実装）
+    alert('レポート形式のエクスポート機能は準備中です');
+}
+
+// ページ読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // ツールチップの初期化
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+</script>
+{% endblock %}

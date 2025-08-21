@@ -1,0 +1,307 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}SEO対策ツール{% endblock %}
+{% block page_title %}SEO対策ツール{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>ツール</li>
+<li>SEO対策ツール</li>
+{% endblock %}
+
+{% block content %}
+<div class="seo-dashboard">
+    
+    <!-- 統計概要 -->
+    <div class="stats-overview">
+        <h5><i class="fas fa-chart-line"></i> SEO統計概要</h5>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-number">{{ article_count or 0 }}</div>
+                <div class="stat-label">総記事数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ analyzed_count or 0 }}</div>
+                <div class="stat-label">分析済み記事</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ avg_seo_score or 0 }}</div>
+                <div class="stat-label">平均SEOスコア</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ needs_improvement or 0 }}</div>
+                <div class="stat-label">要改善記事</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEOツール一覧 -->
+    <div class="seo-grid">
+        
+        <!-- 個別記事分析 -->
+        <div class="seo-card">
+            <div class="seo-icon">
+                <i class="fas fa-microscope"></i>
+            </div>
+            <div class="seo-title">個別記事SEO分析</div>
+            <div class="seo-description">
+                記事ごとに詳細なSEO分析を実行し、具体的な改善提案を取得します。
+            </div>
+            <ul class="feature-list">
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    タイトル最適化分析
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    コンテンツ構造チェック
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    キーワード密度分析
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    読みやすさ評価
+                </li>
+            </ul>
+            <div class="quick-actions">
+                <button type="button" class="btn btn-primary" onclick="showArticleSelector()">
+                    <i class="fas fa-play"></i> 分析開始
+                </button>
+            </div>
+        </div>
+
+        <!-- 一括分析 -->
+        <div class="seo-card">
+            <div class="seo-icon">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="seo-title">一括SEO分析</div>
+            <div class="seo-description">
+                全記事またはカテゴリ別にSEO分析を一括実行し、サイト全体の最適化状況を把握します。
+            </div>
+            <ul class="feature-list">
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    全記事一括分析
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    カテゴリ別分析
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    分析結果レポート
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    優先度別改善リスト
+                </li>
+            </ul>
+            <div class="quick-actions">
+                <a href="{{ url_for('admin.seo_batch_analyze') }}" class="btn btn-success">
+                    <i class="fas fa-cogs"></i> 一括分析
+                </a>
+            </div>
+        </div>
+
+        <!-- AI提案 -->
+        <div class="seo-card">
+            <div class="seo-icon">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="seo-title">AI SEO提案</div>
+            <div class="seo-description">
+                AI/LLMを活用して高度なSEO改善提案を生成し、より効果的な最適化を実現します。
+            </div>
+            <ul class="feature-list">
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    AIタイトル提案
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    メタディスクリプション生成
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    関連キーワード提案
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    コンテンツ構成提案
+                </li>
+            </ul>
+            <div class="quick-actions">
+                <button type="button" class="btn btn-info" onclick="showAISuggestions()">
+                    <i class="fas fa-magic"></i> AI提案取得
+                </button>
+            </div>
+        </div>
+
+        <!-- キーワード分析 -->
+        <div class="seo-card">
+            <div class="seo-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="seo-title">キーワード分析</div>
+            <div class="seo-description">
+                サイト全体のキーワード使用状況を分析し、SEO戦略の最適化をサポートします。
+            </div>
+            <ul class="feature-list">
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    キーワード密度分析
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    競合キーワード調查
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    長尾キーワード発見
+                </li>
+                <li class="feature-item">
+                    <i class="fas fa-check"></i>
+                    トレンド分析
+                </li>
+            </ul>
+            <div class="quick-actions">
+                <button type="button" class="btn btn-warning" onclick="analyzeKeywords()">
+                    <i class="fas fa-chart-bar"></i> 分析開始
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 最近の分析結果 -->
+    <div class="recent-analyses">
+        <h5><i class="fas fa-history"></i> 最近の分析結果</h5>
+        {% if recent_analyses %}
+            {% for analysis in recent_analyses %}
+                <div class="analysis-item">
+                    <div class="flex-grow-1">
+                        <strong>{{ analysis.title }}</strong>
+                        <small class="text-muted d-block">{{ analysis.analyzed_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <div class="score-badge">
+                        <span class="badge 
+                            {% if analysis.seo_score >= 80 %}bg-success
+                            {% elif analysis.seo_score >= 60 %}bg-warning
+                            {% else %}bg-danger{% endif %}">
+                            {{ analysis.seo_score }}/100
+                        </span>
+                    </div>
+                    <div class="ms-2">
+                        <a href="{{ url_for('admin.seo_analyze_article', article_id=analysis.article_id) }}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> 詳細
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">まだ分析結果がありません。</p>
+        {% endif %}
+    </div>
+
+    <!-- 使用方法 -->
+    <div class="info-section">
+        <h6><i class="fas fa-lightbulb"></i> SEOツールの使い方</h6>
+        <ol>
+            <li><strong>個別分析:</strong> 特定の記事のSEO状況を詳しく分析したい場合</li>
+            <li><strong>一括分析:</strong> サイト全体のSEO状況を把握したい場合</li>
+            <li><strong>AI提案:</strong> より効果的な改善提案を受けたい場合</li>
+            <li><strong>キーワード分析:</strong> キーワード戦略を見直したい場合</li>
+        </ol>
+        <p class="mb-0">
+            <strong>ヒント:</strong> 定期的な分析により、サイトのSEOパフォーマンスを継続的に改善できます。
+        </p>
+    </div>
+
+</div>
+
+<!-- 記事選択モーダル -->
+<div class="modal fade" id="articleSelectorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">分析する記事を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="articleAnalysisForm">
+                    <div class="mb-3">
+                        <label for="articleSelect" class="form-label">記事選択</label>
+                        <select class="form-select" id="articleSelect" name="article_id" required>
+                            <option value="">選択してください...</option>
+                            {% for article in recent_articles %}
+                                <option value="{{ article.id }}">{{ article.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="targetKeywords" class="form-label">ターゲットキーワード（オプション）</label>
+                        <input type="text" class="form-control" id="targetKeywords" name="target_keywords" 
+                               placeholder="キーワード1, キーワード2, ...">
+                        <div class="form-text">カンマ区切りで複数のキーワードを指定できます</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="startAnalysis()">分析開始</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+function showArticleSelector() {
+    const modal = new bootstrap.Modal(document.getElementById('articleSelectorModal'));
+    modal.show();
+}
+
+function startAnalysis() {
+    const form = document.getElementById('articleAnalysisForm');
+    const formData = new FormData(form);
+    const articleId = formData.get('article_id');
+    
+    if (!articleId) {
+        alert('記事を選択してください');
+        return;
+    }
+    
+    // 分析ページにリダイレクト
+    const targetKeywords = formData.get('target_keywords');
+    let url = `{{ url_for('admin.seo_analyze_article', article_id=0) }}`.replace('0', articleId);
+    if (targetKeywords) {
+        url += `?keywords=${encodeURIComponent(targetKeywords)}`;
+    }
+    window.location.href = url;
+}
+
+function showAISuggestions() {
+    // AI提案機能（将来実装）
+    alert('AI提案機能は準備中です。個別記事分析をお試しください。');
+}
+
+function analyzeKeywords() {
+    // キーワード分析機能（将来実装）
+    alert('キーワード分析機能は準備中です。一括分析をお試しください。');
+}
+
+// ページ読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // ツールチップの初期化
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+</script>
+{% endblock %}

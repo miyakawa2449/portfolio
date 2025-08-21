@@ -1,0 +1,253 @@
+{% extends "layout.html" %}
+{# Block Editor機能削除により、block_macros.html参照を削除 #}
+
+{% block title %}{{ article.meta_title or article.title }} - ミニブログ{% endblock %}
+{% block description %}{{ article.meta_description or (article.summary | truncate(160, True) if article.summary else '') or (article.body | markdown | striptags | truncate(160, True) if article.body else '') or 'プログラミング、テック、ライフスタイルに関する最新記事をお届けします。' }}{% endblock %}
+{% block keywords %}{{ article.meta_keywords if article.meta_keywords else 'ブログ,記事' }}{% endblock %}
+
+{% block og_title %}{{ article.meta_title or article.title }}{% endblock %}
+{% block og_description %}{{ article.meta_description or (article.summary | truncate(160, True) if article.summary else '') or (article.body | markdown | striptags | truncate(160, True) if article.body else '') or 'プログラミング、テック、ライフスタイルに関する最新記事をお届けします。' }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}{% if article.featured_image %}{{ url_for('static', filename=article.featured_image, _external=True) }}{% else %}{{ url_for('static', filename='images/ogp-default.jpg', _external=True) }}{% endif %}{% endblock %}
+
+{% block canonical %}{{ url_for('article_detail', slug=article.slug, _external=True) }}{% endblock %}
+
+{% block content %}
+<div class="article-detail">
+    <div class="container">
+        <!-- パンくずナビ -->
+        <nav class="breadcrumb-nav">
+            <a href="{{ url_for('home') }}" class="breadcrumb-link">
+                <i class="bi bi-house-door"></i> ホーム
+            </a>
+            {% if article.categories %}
+                {% for category in article.categories %}
+                    <span class="breadcrumb-separator">/</span>
+                    <a href="{{ url_for('category_page', slug=category.slug) }}" class="breadcrumb-link">
+                        {{ category.name }}
+                    </a>
+                {% endfor %}
+            {% endif %}
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">{{ article.title }}</span>
+        </nav>
+
+        <!-- 記事メイン -->
+        <article class="article-main">
+            <!-- 記事ヘッダー -->
+            <header class="article-header">
+                {% if article.categories %}
+                    <div class="article-categories">
+                        {% for category in article.categories %}
+                            <a href="{{ url_for('category_page', slug=category.slug) }}" class="category-link">
+                                {{ category.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <h1 class="article-title">{{ article.title }}</h1>
+                
+                <!-- アイキャッチ画像 -->
+                {% if article.featured_image %}
+                    <div class="article-featured-image">
+                        <img src="{{ url_for('static', filename=article.featured_image) }}" 
+                             alt="{{ article.title }}" 
+                             class="featured-image">
+                    </div>
+                {% endif %}
+                
+                <div class="article-meta">
+                    <div class="meta-item">
+                        <i class="bi bi-calendar3"></i>
+                        <span>{{ article.created_at.strftime('%Y年%m月%d日') }}</span>
+                    </div>
+                    
+                    {% if article.author %}
+                        <div class="meta-item">
+                            <i class="bi bi-person"></i>
+                            <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="author-link">
+                                {{ article.author.handle_name or article.author.name }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if article.updated_at and article.updated_at != article.created_at %}
+                        <div class="meta-item">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            <span>更新: {{ article.updated_at.strftime('%Y年%m月%d日') }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="meta-item">
+                        {% if article.is_published %}
+                            <span class="status-badge status-published">
+                                <i class="bi bi-eye"></i> 公開
+                            </span>
+                        {% else %}
+                            <span class="status-badge status-draft">
+                                <i class="bi bi-file-earmark"></i> 下書き
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- アイキャッチ画像（重複削除） -->
+            </header>
+
+            <!-- 記事本文 -->
+            <div class="article-body">
+                <!-- Markdownエディタ記事 -->
+                {{ article.body | sns_embed | markdown | safe }}
+            </div>
+
+            <!-- 記事フッター -->
+            <footer class="article-footer">
+                <div class="article-actions">
+                    {% if current_user.is_authenticated and (current_user == article.author or current_user.role == 'admin') %}
+                        <a href="{{ url_for('admin.edit_article', article_id=article.id) }}" class="btn btn-outline">
+                            <i class="bi bi-pencil"></i>
+                            記事を編集
+                        </a>
+                    {% endif %}
+                </div>
+                
+                {% if article.author %}
+                    <div class="author-info">
+                        <div class="author-avatar">
+                            <div class="avatar-circle">
+                                {{ (article.author.handle_name or article.author.name)[0].upper() }}
+                            </div>
+                        </div>
+                        <div class="author-details">
+                            <h4 class="author-name">
+                                <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="author-link">
+                                    {{ article.author.handle_name or article.author.name }}
+                                </a>
+                            </h4>
+                            <p class="author-role">著者</p>
+                            {% if article.author.introduction %}
+                                {% set intro_text = article.author.introduction[:100] %}
+                                <p class="author-bio">{{ intro_text }}{% if article.author.introduction|length > 100 %}...{% endif %}</p>
+                            {% endif %}
+                            <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="btn btn-sm btn-outline">
+                                プロフィールを見る
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </footer>
+        </article>
+
+        <!-- コメント部分 -->
+        {% if article.allow_comments %}
+        <section class="comments-section">
+            <div class="comments-container">
+                <h3 class="comments-title">
+                    <i class="bi bi-chat-left-text"></i>
+                    コメント
+                </h3>
+                
+                <!-- 既存のコメント表示 -->
+                {% if approved_comments %}
+                    <div class="comments-list">
+                        {% for comment in approved_comments %}
+                            <div class="comment-item">
+                                <div class="comment-header">
+                                    <h5 class="comment-author">{{ comment.author_name }}</h5>
+                                    <span class="comment-date">{{ comment.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
+                                </div>
+                                <div class="comment-content">
+                                    {{ comment.content | nl2br | safe }}
+                                </div>
+                                
+                                <!-- 返信表示 -->
+                                {% if comment.approved_replies %}
+                                    <div class="comment-replies">
+                                        {% for reply in comment.approved_replies %}
+                                            <div class="comment-reply">
+                                                <div class="comment-header">
+                                                    <h6 class="comment-author">{{ reply.author_name }}</h6>
+                                                    <span class="comment-date">{{ reply.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
+                                                </div>
+                                                <div class="comment-content">
+                                                    {{ reply.content | nl2br | safe }}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-comments">まだコメントはありません。最初のコメントを投稿してみましょう！</p>
+                {% endif %}
+                
+                <!-- コメント投稿フォーム -->
+                <div class="comment-form-container">
+                    <h4 class="comment-form-title">コメントを投稿</h4>
+                    <form method="POST" action="{{ url_for('add_comment', article_id=article.id) }}" class="comment-form">
+                        {{ csrf_token() }}
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="author_name">お名前 <span class="required">*</span></label>
+                                <input type="text" id="author_name" name="author_name" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="author_email">メールアドレス <span class="required">*</span></label>
+                                <input type="email" id="author_email" name="author_email" class="form-control" required>
+                                <small class="form-text">メールアドレスは公開されません</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="author_website">ウェブサイト（任意）</label>
+                            <input type="url" id="author_website" name="author_website" class="form-control" placeholder="https://">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="content">コメント <span class="required">*</span></label>
+                            <textarea id="content" name="content" class="form-control" rows="4" required placeholder="コメントを入力してください..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i>
+                                コメントを投稿
+                            </button>
+                        </div>
+                        
+                        <div class="comment-notice">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                コメントは承認後に表示されます。不適切な内容は削除される場合があります。
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ナビゲーション -->
+        <nav class="article-navigation">
+            <div class="nav-buttons">
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    記事一覧に戻る
+                </a>
+                {% if article.categories %}
+                    {% for category in article.categories %}
+                        <a href="{{ url_for('category_page', slug=category.slug) }}" class="btn btn-outline">
+                            <i class="bi bi-tags"></i>
+                            {{ category.name }}の記事
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+</div>
+{% endblock %}

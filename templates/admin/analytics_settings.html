@@ -1,0 +1,193 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Google Analytics設定{% endblock %}
+{% block page_title %}Google Analytics設定{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>ツール</li>
+<li>Google Analytics設定</li>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    
+    <!-- 現在のステータス -->
+    <div class="analytics-status {% if current_settings.google_analytics_enabled == 'true' %}enabled{% else %}disabled{% endif %}">
+        <h5>
+            {% if current_settings.google_analytics_enabled == 'true' %}
+                <i class="fas fa-check-circle text-success"></i> Google Analytics 有効
+            {% else %}
+                <i class="fas fa-times-circle text-danger"></i> Google Analytics 無効
+            {% endif %}
+        </h5>
+        
+        {% if current_settings.google_analytics_enabled == 'true' %}
+            <p class="mb-0">Google Analyticsが設定されており、アクセス解析が実行されています。</p>
+            {% if current_settings.google_analytics_id %}
+                <small class="text-muted">測定ID: {{ current_settings.google_analytics_id }}</small>
+            {% endif %}
+        {% else %}
+            <p class="mb-0">Google Analyticsが無効になっています。設定を行ってください。</p>
+        {% endif %}
+    </div>
+
+    <!-- 設定フォーム -->
+    <form method="POST" id="analyticsForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- 基本設定 -->
+        <div class="form-section">
+            <h6><i class="fas fa-cog"></i> 基本設定</h6>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    {{ form.google_analytics_enabled(class="form-check-input") }}
+                    <label for="{{ form.google_analytics_enabled.id }}" class="form-check-label fw-bold">
+                        {{ form.google_analytics_enabled.label.text }}
+                    </label>
+                </div>
+                <div class="help-text">
+                    <i class="fas fa-info-circle"></i>
+                    このオプションをONにすると、サイトにGoogle Analyticsのトラッキングコードが自動的に埋め込まれます。
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Analytics設定 -->
+        <div class="settings-grid">
+            <div class="settings-card">
+                <h6><i class="fab fa-google"></i> Google Analytics 4</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">{{ form.google_analytics_id.label.text }}</label>
+                    {{ form.google_analytics_id(class="form-control", placeholder="G-XXXXXXXXXX") }}
+                    <div class="help-text">
+                        Google Analytics 4 の測定IDを入力してください。<br>
+                        「G-」で始まる10桁の英数字です。
+                    </div>
+                    {% if form.google_analytics_id.errors %}
+                        {% for error in form.google_analytics_id.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h6><i class="fas fa-tag"></i> Google Tag Manager</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">{{ form.google_tag_manager_id.label.text }}</label>
+                    {{ form.google_tag_manager_id(class="form-control", placeholder="GTM-XXXXXXX") }}
+                    <div class="help-text">
+                        Google Tag Manager を使用する場合のコンテナIDです。<br>
+                        「GTM-」で始まる7桁の英数字です。（オプション）
+                    </div>
+                    {% if form.google_tag_manager_id.errors %}
+                        {% for error in form.google_tag_manager_id.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 詳細設定 -->
+        <div class="form-section">
+            <h6><i class="fas fa-cog"></i> 詳細設定</h6>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    {{ form.analytics_track_admin(class="form-check-input") }}
+                    <label for="{{ form.analytics_track_admin.id }}" class="form-check-label">
+                        {{ form.analytics_track_admin.label.text }}
+                    </label>
+                </div>
+                <div class="help-text">
+                    通常は無効にしておくことを推奨します。管理者のアクセスも統計に含める場合は有効にしてください。
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">{{ form.custom_analytics_code.label.text }}</label>
+                {{ form.custom_analytics_code(class="form-control", rows="5", placeholder="<script>カスタムアナリティクスコード</script>") }}
+                <div class="help-text">
+                    その他のアナリティクスサービスのトラッキングコードを追加する場合に使用します。（オプション）
+                </div>
+            </div>
+        </div>
+
+        <!-- 設定手順の説明 -->
+        <div class="info-box">
+            <h6><i class="fas fa-info-circle"></i> Google Analytics の設定手順</h6>
+            <ol class="mb-0">
+                <li><a href="https://analytics.google.com/" target="_blank">Google Analytics</a> にアクセスしてアカウントを作成</li>
+                <li>プロパティを作成し、データストリームを設定</li>
+                <li>測定ID（G-XXXXXXXXXX）をコピー</li>
+                <li>上記のフォームに測定IDを入力</li>
+                <li>「Google Analyticsを有効にする」をチェック</li>
+                <li>「設定を保存」をクリック</li>
+            </ol>
+        </div>
+
+        <!-- 保存ボタン -->
+        <div class="d-grid gap-2">
+            {{ form.submit(class="btn btn-primary btn-lg") }}
+        </div>
+    </form>
+
+    <!-- 現在のトラッキングコードプレビュー -->
+    {% if current_settings.google_analytics_enabled == 'true' and current_settings.google_analytics_id %}
+        <div class="form-section mt-4">
+            <h6><i class="fas fa-code"></i> 埋め込まれるトラッキングコード</h6>
+            <div class="code-preview"><!-- Google tag (gtag.js) -->
+&lt;script async src="https://www.googletagmanager.com/gtag/js?id={{ current_settings.google_analytics_id }}"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '{{ current_settings.google_analytics_id }}');
+&lt;/script&gt;</div>
+        </div>
+    {% endif %}
+
+    <!-- 注意事項 -->
+    <div class="warning-box">
+        <h6><i class="fas fa-exclamation-triangle"></i> 注意事項</h6>
+        <ul class="mb-0">
+            <li>プライバシーポリシーの更新: アナリティクスの使用をプライバシーポリシーに記載してください</li>
+            <li>GDPR対応: EU地域のユーザーがいる場合は、適切な同意フォームの実装が必要です</li>
+            <li>設定変更後は実際にサイトにアクセスして、トラッキングが動作することを確認してください</li>
+            <li>測定IDは公開されても問題ありませんが、管理画面のアクセス権限は適切に管理してください</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block script_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const enabledCheckbox = document.getElementById('google_analytics_enabled');
+    const analyticsIdField = document.getElementById('google_analytics_id');
+    const gtmIdField = document.getElementById('google_tag_manager_id');
+    
+    function toggleFields() {
+        const isEnabled = enabledCheckbox.checked;
+        analyticsIdField.disabled = !isEnabled;
+        gtmIdField.disabled = !isEnabled;
+        
+        if (!isEnabled) {
+            analyticsIdField.style.backgroundColor = '#f8f9fa';
+            gtmIdField.style.backgroundColor = '#f8f9fa';
+        } else {
+            analyticsIdField.style.backgroundColor = '';
+            gtmIdField.style.backgroundColor = '';
+        }
+    }
+    
+    enabledCheckbox.addEventListener('change', toggleFields);
+    toggleFields(); // 初期状態を設定
+});
+</script>
+{% endblock %}

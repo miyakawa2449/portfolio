@@ -1,0 +1,136 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}2段階認証無効化{% endblock %}
+
+{% block head_extra %}
+<style>
+.totp-disable-container .alert {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    margin-bottom: 1rem !important;
+}
+.totp-disable-container .alert h6,
+.totp-disable-container .alert p,
+.totp-disable-container .alert ul,
+.totp-disable-container .alert li {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">🔓 2段階認証無効化</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+            ← ダッシュボードに戻る
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>2段階認証の無効化</h5>
+            </div>
+            <div class="card-body totp-disable-container">
+                
+                <div class="alert alert-danger" style="position: relative; z-index: 10;">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>重要な警告</h6>
+                    <ul class="mb-2">
+                        <li>2段階認証を無効にすると、アカウントのセキュリティが大幅に低下します</li>
+                        <li>パスワードのみでログインできるようになります</li>
+                        <li>不正アクセスのリスクが高まります</li>
+                    </ul>
+                    <p class="mb-0"><strong>本当に無効化しますか？</strong></p>
+                </div>
+                
+                <div class="alert alert-info" style="position: relative; z-index: 10;">
+                    <h6><i class="fas fa-info-circle me-2"></i>確認</h6>
+                    <p class="mb-0">無効化を続行するには、現在のパスワードを入力してください。</p>
+                </div>
+                
+                <form method="POST">
+                    {{ csrf_token() }}
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-key me-2"></i>現在のパスワード
+                        </label>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" required 
+                               placeholder="パスワードを入力してください">
+                        <div class="form-text">セキュリティ確認のため、現在のパスワードが必要です</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-times me-2"></i>2段階認証を無効化する
+                        </button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>キャンセル
+                        </a>
+                    </div>
+                </form>
+                
+                <div class="mt-4 pt-3 border-top">
+                    <h6><i class="fas fa-lightbulb me-2"></i>セキュリティ向上のために</h6>
+                    <p class="text-muted small mb-0">
+                        2段階認証を無効化する代わりに、より強力なパスワードに変更することをお勧めします。
+                        <a href="{{ url_for('admin.edit_user', user_id=current_user.id) }}">パスワード変更はこちら</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 要素の存在確認
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const form = document.querySelector('form');
+    
+    if (!passwordInput || !submitBtn || !form) {
+        console.warn('Required form elements not found');
+        return;
+    }
+    
+    // 初期状態でボタンを無効化
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.6';
+    
+    // パスワード入力時のリアルタイム検証
+    passwordInput.addEventListener('input', function() {
+        if (this.value.length >= 1) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+        }
+    });
+    
+    // フォーム送信前の最終確認
+    form.addEventListener('submit', function(e) {
+        const password = passwordInput.value;
+        if (password.length === 0) {
+            e.preventDefault();
+            alert('パスワードを入力してください。');
+            return false;
+        }
+        
+        if (!confirm('本当に2段階認証を無効化しますか？この操作によりアカウントのセキュリティが低下します。')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

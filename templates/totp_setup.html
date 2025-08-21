@@ -1,0 +1,114 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}2段階認証設定{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">🔐 2段階認証設定</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+            ← ダッシュボードに戻る
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Google Authenticator 2段階認証</h5>
+            </div>
+            <div class="card-body">
+                
+                <div class="alert alert-warning mb-4">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>重要</h6>
+                    <p class="mb-0">2段階認証を有効にすると、ログイン時にスマートフォンの認証アプリが必要になります。設定前にGoogle Authenticatorアプリをインストールしてください。</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h5 class="mb-3"><i class="fas fa-qrcode me-2"></i>手順1: QRコードをスキャン</h5>
+                        <p class="text-muted mb-3">スマートフォンのGoogle AuthenticatorアプリでQRコードをスキャンしてください。</p>
+                        
+                        <div class="text-center mb-4">
+                            <div class="border rounded p-3 bg-white d-inline-block">
+                                <img src="data:image/png;base64,{{ qr_code }}" alt="QRコード" class="img-fluid" style="max-width: 200px;">
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-key me-2"></i>手動入力用キー</h6>
+                            <p class="mb-2">QRコードが読み取れない場合は、以下のキーを手動で入力してください：</p>
+                            <code class="user-select-all">{{ secret }}</code>
+                            <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyToClipboard('{{ secret }}')">
+                                <i class="fas fa-copy"></i> コピー
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <h5 class="mb-3"><i class="fas fa-mobile-alt me-2"></i>手順2: 認証コードを入力</h5>
+                        <p class="text-muted mb-3">Google Authenticatorに表示される6桁のコードを入力して、2段階認証を有効化してください。</p>
+                        
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+                            <div class="mb-3">
+                                {{ form.totp_code.label(class="form-label") }}
+                                {{ form.totp_code(class="form-control form-control-lg text-center" + (" is-invalid" if form.totp_code.errors else ""), placeholder="000000", maxlength="6", style="letter-spacing: 0.5em; font-size: 1.2em;") }}
+                                {% if form.totp_code.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.totp_code.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">認証コードは30秒ごとに更新されます</div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                {{ form.submit(class="btn btn-success btn-lg") }}
+                                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">キャンセル</a>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-4">
+                            <h6><i class="fas fa-download me-2"></i>Google Authenticatorアプリ</h6>
+                            <div class="d-flex gap-2">
+                                <a href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fab fa-apple"></i> iOS
+                                </a>
+                                <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" class="btn btn-sm btn-outline-success">
+                                    <i class="fab fa-google-play"></i> Android
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // 簡単な成功フィードバック
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> コピー済み';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
+}
+
+// 数字のみ入力許可
+document.querySelector('input[name="totp_code"]').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
+</script>
+{% endblock %}

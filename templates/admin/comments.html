@@ -1,0 +1,257 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}コメント管理{% endblock %}
+{% block page_title %}コメント管理{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>コメント管理</li>
+{% endblock %}
+
+{% block content %}
+<!-- 統計情報 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stats-card">
+            <div class="stats-icon">
+                <i class="fa fa-comments"></i>
+            </div>
+            <div class="stats-number">{{ total }}</div>
+            <div class="stats-label">総コメント数</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card success">
+            <div class="stats-icon">
+                <i class="fa fa-check"></i>
+            </div>
+            <div class="stats-number">{{ approved }}</div>
+            <div class="stats-label">承認済み</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card warning">
+            <div class="stats-icon">
+                <i class="fa fa-clock"></i>
+            </div>
+            <div class="stats-number">{{ pending }}</div>
+            <div class="stats-label">承認待ち</div>
+        </div>
+    </div>
+</div>
+
+<!-- フィルター -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('admin.comments', status='all') }}" 
+               class="btn btn-{{ 'primary' if status_filter == 'all' else 'outline-primary' }}">
+                すべて
+            </a>
+            <a href="{{ url_for('admin.comments', status='pending') }}" 
+               class="btn btn-{{ 'warning' if status_filter == 'pending' else 'outline-warning' }}">
+                承認待ち
+            </a>
+            <a href="{{ url_for('admin.comments', status='approved') }}" 
+               class="btn btn-{{ 'success' if status_filter == 'approved' else 'outline-success' }}">
+                承認済み
+            </a>
+        </div>
+    </div>
+    <div class="col-md-6 text-end">
+        <div class="input-group" style="max-width: 300px; margin-left: auto;">
+            <span class="input-group-text"><i class="fa fa-search"></i></span>
+            <input type="text" class="form-control" placeholder="コメントを検索...">
+        </div>
+    </div>
+</div>
+
+<!-- コメント一覧 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fa fa-comments me-2"></i>コメント一覧</h5>
+        {% if comments_list and comments_list.total %}
+        <span class="badge bg-info">{{ comments_list.total }} コメント</span>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        {% if comments_list and comments_list.items %}
+            <form method="POST" action="{{ url_for('admin.bulk_comment_action') }}">
+                {{ csrf_token() }}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th>コメント内容</th>
+                                <th>投稿者</th>
+                                <th>記事</th>
+                                <th>状態</th>
+                                <th>投稿日</th>
+                                <th width="150">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comment in comments_list.items %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="comment_ids" value="{{ comment.id }}">
+                                </td>
+                                <td>
+                                    <div class="comment-content">
+                                        {{ comment.content[:100] }}{% if comment.content|length > 100 %}...{% endif %}
+                                    </div>
+                                    {% if comment.email %}
+                                        <small class="text-muted">{{ comment.email }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ comment.name if comment.name else 'Anonymous' }}</strong>
+                                    {% if comment.website %}
+                                        <br><small><a href="{{ comment.website }}" target="_blank" class="text-muted">{{ comment.website }}</a></small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if comment.article %}
+                                        <a href="{{ url_for('admin.edit_article', article_id=comment.article.id) }}" class="text-decoration-none">
+                                            {{ comment.article.title[:50] }}{% if comment.article.title|length > 50 %}...{% endif %}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">記事が見つかりません</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if comment.is_approved is defined %}
+                                        <span class="badge bg-{{ 'success' if comment.is_approved else 'warning' }}">
+                                            {{ '承認済み' if comment.is_approved else '承認待ち' }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">状態不明</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else 'N/A' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if comment.is_approved is defined and not comment.is_approved %}
+                                        <form method="POST" action="{{ url_for('admin.approve_comment', comment_id=comment.id) }}" class="d-inline">
+                                            {{ csrf_token() }}
+                                            <button type="submit" class="btn btn-outline-success" title="承認">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        {% if comment.is_approved is defined and comment.is_approved %}
+                                        <form method="POST" action="{{ url_for('admin.reject_comment', comment_id=comment.id) }}" class="d-inline">
+                                            {{ csrf_token() }}
+                                            <button type="submit" class="btn btn-outline-warning" title="拒否">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('admin.delete_comment', comment_id=comment.id) }}" class="d-inline">
+                                            {{ csrf_token() }}
+                                            <button type="submit" class="btn btn-outline-danger" 
+                                                    onclick="return confirm('このコメントを削除してもよろしいですか？')" title="削除">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 一括操作 -->
+                <div class="card-footer">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <select name="action" class="form-select form-select-sm me-2" style="width: auto;">
+                                    <option value="">一括操作を選択</option>
+                                    <option value="approve">承認</option>
+                                    <option value="reject">拒否</option>
+                                    <option value="delete">削除</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('選択したコメントに対してこの操作を実行してもよろしいですか？')">
+                                    実行
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            {% if comments_list.pages > 1 %}
+                            <!-- ページネーション -->
+                            <nav aria-label="コメントページネーション">
+                                <ul class="pagination pagination-sm justify-content-end mb-0">
+                                    {% if comments_list.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin.comments', page=comments_list.prev_num, status=status_filter) }}">前</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in comments_list.iter_pages() %}
+                                        {% if page_num %}
+                                            {% if page_num != comments_list.page %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ url_for('admin.comments', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_num }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">…</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if comments_list.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin.comments', page=comments_list.next_num, status=status_filter) }}">次</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fa fa-comments fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">コメントがありません</h5>
+                {% if status_filter == 'pending' %}
+                    <p class="text-muted">承認待ちのコメントはありません</p>
+                {% elif status_filter == 'approved' %}
+                    <p class="text-muted">承認済みのコメントはありません</p>
+                {% else %}
+                    <p class="text-muted">コメント機能が実装されていないか、まだコメントが投稿されていません</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// 全選択
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('input[name="comment_ids"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+</script>
+{% endblock %}

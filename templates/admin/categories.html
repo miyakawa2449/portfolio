@@ -1,0 +1,488 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}カテゴリ管理{% endblock %}
+{% block page_title %}カテゴリ管理{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>カテゴリ管理</li>
+{% endblock %}
+
+{% block content %}
+<!-- アクションバー -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fa fa-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" placeholder="カテゴリ名で検索..." onkeyup="filterTable()">
+        </div>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" id="sortFilter" onchange="sortTable()">
+            <option value="name">名前順</option>
+            <option value="articles">記事数順</option>
+            <option value="created">作成日順</option>
+        </select>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">
+            <i class="fa fa-plus me-1"></i>新規カテゴリ
+        </a>
+    </div>
+</div>
+
+<!-- カテゴリ一覧 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fa fa-tags me-2"></i>カテゴリ一覧</h5>
+        <span class="badge bg-info">{{ categories_list.total }} カテゴリ</span>
+    </div>
+    <div class="card-body p-0">
+        {% if categories_list.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="categoriesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()">
+                            </th>
+                            <th>カテゴリ名</th>
+                            <th>スラッグ</th>
+                            <th>説明</th>
+                            <th>記事数</th>
+                            <th>作成日</th>
+                            <th width="120">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories_list.items %}
+                        <tr class="category-row" data-name="{{ category.name|lower }}" data-articles="{{ category.articles|length if category.articles else 0 }}" data-created="{{ category.created_at.strftime('%Y%m%d') if category.created_at else '19700101' }}">
+                            <td>
+                                <input type="checkbox" name="category_ids" value="{{ category.id }}" class="category-checkbox">
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="category-icon me-2">
+                                        {% if category.ogp_image %}
+                                            <img src="{{ url_for('static', filename=category.ogp_image) }}" 
+                                                 alt="{{ category.name }}" 
+                                                 class="rounded" 
+                                                 style="width: 32px; height: 32px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" 
+                                                 style="width: 32px; height: 32px; font-size: 12px;">
+                                                {{ category.name[:2].upper() }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <strong>{{ category.name }}</strong>
+                                        {% if category.parent %}
+                                            <br><small class="text-muted">親: {{ category.parent.name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <code>{{ category.slug }}</code>
+                                <a href="/category/{{ category.slug }}" target="_blank" class="ms-1" title="カテゴリページを表示">
+                                    <i class="fa fa-external-link-alt text-muted"></i>
+                                </a>
+                            </td>
+                            <td>
+                                {% if category.description %}
+                                    <span class="text-truncate" style="max-width: 200px; display: inline-block;" title="{{ category.description }}">
+                                        {{ category.description[:50] }}{% if category.description|length > 50 %}...{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">説明なし</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if category.articles and category.articles|length > 0 else 'secondary' }}">
+                                    {{ category.articles|length if category.articles else 0 }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ category.created_at.strftime('%Y-%m-%d') if category.created_at else 'N/A' }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- 編集ボタン - JavaScriptでエラーハンドリング -->
+                                    <a href="#" 
+                                       class="btn btn-outline-primary edit-category-btn" 
+                                       data-category-id="{{ category.id }}"
+                                       title="編集">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-outline-danger" 
+                                            onclick="confirmDeleteCategory({{ category.id }}, '{{ category.name }}')"
+                                            title="削除">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- ページネーション -->
+            {% if categories_list.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="カテゴリページネーション">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        <!-- 最初のページ -->
+                        {% if categories_list.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.categories', page=1) }}">
+                                    <i class="fa fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.categories', page=categories_list.prev_num) }}">
+                                    <i class="fa fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fa fa-angle-double-left"></i></span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fa fa-angle-left"></i></span>
+                            </li>
+                        {% endif %}
+
+                        <!-- ページ番号 -->
+                        {% for page_num in categories_list.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num != categories_list.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.categories', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        <!-- 次のページ -->
+                        {% if categories_list.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.categories', page=categories_list.next_num) }}">
+                                    <i class="fa fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.categories', page=categories_list.pages) }}">
+                                    <i class="fa fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fa fa-angle-right"></i></span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fa fa-angle-double-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        {{ categories_list.page }} / {{ categories_list.pages }} ページ 
+                        ({{ categories_list.total }} カテゴリ中 {{ categories_list.per_page * (categories_list.page - 1) + 1 }} - 
+                        {{ categories_list.per_page * categories_list.page if categories_list.per_page * categories_list.page < categories_list.total else categories_list.total }} を表示)
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fa fa-tags fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">カテゴリが見つかりません</h5>
+                <p class="text-muted">最初のカテゴリを作成してみましょう</p>
+                <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">
+                    <i class="fa fa-plus me-1"></i>カテゴリを作成
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 一括操作パネル（選択時に表示） -->
+<div id="bulkActionsPanel" class="card mt-3" style="display: none;">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong><span id="selectedCount">0</span></strong> 個のカテゴリが選択されています
+            </div>
+            <div>
+                <button type="button" class="btn btn-outline-danger" onclick="confirmBulkDelete()">
+                    <i class="fa fa-trash me-1"></i>選択したカテゴリを削除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 統計情報 -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon">
+                <i class="fa fa-tags"></i>
+            </div>
+            <div class="stats-number">{{ categories_list.total }}</div>
+            <div class="stats-label">総カテゴリ数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card success">
+            <div class="stats-icon">
+                <i class="fa fa-file-alt"></i>
+            </div>
+            <div class="stats-number">{{ stats.current_page_articles if stats else 0 }}</div>
+            <div class="stats-label">記事数（現在ページ）</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card warning">
+            <div class="stats-icon">
+                <i class="fa fa-sitemap"></i>
+            </div>
+            <div class="stats-number">
+                {{ categories_list.items|selectattr('parent', 'none')|list|length }}
+            </div>
+            <div class="stats-label">親カテゴリ（現在ページ）</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card info">
+            <div class="stats-icon">
+                <i class="fa fa-image"></i>
+            </div>
+            <div class="stats-number">
+                {{ categories_list.items|selectattr('ogp_image')|list|length }}
+            </div>
+            <div class="stats-label">画像付き（現在ページ）</div>
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-trash me-2"></i>カテゴリ削除確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>カテゴリ「<strong id="deleteCategoryName"></strong>」を削除してもよろしいですか？</p>
+                <div class="alert alert-warning">
+                    <strong><i class="fa fa-exclamation-triangle me-1"></i>警告:</strong> 
+                    このカテゴリに属する記事は「未分類」に移動されます。この操作は取り消せません。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-danger" onclick="deleteCategory()">削除実行</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+let deleteCategoryId = null;
+
+// 編集ボタンのURL解決
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons = document.querySelectorAll('.edit-category-btn');
+    
+    editButtons.forEach(button => {
+        const categoryId = button.getAttribute('data-category-id');
+        
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 正しいURL生成
+            const editUrl = `{{ url_for('admin.categories') }}`.replace('/categories/', `/category/edit/${categoryId}/`);
+            window.location.href = editUrl;
+        });
+    });
+});
+
+// 検索機能
+function filterTable() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.category-row');
+
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        const visible = name.includes(searchInput);
+        row.style.display = visible ? '' : 'none';
+    });
+}
+
+// ソート機能
+function sortTable() {
+    const sortBy = document.getElementById('sortFilter').value;
+    const tbody = document.querySelector('#categoriesTable tbody');
+    const rows = Array.from(tbody.querySelectorAll('.category-row'));
+
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(sortBy) {
+            case 'name':
+                aValue = a.getAttribute('data-name');
+                bValue = b.getAttribute('data-name');
+                return aValue.localeCompare(bValue);
+                
+            case 'articles':
+                aValue = parseInt(a.getAttribute('data-articles'));
+                bValue = parseInt(b.getAttribute('data-articles'));
+                return bValue - aValue; // 降順
+                
+            case 'created':
+                aValue = a.getAttribute('data-created');
+                bValue = b.getAttribute('data-created');
+                return bValue.localeCompare(aValue); // 降順
+                
+            default:
+                return 0;
+        }
+    });
+
+    // ソート後の行を再配置
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// 全選択/全解除
+function toggleAllCheckboxes() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.category-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkActionsPanel();
+}
+
+// 一括操作パネルの表示/非表示
+function updateBulkActionsPanel() {
+    const checkboxes = document.querySelectorAll('.category-checkbox:checked');
+    const panel = document.getElementById('bulkActionsPanel');
+    const countSpan = document.getElementById('selectedCount');
+    
+    if (checkboxes.length > 0) {
+        panel.style.display = 'block';
+        countSpan.textContent = checkboxes.length;
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// チェックボックス変更イベント
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('category-checkbox')) {
+        updateBulkActionsPanel();
+    }
+});
+
+// 削除確認
+function confirmDeleteCategory(categoryId, categoryName) {
+    deleteCategoryId = categoryId;
+    document.getElementById('deleteCategoryName').textContent = categoryName;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// 削除実行
+function deleteCategory() {
+    if (deleteCategoryId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('admin.categories') }}`.replace('/categories/', `/category/delete/${deleteCategoryId}/`);
+        
+        // CSRFトークンをmetaタグから取得
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// 一括削除確認
+function confirmBulkDelete() {
+    const checkedBoxes = document.querySelectorAll('.category-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) {
+        alert('削除するカテゴリを選択してください。');
+        return;
+    }
+    
+    if (confirm(`${checkedBoxes.length}個のカテゴリを削除してもよろしいですか？\n\n注意: このカテゴリに属する記事は「未分類」に移動されます。`)) {
+        // 一括削除フォームを作成して送信
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/categories/bulk-delete';
+        
+        const csrfToken = '{{ csrf_token() }}';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        checkedBoxes.forEach(checkbox => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'category_ids';
+            input.value = checkbox.value;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// 統計情報のアニメーション
+document.addEventListener('DOMContentLoaded', function() {
+    const statsNumbers = document.querySelectorAll('.stats-number');
+    statsNumbers.forEach((el, index) => {
+        setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            }, 100);
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

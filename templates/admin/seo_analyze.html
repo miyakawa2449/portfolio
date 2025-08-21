@@ -1,0 +1,436 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}SEO分析結果 - {{ article.title }}{% endblock %}
+{% block page_title %}SEO分析結果{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>ツール</li>
+<li><a href="{{ url_for('admin.seo_tools') }}">SEO対策ツール</a></li>
+<li>分析結果</li>
+{% endblock %}
+
+{% endblock %}
+
+{% block content %}
+<div class="seo-analysis">
+    
+    <!-- 記事情報 -->
+    <div class="article-info">
+        <h5><i class="fas fa-file-alt"></i> 分析対象記事</h5>
+        <h6><strong>{{ article.title }}</strong></h6>
+        <div class="row">
+            <div class="col-md-6">
+                <small class="text-muted">
+                    <i class="fas fa-tag"></i> カテゴリ: {{ article.category.name if article.category else '未設定' }}<br>
+                    <i class="fas fa-calendar"></i> 公開日: {{ article.published_at.strftime('%Y-%m-%d') if article.published_at else '未公開' }}<br>
+                    <i class="fas fa-user"></i> 著者: {{ article.author.name }}
+                </small>
+            </div>
+            <div class="col-md-6">
+                <small class="text-muted">
+                    <i class="fas fa-eye"></i> ステータス: {{ '公開' if article.is_published else '下書き' }}<br>
+                    <i class="fas fa-clock"></i> 分析日時: {{ datetime.now().strftime('%Y-%m-%d %H:%M') }}<br>
+                    {% if target_keywords %}
+                    <i class="fas fa-search"></i> ターゲットキーワード: {{ target_keywords|join(', ') }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 総合スコア -->
+    <div class="score-overview">
+        <div class="overall-score">{{ analysis.seo_score }}/100</div>
+        <div class="score-label">総合SEOスコア</div>
+        <div class="progress-ring" style="margin: 20px auto;">
+            <svg class="progress-ring" width="100" height="100">
+                <circle class="progress-ring-circle progress-ring-background" />
+                <circle class="progress-ring-circle progress-ring-progress" 
+                        stroke-dasharray="{{ (analysis.seo_score / 100 * 251.2)|round(1) }} 251.2" />
+            </svg>
+            <div class="progress-text">{{ analysis.seo_score }}%</div>
+        </div>
+    </div>
+
+    <!-- 詳細スコア -->
+    <div class="score-grid">
+        <div class="score-card">
+            <div class="score-number {{ 'excellent' if analysis.title_analysis.score >= 80 else 'good' if analysis.title_analysis.score >= 60 else 'average' if analysis.title_analysis.score >= 40 else 'poor' }}">
+                {{ analysis.title_analysis.score }}
+            </div>
+            <div>タイトル最適化</div>
+        </div>
+        <div class="score-card">
+            <div class="score-number {{ 'excellent' if analysis.content_analysis.score >= 80 else 'good' if analysis.content_analysis.score >= 60 else 'average' if analysis.content_analysis.score >= 40 else 'poor' }}">
+                {{ analysis.content_analysis.score }}
+            </div>
+            <div>コンテンツ構造</div>
+        </div>
+        <div class="score-card">
+            <div class="score-number {{ 'excellent' if analysis.keyword_density.score >= 80 else 'good' if analysis.keyword_density.score >= 60 else 'average' if analysis.keyword_density.score >= 40 else 'poor' }}">
+                {{ analysis.keyword_density.score }}
+            </div>
+            <div>キーワード密度</div>
+        </div>
+        <div class="score-card">
+            <div class="score-number {{ 'excellent' if analysis.readability.score >= 80 else 'good' if analysis.readability.score >= 60 else 'average' if analysis.readability.score >= 40 else 'poor' }}">
+                {{ analysis.readability.score }}
+            </div>
+            <div>読みやすさ</div>
+        </div>
+    </div>
+
+    <!-- タイトル分析 -->
+    <div class="analysis-section">
+        <div class="section-title">
+            <i class="fas fa-heading"></i>
+            タイトル分析
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <ul class="issue-list">
+                    {% for issue in analysis.title_analysis.issues %}
+                        <li class="issue-item">
+                            <i class="fas fa-exclamation-triangle issue-icon warning"></i>
+                            {{ issue }}
+                        </li>
+                    {% else %}
+                        <li class="issue-item">
+                            <i class="fas fa-check-circle issue-icon" style="color: #28a745;"></i>
+                            タイトルは適切に最適化されています
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted">
+                    <strong>統計情報:</strong><br>
+                    文字数: {{ analysis.title_analysis.length }}文字<br>
+                    語数: {{ analysis.title_analysis.word_count }}語<br>
+                    数字使用: {{ '有' if analysis.title_analysis.has_numbers else '無' }}<br>
+                    パワーワード: {{ '有' if analysis.title_analysis.has_power_words else '無' }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- コンテンツ分析 -->
+    <div class="analysis-section">
+        <div class="section-title">
+            <i class="fas fa-file-text"></i>
+            コンテンツ構造分析
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <ul class="issue-list">
+                    {% for issue in analysis.content_analysis.issues %}
+                        <li class="issue-item">
+                            <i class="fas fa-info-circle issue-icon info"></i>
+                            {{ issue }}
+                        </li>
+                    {% else %}
+                        <li class="issue-item">
+                            <i class="fas fa-check-circle issue-icon" style="color: #28a745;"></i>
+                            コンテンツ構造は適切です
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted">
+                    <strong>統計情報:</strong><br>
+                    語数: {{ analysis.content_analysis.word_count }}語<br>
+                    段落数: {{ analysis.content_analysis.paragraph_count }}<br>
+                    見出し数: {{ analysis.content_analysis.heading_count }}<br>
+                    画像数: {{ analysis.content_analysis.image_count }}<br>
+                    リンク数: {{ analysis.content_analysis.link_count }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- キーワード密度 -->
+    <div class="analysis-section">
+        <div class="section-title">
+            <i class="fas fa-search"></i>
+            キーワード分析
+        </div>
+        {% if analysis.keyword_density.density %}
+            <h6>ターゲットキーワード密度</h6>
+            <div class="keyword-density">
+                {% for keyword, data in analysis.keyword_density.density.items() %}
+                    <div class="keyword-tag {{ 'target' if data.density >= 0.5 and data.density <= 3.0 else 'high' if data.density > 3.0 else '' }}">
+                        {{ keyword }}: {{ data.density }}% ({{ data.count }}回)
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if analysis.keyword_density.top_words %}
+            <h6>頻出語句</h6>
+            <div class="keyword-density">
+                {% for word, data in analysis.keyword_density.top_words.items() %}
+                    <div class="keyword-tag">
+                        {{ word }}: {{ data.density }}% ({{ data.count }}回)
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <ul class="issue-list">
+            {% for issue in analysis.keyword_density.issues %}
+                <li class="issue-item">
+                    <i class="fas fa-exclamation-triangle issue-icon warning"></i>
+                    {{ issue }}
+                </li>
+            {% else %}
+                <li class="issue-item">
+                    <i class="fas fa-check-circle issue-icon" style="color: #28a745;"></i>
+                    キーワード密度は適切です
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- 読みやすさ分析 -->
+    <div class="analysis-section">
+        <div class="section-title">
+            <i class="fas fa-eye"></i>
+            読みやすさ分析
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <ul class="issue-list">
+                    {% for issue in analysis.readability.issues %}
+                        <li class="issue-item">
+                            <i class="fas fa-info-circle issue-icon info"></i>
+                            {{ issue }}
+                        </li>
+                    {% else %}
+                        <li class="issue-item">
+                            <i class="fas fa-check-circle issue-icon" style="color: #28a745;"></i>
+                            読みやすさは良好です
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted">
+                    <strong>読みやすさ統計:</strong><br>
+                    レベル: {{ analysis.readability.level }}<br>
+                    平均文長: {{ analysis.readability.avg_sentence_length }}語<br>
+                    文数: {{ analysis.readability.sentence_count }}<br>
+                    漢字比率: {{ analysis.readability.kanji_ratio }}%
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 改善提案 -->
+    {% if analysis.recommendations %}
+    <div class="recommendations">
+        <h5><i class="fas fa-lightbulb"></i> 改善提案</h5>
+        <ul class="issue-list">
+            {% for recommendation in analysis.recommendations %}
+                <li class="issue-item">
+                    <i class="fas fa-arrow-right issue-icon" style="color: var(--primary-color);"></i>
+                    {{ recommendation }}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- メタタグ提案 -->
+    {% if analysis.meta_suggestions %}
+    <div class="analysis-section">
+        <div class="section-title">
+            <i class="fas fa-tags"></i>
+            メタタグ提案
+        </div>
+        <div class="meta-suggestions">
+            {% for key, value in analysis.meta_suggestions.items() %}
+                <div class="suggestion-item">
+                    <div class="suggestion-label">{{ key|title }}:</div>
+                    <div class="suggestion-content">{{ value }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- アクション -->
+    <div class="actions-section">
+        <a href="{{ url_for('admin.edit_article', id=article.id) }}" class="btn btn-primary">
+            <i class="fas fa-edit"></i> 記事を編集
+        </a>
+        <button type="button" class="btn btn-success" onclick="generateAISuggestions()">
+            <i class="fas fa-robot"></i> AI提案を取得
+        </button>
+        <button type="button" class="btn btn-info" onclick="exportAnalysis()">
+            <i class="fas fa-download"></i> 分析結果をエクスポート
+        </button>
+        <a href="{{ url_for('admin.seo_tools') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> SEOツールに戻る
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+function generateAISuggestions() {
+    // AI提案を非同期で取得
+    const articleId = {{ article.id }};
+    const targetKeywords = {{ target_keywords|tojson if target_keywords else 'null' }};
+    
+    // ローディング表示
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+    button.disabled = true;
+    
+    fetch(`{{ url_for('admin.api_seo_suggestions') }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            article_id: articleId,
+            target_keywords: targetKeywords
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAISuggestionModal(data.suggestions);
+        } else {
+            alert('AI提案の生成に失敗しました: ' + (data.message || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('AI提案の生成中にエラーが発生しました');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showAISuggestionModal(suggestions) {
+    // AI提案結果をモーダルで表示
+    let modalHtml = `
+        <div class="modal fade" id="aiSuggestionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-robot"></i> AI SEO提案</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <h6>改善されたタイトル提案</h6>
+                            <ul>
+    `;
+    
+    suggestions.title_suggestions.forEach(title => {
+        modalHtml += `<li>${title}</li>`;
+    });
+    
+    modalHtml += `
+                            </ul>
+                        </div>
+                        <div class="mb-3">
+                            <h6>メタディスクリプション</h6>
+                            <div class="bg-light p-2 rounded">${suggestions.meta_description}</div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>コンテンツ構成提案</h6>
+                            <ol>
+    `;
+    
+    suggestions.content_outline.forEach(item => {
+        modalHtml += `<li>${item}</li>`;
+    });
+    
+    modalHtml += `
+                            </ol>
+                        </div>
+                        <div class="mb-3">
+                            <h6>関連キーワード</h6>
+                            <div>
+    `;
+    
+    suggestions.related_keywords.forEach(keyword => {
+        modalHtml += `<span class="badge bg-secondary me-1">${keyword}</span>`;
+    });
+    
+    modalHtml += `
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-primary" onclick="applyAISuggestions()">提案を適用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 既存のモーダルがあれば削除
+    const existingModal = document.getElementById('aiSuggestionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 新しいモーダルを追加して表示
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('aiSuggestionModal'));
+    modal.show();
+}
+
+function applyAISuggestions() {
+    // AI提案を記事編集画面で適用（将来実装）
+    alert('提案の適用機能は準備中です。編集画面で手動で適用してください。');
+}
+
+function exportAnalysis() {
+    // 分析結果をJSONでダウンロード
+    const analysisData = {
+        article_id: {{ article.id }},
+        article_title: {{ article.title|tojson }},
+        analysis_date: new Date().toISOString(),
+        seo_score: {{ analysis.seo_score }},
+        title_analysis: {{ analysis.title_analysis|tojson }},
+        content_analysis: {{ analysis.content_analysis|tojson }},
+        keyword_density: {{ analysis.keyword_density|tojson }},
+        readability: {{ analysis.readability|tojson }},
+        recommendations: {{ analysis.recommendations|tojson }},
+        meta_suggestions: {{ analysis.meta_suggestions|tojson }}
+    };
+    
+    const dataStr = JSON.stringify(analysisData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'seo_analysis_{{ article.id }}_' + new Date().toISOString().split('T')[0] + '.json';
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+// ページ読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // ツールチップの初期化
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{# 認証系ページ共通カードコンポーネント #}
+{% macro auth_card(title, icon_class, bg_color="primary", max_width="md") %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-{% if max_width == 'sm' %}4{% elif max_width == 'lg' %}6{% else %}5{% endif %}">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-{{ bg_color }} text-white text-center">
+                <h4 class="mb-0">
+                    {% if icon_class %}<i class="{{ icon_class }} me-2"></i>{% endif %}
+                    {{ title }}
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                {{ caller() }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

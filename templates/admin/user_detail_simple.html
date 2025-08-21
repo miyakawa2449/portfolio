@@ -1,0 +1,39 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ユーザー詳細 - {{ user.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>👤 ユーザー詳細: {{ user.name }}</h1>
+    
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5>基本情報</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>ID:</strong> {{ user.id }}</p>
+            <p><strong>名前:</strong> {{ user.name }}</p>
+            <p><strong>メール:</strong> {{ user.email }}</p>
+            <p><strong>役割:</strong> {{ user.role }}</p>
+            <p><strong>登録日:</strong> {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</p>
+        </div>
+    </div>
+    
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5>統計情報</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>総記事数:</strong> {{ total_articles }}</p>
+            <p><strong>公開記事:</strong> {{ published_articles }}</p>
+            <p><strong>下書き:</strong> {{ draft_articles }}</p>
+            <p><strong>成功ログイン:</strong> {{ successful_logins }}</p>
+            <p><strong>失敗ログイン:</strong> {{ failed_logins }}</p>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">一覧に戻る</a>
+    </div>
+</div>
+{% endblock %}

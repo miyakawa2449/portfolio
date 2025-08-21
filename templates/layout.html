@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_settings.site_name or 'ミニブログ' }}{% endblock %}</title>
+    
+    <!-- Favicon -->
+    {% if site_settings.site_favicon_url %}
+    <link rel="icon" href="{{ site_settings.site_favicon_url }}" type="image/x-icon">
+    {% endif %}
+    
+    <!-- SEO・OGP設定 -->
+    <meta name="description" content="{% block description %}{{ site_settings.site_description or 'プログラミング、テック、ライフスタイルに関する最新記事をお届けします。' }}{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}{{ site_settings.seo_keywords or 'ブログ,プログラミング,テック' }}{% endblock %}">
+    
+    <!-- OGP情報 -->
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.description() }}{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:site_name" content="{{ site_settings.site_name or 'ミニブログ' }}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/ogp-default.jpg', _external=True) }}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ self.og_title() }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ self.og_description() }}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ self.og_image() }}{% endblock %}">{%- if twitter_site %}<meta name="twitter:site" content="{{ twitter_site }}">{% endif %}
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{% block canonical %}{{ request.url }}{% endblock %}">
+    
+    <!-- Critical CSS (inlined for faster rendering) -->
+    <style>
+        /* Critical CSS - Above the fold styles */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --white: #ffffff;
+            --gray-100: #f8f9fa;
+            --gray-300: #dee2e6;
+            --gray-500: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            --border-radius: 0.5rem;
+            --transition: all 0.3s ease;
+            --container-max-width: 1200px;
+            --container-padding: 1rem;
+        }
+        
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+        @media (max-width: 768px) { 
+            html { font-size: 14px; }
+            .hero-section { 
+                height: 320px; 
+                padding: 3rem 0;
+            }
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--white);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container-responsive {
+            max-width: var(--container-max-width);
+            margin: 0 auto;
+            padding: 0 var(--container-padding);
+        }
+        
+        .navbar {
+            padding: 0.75rem 0;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-300);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .hero-section {
+            background: var(--primary-gradient);
+            color: var(--white);
+            padding: 4rem 0;
+            text-align: center;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .lazy-load {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .lazy-load.loaded {
+            opacity: 1;
+        }
+    </style>
+    
+    <!-- Non-critical CSS (deferred loading) -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></noscript>
+    
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.min.css" rel="stylesheet"></noscript>
+    
+    <link rel="preload" href="{{ url_for('static', filename='css/main.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet"></noscript>
+    
+    <link rel="preload" href="{{ url_for('static', filename='css/components.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="{{ url_for('static', filename='css/components.css') }}" rel="stylesheet"></noscript>
+    {% if site_settings.theme_color %}
+    <style>
+        :root {
+            --primary-color: {{ site_settings.theme_color }};
+            --primary-hover: {{ site_settings.theme_color }}dd;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        .navbar-brand, .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+        a {
+            color: var(--primary-color);
+        }
+        a:hover {
+            color: var(--primary-hover);
+        }
+        
+        /* 追加のテーマカラー適用 */
+        .hero-title {
+            color: var(--primary-color);
+        }
+        .category-tag {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .category-tag:hover {
+            background-color: var(--primary-hover);
+        }
+        .article-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .pagination .page-link {
+            color: var(--primary-color);
+        }
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .pagination .page-link:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: white;
+        }
+        
+        /* SNSアイコンのスタイル */
+        .sns-link {
+            padding: 0.375rem 0.5rem !important;
+            margin: 0 0.1rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+        .sns-link:hover {
+            background-color: var(--primary-color);
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .sns-link i {
+            font-size: 1.1rem;
+        }
+    </style>
+    {% endif %}
+    
+    <!-- Google Analytics -->
+    {{ google_analytics_code() }}
+</head>
+
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    {{ google_tag_manager_noscript() }}
+    
+    <!-- ナビゲーション -->
+    <nav class="modern-navbar">
+        <div class="container-responsive">
+            <div class="navbar-content">
+                <a class="navbar-brand" href="{{ url_for('home') }}">
+                {% if site_settings.site_logo_url %}
+                <img src="{{ site_settings.site_logo_url }}" alt="{{ site_settings.site_name or 'ミニブログ' }}" style="height: 32px; margin-right: 8px;">
+                {% else %}
+                <i class="bi bi-journal-text"></i>
+                {% endif %}
+                    {{ site_settings.site_name or 'ミニブログ' }}
+                </a>
+                
+                <!-- ハンバーガーメニューボタン -->
+                <button class="hamburger-btn" aria-label="メニューを開く" aria-expanded="false">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                
+                <!-- ナビゲーションメニュー -->
+                <div class="navbar-menu" role="menu">
+                    <a class="navbar-link" href="{{ url_for('home') }}" role="menuitem">
+                        <i class="bi bi-house-door"></i> ホーム
+                    </a>
+                    
+                    <!-- SNSアイコン -->
+                    {% if site_settings.social_media_links %}
+                        {% for platform, url in site_settings.social_media_links.items() if url %}
+                            <a class="navbar-link" href="{{ url }}" target="_blank" rel="noopener noreferrer" title="{{ platform|title }}" role="menuitem">
+                                {% if platform == 'twitter' %}
+                                    <i class="bi bi-twitter"></i>
+                                {% elif platform == 'facebook' %}
+                                    <i class="bi bi-facebook"></i>
+                                {% elif platform == 'instagram' %}
+                                    <i class="bi bi-instagram"></i>
+                                {% elif platform == 'youtube' %}
+                                    <i class="bi bi-youtube"></i>
+                                {% elif platform == 'github' %}
+                                    <i class="bi bi-github"></i>
+                                {% elif platform == 'linkedin' %}
+                                    <i class="bi bi-linkedin"></i>
+                                {% elif platform == 'tiktok' %}
+                                    <i class="bi bi-tiktok"></i>
+                                {% else %}
+                                    <i class="bi bi-link-45deg"></i>
+                                {% endif %}
+                                {{ platform|title }}
+                            </a>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if current_user.is_authenticated %}
+                        <a class="navbar-link" href="{{ url_for('admin.dashboard') }}" role="menuitem">
+                            <i class="bi bi-gear"></i> 管理
+                        </a>
+                        <a class="navbar-link" href="{{ url_for('logout') }}" role="menuitem">
+                            <i class="bi bi-box-arrow-right"></i> ログアウト
+                        </a>
+                    {% else %}
+                        <a class="navbar-link" href="{{ url_for('login') }}" role="menuitem">
+                            <i class="bi bi-box-arrow-in-right"></i> ログイン
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <!-- フラッシュメッセージ -->
+        {% include '_flash_messages.html' %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- フッター -->
+    <footer class="site-footer">
+        <div class="container text-center">
+            <p>{{ site_settings.footer_text or '© 2025 ミニブログ. All rights reserved.' }}</p>
+            {% if site_settings.contact_email %}
+            <p><i class="bi bi-envelope"></i> <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a></p>
+            {% endif %}
+            {% if site_settings.social_media_links %}
+            <div class="social-links mt-2">
+                {% for platform, url in site_settings.social_media_links.items() if url %}
+                <a href="{{ url }}" target="_blank" rel="noopener noreferrer" class="me-3">
+                    <i class="bi bi-{{ platform }}"></i>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Performance Optimization JavaScript -->
+    <script src="{{ url_for('static', filename='js/performance.js') }}" defer></script>
+</body>
+</html>

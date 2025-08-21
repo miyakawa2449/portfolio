@@ -1,0 +1,303 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}モダンSEOダッシュボード{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">🤖 モダンSEO ダッシュボード</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.batch_analyze_seo') }}" class="btn btn-sm btn-primary me-2">
+            📊 バッチ分析
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+            🔄 更新
+        </button>
+    </div>
+</div>
+
+<!-- 統計カード -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">総記事数</h5>
+                        <h2 class="mb-0">{{ total_articles }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">分析済み記事</h5>
+                        <h2 class="mb-0">{{ analyzed_articles }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">平均LLMOスコア</h5>
+                        <h2 class="mb-0">{{ avg_llmo_score }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-robot fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">平均AIOスコア</h5>
+                        <h2 class="mb-0">{{ avg_aio_score }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-search fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI時代のSEO概要 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">🤖 LLMO（LLM最適化）</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Large Language Model Optimization</strong></p>
+                <ul class="mb-3">
+                    <li>AIが理解しやすいコンテンツ構造</li>
+                    <li>読みやすさとセマンティック構造の分析</li>
+                    <li>エンティティ抽出とトピック一貫性</li>
+                </ul>
+                {% if avg_llmo_score > 0 %}
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ avg_llmo_score }}%" 
+                             aria-valuenow="{{ avg_llmo_score }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ avg_llmo_score }}%
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">🔍 AIO（AI Overview対応）</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>AI Overview Optimization</strong></p>
+                <ul class="mb-3">
+                    <li>Google AI Overview表示対応</li>
+                    <li>質問-回答ペア自動生成</li>
+                    <li>フィーチャードスニペット候補抽出</li>
+                </ul>
+                {% if avg_aio_score > 0 %}
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             style="width: {{ avg_aio_score }}%" 
+                             aria-valuenow="{{ avg_aio_score }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ avg_aio_score }}%
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- スコア分布 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">📈 SEOスコア分布</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-success rounded-circle me-2" style="width: 20px; height: 20px;"></div>
+                            <span>優秀 (80-100): <strong>{{ score_distribution.excellent }}件</strong></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary rounded-circle me-2" style="width: 20px; height: 20px;"></div>
+                            <span>良好 (60-79): <strong>{{ score_distribution.good }}件</strong></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning rounded-circle me-2" style="width: 20px; height: 20px;"></div>
+                            <span>普通 (40-59): <strong>{{ score_distribution.fair }}件</strong></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-danger rounded-circle me-2" style="width: 20px; height: 20px;"></div>
+                            <span>要改善 (0-39): <strong>{{ score_distribution.poor }}件</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">🎯 最適化のポイント</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <h6>📝 コンテンツ構造</h6>
+                        <p class="text-muted small">適切な見出し階層と段落構成</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <h6>🔤 読みやすさ</h6>
+                        <p class="text-muted small">文章の長さと理解のしやすさ</p>
+                    </div>
+                    <div class="col-12">
+                        <h6>🎯 キーワード密度</h6>
+                        <p class="text-muted small">自然で効果的なキーワード配置</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- トップスコア記事 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">🏆 LLMOスコア上位記事</h5>
+    </div>
+    <div class="card-body">
+        {% if top_articles %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>順位</th>
+                        <th>記事タイトル</th>
+                        <th>LLMOスコア</th>
+                        <th>分析日時</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for analysis, title in top_articles %}
+                    <tr>
+                        <td>
+                            {% if loop.index <= 3 %}
+                                <span class="badge bg-warning">{{ loop.index }}</span>
+                            {% else %}
+                                {{ loop.index }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ title[:50] }}{% if title|length > 50 %}...{% endif %}</div>
+                        </td>
+                        <td>
+                            {% set score = analysis.score %}
+                            {% if score >= 80 %}
+                                <span class="badge bg-success">{{ "%.1f"|format(score) }}</span>
+                            {% elif score >= 60 %}
+                                <span class="badge bg-primary">{{ "%.1f"|format(score) }}</span>
+                            {% elif score >= 40 %}
+                                <span class="badge bg-warning text-dark">{{ "%.1f"|format(score) }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">{{ "%.1f"|format(score) }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ analysis.created_at.strftime('%m/%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.analyze_article_seo', article_id=analysis.article_id) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                📊 詳細分析
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+            <p>まだ分析結果がありません</p>
+            <a href="{{ url_for('admin.batch_analyze_seo') }}" class="btn btn-primary">
+                📊 バッチ分析を開始
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- クイックアクション -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="card-title mb-0">🚀 個別記事分析</h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">特定の記事を詳細分析します</p>
+                <a href="{{ url_for('admin.articles') }}" class="btn btn-primary">記事選択</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="card-title mb-0">📊 バッチ分析</h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">複数記事を一括で分析します</p>
+                <a href="{{ url_for('admin.batch_analyze_seo') }}" class="btn btn-success">バッチ分析</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">🔧 従来SEOツール</h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">従来のSEO機能も利用できます</p>
+                <a href="{{ url_for('admin.seo_tools') }}" class="btn btn-info">従来SEO</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

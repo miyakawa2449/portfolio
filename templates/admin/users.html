@@ -1,0 +1,325 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ユーザー管理{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">👥 ユーザー管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-sm btn-primary me-2">
+            ➕ ユーザー追加
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+            🔄 更新
+        </button>
+    </div>
+</div>
+
+<!-- 検索・フィルタリングフォーム -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin.users') }}" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">🔍 検索</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="名前、メール、ハンドル名で検索">
+            </div>
+            <div class="col-md-4">
+                <label for="role" class="form-label">🛡️ 役割フィルタ</label>
+                <select class="form-select" id="role" name="role">
+                    <option value="">すべて</option>
+                    <option value="admin" {{ 'selected' if role_filter == 'admin' }}>👑 管理者</option>
+                    <option value="author" {{ 'selected' if role_filter == 'author' }}>👤 一般</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">🔍 検索</button>
+            </div>
+        </form>
+        {% if search or role_filter %}
+        <div class="mt-3">
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary btn-sm">
+                ✖️ フィルタクリア
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- CSRF token for JavaScript operations -->
+{{ csrf_token() }}
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">👤 ユーザー情報</th>
+                <th scope="col">🛡️ 権限</th>
+                <th scope="col">🔐 2段階認証</th>
+                <th scope="col">📅 登録日</th>
+                <th scope="col">🔧 操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if users %}
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 14px;">
+                            {{ (user.handle_name or user.name)[0].upper() }}
+                        </div>
+                        <div>
+                            <div class="fw-bold">{{ user.handle_name or user.name }}</div>
+                            <small class="text-muted">{{ user.email }}</small>
+                            {% if user.handle_name and user.handle_name != user.name %}
+                            <br><small class="text-muted">{{ user.name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if user.role == 'admin' %}
+                        <span class="badge bg-danger">👑 管理者</span>
+                    {% else %}
+                        <span class="badge bg-secondary">👤 一般</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.totp_enabled %}
+                        <span class="badge bg-success">✅ 有効</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">⚠️ 無効</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="viewUser({{ user.id }})">
+                            👁️ 詳細
+                        </button>
+                        {% if user.role != 'admin' or users|length > 1 %}
+                        <button type="button" class="btn btn-outline-warning" onclick="editUser({{ user.id }})">
+                            ✏️ 編集
+                        </button>
+                        {% endif %}
+                        {% if user.id != current_user.id %}
+                        <button type="button" class="btn btn-outline-danger" onclick="confirmDelete({{ user.id }}, '{{ user.email }}')">
+                            🗑️ 削除
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <div>
+                        <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+                        {% if search or role_filter %}
+                        <p>検索条件に一致するユーザーが見つかりません</p>
+                        {% else %}
+                        <p>ユーザーが登録されていません</p>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ページネーション -->
+{% if pagination and pagination.pages > 1 %}
+<nav aria-label="ユーザー一覧ページネーション">
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('admin.users', page=pagination.prev_num, search=search, role=role_filter) }}">
+                « 前へ
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">« 前へ</span>
+        </li>
+        {% endif %}
+        
+        {% for page_num in pagination.iter_pages() %}
+        {% if page_num %}
+            {% if page_num != pagination.page %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.users', page=page_num, search=search, role=role_filter) }}">
+                    {{ page_num }}
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item active">
+                <span class="page-link">{{ page_num }}</span>
+            </li>
+            {% endif %}
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">…</span>
+        </li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('admin.users', page=pagination.next_num, search=search, role=role_filter) }}">
+                次へ »
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">次へ »</span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+
+<!-- ページ情報表示 -->
+{% if pagination %}
+<div class="text-center text-muted mb-4">
+    {{ pagination.total }}件中 {{ (pagination.page - 1) * pagination.per_page + 1 }}～{{ pagination.page * pagination.per_page if pagination.page * pagination.per_page <= pagination.total else pagination.total }}件を表示
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ユーザー統計カード -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">総ユーザー数</h5>
+                        <h2 class="mb-0">{{ total_users }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">2段階認証有効</h5>
+                        <h2 class="mb-0">{{ totp_enabled_count }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-shield-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">管理者</h5>
+                        <h2 class="mb-0">{{ admin_count }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-crown fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">今月の新規</h5>
+                        <h2 class="mb-0">{{ new_users_this_month }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-plus fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">🗑️ ユーザー削除確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>以下のユーザーを削除してもよろしいですか？</p>
+                <div class="alert alert-warning">
+                    <strong>⚠️ 警告:</strong> この操作は取り消せません。
+                </div>
+                <p><strong>メールアドレス:</strong> <span id="deleteUserEmail"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-danger" onclick="deleteUser()">削除実行</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+let deleteUserId = null;
+
+// URL パターンを管理画面プレフィックスを使って生成
+const adminPrefix = "{{ url_for('admin.users') }}".replace('/users/', '');
+
+function viewUser(userId) {
+    // ユーザー詳細ページにリダイレクト
+    window.location.href = adminPrefix + '/user/detail/' + userId + '/';
+}
+
+function editUser(userId) {
+    // ユーザー編集ページにリダイレクト
+    window.location.href = adminPrefix + '/user/edit/' + userId + '/';
+}
+
+function confirmDelete(userId, email) {
+    deleteUserId = userId;
+    document.getElementById('deleteUserEmail').textContent = email;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function deleteUser() {
+    if (deleteUserId) {
+        // フォームを作成してユーザー削除APIを呼び出し
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = adminPrefix + '/user/delete/' + deleteUserId + '/';
+        
+        // CSRFトークンをmetaタグから取得
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

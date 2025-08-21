@@ -1,0 +1,370 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ユーザー詳細 - {{ user.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">👤 ユーザー詳細: {{ user.name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning me-2">
+            ✏️ 編集
+        </a>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-outline-secondary">
+            ← 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<!-- ユーザー基本情報 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">👤 基本情報</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="avatar-lg bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 24px;">
+                        {{ (user.handle_name or user.name)[0].upper() }}
+                    </div>
+                </div>
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted fw-bold">ID:</td>
+                        <td>{{ user.id }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-bold">名前:</td>
+                        <td>{{ user.name }}</td>
+                    </tr>
+                    {% if user.handle_name %}
+                    <tr>
+                        <td class="text-muted fw-bold">ハンドル名:</td>
+                        <td>{{ user.handle_name }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="text-muted fw-bold">メール:</td>
+                        <td><small>{{ user.email }}</small></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-bold">役割:</td>
+                        <td>
+                            {% if user.role == 'admin' %}
+                                <span class="badge bg-danger">👑 管理者</span>
+                            {% else %}
+                                <span class="badge bg-secondary">👤 一般</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-bold">2段階認証:</td>
+                        <td>
+                            {% if user.totp_enabled %}
+                                <span class="badge bg-success">✅ 有効</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">⚠️ 無効</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-bold">登録日:</td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-bold">最終ログイン:</td>
+                        <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '未ログイン' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- プロフィール情報 -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">📝 プロフィール情報</h5>
+            </div>
+            <div class="card-body">
+                {% if user.introduction %}
+                <div class="mb-3">
+                    <strong>自己紹介:</strong>
+                    <p class="mt-1">{{ user.introduction }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    {% if user.birthplace %}
+                    <div class="col-md-6">
+                        <strong>出身地:</strong> {{ user.birthplace }}
+                    </div>
+                    {% endif %}
+                    {% if user.birthday %}
+                    <div class="col-md-6">
+                        <strong>誕生日:</strong> {{ user.birthday.strftime('%Y-%m-%d') }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- SNSアカウント -->
+                {% if user.sns_x or user.sns_facebook or user.sns_instagram or user.sns_threads or user.sns_youtube %}
+                <div class="mt-3">
+                    <strong>SNSアカウント:</strong>
+                    <div class="mt-2">
+                        {% if user.sns_x %}
+                        <a href="{{ user.sns_x }}" target="_blank" class="btn btn-outline-primary btn-sm me-2">
+                            🐦 X (Twitter)
+                        </a>
+                        {% endif %}
+                        {% if user.sns_facebook %}
+                        <a href="{{ user.sns_facebook }}" target="_blank" class="btn btn-outline-primary btn-sm me-2">
+                            📘 Facebook
+                        </a>
+                        {% endif %}
+                        {% if user.sns_instagram %}
+                        <a href="{{ user.sns_instagram }}" target="_blank" class="btn btn-outline-danger btn-sm me-2">
+                            📷 Instagram
+                        </a>
+                        {% endif %}
+                        {% if user.sns_threads %}
+                        <a href="{{ user.sns_threads }}" target="_blank" class="btn btn-outline-dark btn-sm me-2">
+                            🧵 Threads
+                        </a>
+                        {% endif %}
+                        {% if user.sns_youtube %}
+                        <a href="{{ user.sns_youtube }}" target="_blank" class="btn btn-outline-danger btn-sm me-2">
+                            📺 YouTube
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 通知設定 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">🔔 通知設定</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li>
+                        {% if user.notify_on_publish %}
+                            <span class="badge bg-success me-2">✅</span>
+                        {% else %}
+                            <span class="badge bg-secondary me-2">❌</span>
+                        {% endif %}
+                        記事公開時の通知
+                    </li>
+                    <li>
+                        {% if user.notify_on_comment %}
+                            <span class="badge bg-success me-2">✅</span>
+                        {% else %}
+                            <span class="badge bg-secondary me-2">❌</span>
+                        {% endif %}
+                        コメント投稿時の通知
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 統計情報 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">総記事数</h5>
+                        <h2 class="mb-0">{{ total_articles }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">公開記事</h5>
+                        <h2 class="mb-0">{{ published_articles }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-eye fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">下書き</h5>
+                        <h2 class="mb-0">{{ draft_articles }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-edit fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">ログイン成功</h5>
+                        <h2 class="mb-0">{{ successful_logins }}</h2>
+                        <small>失敗: {{ failed_logins }}</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-sign-in-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近の記事 -->
+{% if recent_articles %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">📰 最近の記事</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>タイトル</th>
+                        <th>ステータス</th>
+                        <th>作成日</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in recent_articles %}
+                    <tr>
+                        <td>{{ article.title }}</td>
+                        <td>
+                            {% if article.is_published %}
+                                <span class="badge bg-success">公開</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">下書き</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ article.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.edit_article', article_id=article.id) }}" class="btn btn-sm btn-outline-primary">
+                                ✏️ 編集
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ログイン履歴 -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">🔐 ログイン履歴</h5>
+        <small class="text-muted">最新10件</small>
+    </div>
+    <div class="card-body">
+        {% if login_history %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>ステータス</th>
+                        <th>IPアドレス</th>
+                        <th>ブラウザ</th>
+                        <th>OS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in login_history %}
+                    <tr>
+                        <td>{{ log.login_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            {% if log.success %}
+                                <span class="badge bg-success">✅ 成功</span>
+                            {% else %}
+                                <span class="badge bg-danger">❌ 失敗</span>
+                                {% if log.failure_reason %}
+                                <br><small class="text-muted">{{ log.failure_reason }}</small>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td><small>{{ log.ip_address or 'N/A' }}</small></td>
+                        <td><small>{{ log.browser_info }}</small></td>
+                        <td><small>{{ log.os_info }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-sign-in-alt fa-3x mb-3"></i>
+            <p>ログイン履歴がありません</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 管理操作 -->
+{% if user.id != current_user.id %}
+<div class="card border-warning">
+    <div class="card-header bg-warning">
+        <h5 class="card-title mb-0">⚠️ 管理操作</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>2段階認証リセット</h6>
+                <p class="text-muted">ユーザーの2段階認証設定をリセットします。</p>
+                <form method="POST" action="{{ url_for('admin.reset_user_2fa', user_id=user.id) }}" style="display: inline;">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('2段階認証設定をリセットしますか？')">
+                        🔄 2FAリセット
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <h6>パスワードリセット</h6>
+                <p class="text-muted">新しいパスワードを設定します。</p>
+                <form method="POST" action="{{ url_for('admin.admin_reset_user_password', user_id=user.id) }}" class="row g-2">
+                    {{ csrf_token() }}
+                    <div class="col-8">
+                        <input type="password" class="form-control form-control-sm" name="new_password" placeholder="新しいパスワード（8文字以上）" required minlength="8">
+                    </div>
+                    <div class="col-4">
+                        <button type="submit" class="btn btn-danger btn-sm w-100" onclick="return confirm('パスワードをリセットしますか？')">
+                            🔑 リセット
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

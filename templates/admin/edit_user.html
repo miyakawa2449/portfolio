@@ -1,0 +1,376 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ユーザー編集{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">✏️ ユーザー編集</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-outline-secondary">
+            ← ユーザー一覧に戻る
+        </a>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<form method="POST">
+    {{ csrf_token() }}
+    <div class="row">
+        <!-- 左側：基本情報 -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">👤 基本情報</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">📧 メールアドレス</label>
+                                <div class="input-group">
+                                    <input type="email" class="form-control" id="current_email" value="{{ user.email }}" readonly>
+                                    <button type="button" class="btn btn-outline-primary" onclick="showEmailChangeModal()">
+                                        🔄 変更
+                                    </button>
+                                </div>
+                                <div class="form-text">安全なメールアドレス変更には確認が必要です</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="role" class="form-label">🛡️ 権限</label>
+                                {% if user.id == current_user.id %}
+                                    <input type="text" class="form-control" value="👑 管理者" readonly>
+                                    <input type="hidden" name="role" value="admin">
+                                    <div class="form-text">自分自身の権限は変更できません</div>
+                                {% else %}
+                                    <select class="form-select" id="role" name="role">
+                                        <option value="author" {{ 'selected' if user.role == 'author' else '' }}>👤 投稿者</option>
+                                        <option value="admin" {{ 'selected' if user.role == 'admin' else '' }}>👑 管理者</option>
+                                    </select>
+                                {% endif %}
+                                {% if user.id == current_user.id %}
+                                <div class="form-text text-warning">自分の権限は変更できません</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">👤 名前</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="handle_name" class="form-label">🏷️ ハンドルネーム</label>
+                                <input type="text" class="form-control" id="handle_name" name="handle_name" value="{{ user.handle_name or '' }}" maxlength="100">
+                                <div class="form-text">公開時に表示される名前</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プロフィール情報 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📝 プロフィール情報</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="introduction" class="form-label">📄 紹介文</label>
+                        <textarea class="form-control" id="introduction" name="introduction" rows="4" maxlength="250">{{ user.introduction or '' }}</textarea>
+                        <div class="form-text">最大250文字</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="birthplace" class="form-label">🏠 出身地</label>
+                                <input type="text" class="form-control" id="birthplace" name="birthplace" value="{{ user.birthplace or '' }}" maxlength="10">
+                                <div class="form-text">最大10文字</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="birthday" class="form-label">🎂 誕生日</label>
+                                <input type="date" class="form-control" id="birthday" name="birthday" value="{{ user.birthday.strftime('%Y-%m-%d') if user.birthday else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SNSアカウント -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🔗 SNSアカウント</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_x" class="form-label">𝕏 X (旧Twitter)</label>
+                                <input type="text" class="form-control" id="sns_x" name="sns_x" value="{{ user.sns_x or '' }}" placeholder="@username">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_facebook" class="form-label">📘 Facebook</label>
+                                <input type="text" class="form-control" id="sns_facebook" name="sns_facebook" value="{{ user.sns_facebook or '' }}" placeholder="username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_instagram" class="form-label">📷 Instagram</label>
+                                <input type="text" class="form-control" id="sns_instagram" name="sns_instagram" value="{{ user.sns_instagram or '' }}" placeholder="@username">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_threads" class="form-label">🧵 Threads</label>
+                                <input type="text" class="form-control" id="sns_threads" name="sns_threads" value="{{ user.sns_threads or '' }}" placeholder="@username">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_youtube" class="form-label">📺 YouTube</label>
+                                <input type="text" class="form-control" id="sns_youtube" name="sns_youtube" value="{{ user.sns_youtube or '' }}" placeholder="channel-name">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- パスワード変更 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🔐 パスワード変更</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">新しいパスワード</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" minlength="8">
+                        <div class="form-text">変更する場合のみ入力してください（8文字以上）</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">パスワード確認</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：設定・統計 -->
+        <div class="col-lg-4">
+            <!-- 通知設定 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🔔 通知設定</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="notify_on_publish" name="notify_on_publish" {{ 'checked' if user.notify_on_publish else '' }}>
+                        <label class="form-check-label" for="notify_on_publish">
+                            📢 記事公開通知
+                        </label>
+                        <div class="form-text">記事が公開された時に通知を受け取る</div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="notify_on_comment" name="notify_on_comment" {{ 'checked' if user.notify_on_comment else '' }}>
+                        <label class="form-check-label" for="notify_on_comment">
+                            💬 コメント通知
+                        </label>
+                        <div class="form-text">コメントが投稿された時に通知を受け取る</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ユーザー統計 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 ユーザー統計</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>登録日:</span>
+                        <strong>{{ user.created_at.strftime('%Y年%m月%d日') if user.created_at else 'N/A' }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>投稿記事数:</span>
+                        <strong>{{ user.articles|length }}件</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>2段階認証:</span>
+                        <strong class="{{ 'text-success' if user.totp_enabled else 'text-warning' }}">
+                            {{ '✅ 有効' if user.totp_enabled else '⚠️ 無効' }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作ボタン -->
+            <div class="card">
+                <div class="card-body">
+                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                        💾 変更を保存
+                    </button>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-secondary w-100">
+                        ❌ キャンセル
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- メールアドレス変更モーダル -->
+<div class="modal fade" id="emailChangeModal" tabindex="-1" aria-labelledby="emailChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailChangeModalLabel">📧 メールアドレス変更</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="emailChangeForm">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h6>🔒 安全なメールアドレス変更</h6>
+                        <p class="mb-0">セキュリティのため、以下の手順で変更を行います：</p>
+                        <ol class="mb-0 mt-2">
+                            <li>現在のパスワードで本人確認</li>
+                            <li>新しいメールアドレスに確認メール送信</li>
+                            <li>確認メール内のリンクをクリックして変更完了</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">🔑 現在のパスワード</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                        <div class="form-text">本人確認のため現在のパスワードを入力してください</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new_email" class="form-label">📧 新しいメールアドレス</label>
+                        <input type="email" class="form-control" id="new_email" name="new_email" required>
+                        <div class="form-text">確認メールが送信されます</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">📤 確認メール送信</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// メールアドレス変更モーダル表示
+function showEmailChangeModal() {
+    new bootstrap.Modal(document.getElementById('emailChangeModal')).show();
+}
+
+// メールアドレス変更フォーム送信
+document.getElementById('emailChangeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    // ボタン無効化
+    submitBtn.disabled = true;
+    submitBtn.textContent = '📤 送信中...';
+    
+    fetch('{{ url_for("admin.request_email_change", user_id=user.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 成功時
+            bootstrap.Modal.getInstance(document.getElementById('emailChangeModal')).hide();
+            showAlert('success', data.message);
+            // フォームリセット
+            document.getElementById('emailChangeForm').reset();
+        } else {
+            // エラー時
+            showAlert('danger', data.message || 'エラーが発生しました');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'ネットワークエラーが発生しました');
+    })
+    .finally(() => {
+        // ボタン復元
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    });
+});
+
+// アラート表示関数
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // 既存のアラートを削除
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // 新しいアラートを挿入
+    const contentDiv = document.querySelector('.border-bottom').nextElementSibling;
+    contentDiv.insertAdjacentHTML('afterbegin', alertHtml);
+}
+
+// パスワード確認チェック
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('new_password').value;
+    const confirm = this.value;
+    
+    if (password && confirm && password !== confirm) {
+        this.setCustomValidity('パスワードが一致しません');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// 文字数カウンター
+document.getElementById('introduction').addEventListener('input', function() {
+    const maxLength = 250;
+    const currentLength = this.value.length;
+    const formText = this.nextElementSibling;
+    
+    formText.textContent = `${currentLength}/${maxLength}文字`;
+    formText.className = currentLength > maxLength ? 'form-text text-danger' : 'form-text';
+});
+</script>
+{% endblock %}

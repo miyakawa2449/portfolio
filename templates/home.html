@@ -1,0 +1,165 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ site_settings.site_name or 'ミニブログ' }} - 最新記事{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<section class="hero-section">
+    <div class="container-responsive">
+        <h1 class="hero-title">{{ site_settings.site_name or 'ミニブログ' }}</h1>
+        <p class="hero-subtitle">{{ site_settings.site_description or 'プログラミング、テック、ライフスタイルに関する記事をお届けします' }}</p>
+        
+        <!-- 検索フォーム -->
+        <form class="search-form" method="GET" action="{{ url_for('home') }}">
+            <input type="text" name="q" class="search-input" placeholder="記事を検索..." value="{{ request.args.get('q', '') }}">
+            <button type="submit" class="search-btn">
+                <i class="bi bi-search"></i>
+                <span>検索</span>
+            </button>
+        </form>
+    </div>
+</section>
+
+<!-- メインコンテンツ -->
+<main class="container-responsive">
+    {% if articles %}
+        <div class="article-grid">
+            {% for article in articles %}
+            <article class="modern-card" data-content="{{ article.body | striptags | truncate(500, True) }}">
+                <!-- 記事画像 -->
+                {% if article.featured_image %}
+                    <img src="{{ url_for('static', filename=article.featured_image) }}" 
+                         data-src="{{ url_for('static', filename=article.featured_image) }}"
+                         alt="{{ article.title }}" 
+                         class="modern-card-image lazy-load">
+                {% else %}
+                    <div class="modern-card-image" style="background: var(--gray-100); display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-file-text" style="font-size: 3rem; color: var(--gray-500);"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="modern-card-content">
+                    <!-- メタ情報 -->
+                    <div class="modern-card-meta">
+                        <div class="modern-card-author">
+                            {% if article.author %}
+                                <div class="modern-card-avatar" style="background: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: bold;">
+                                    {{ (article.author.handle_name or article.author.name)[:1] }}
+                                </div>
+                                <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="author-link">
+                                    {{ article.author.handle_name or article.author.name }}
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="modern-card-date">
+                            {{ article.created_at.strftime('%m/%d') }}
+                        </div>
+                    </div>
+                    
+                    <!-- タイトル -->
+                    <h2 class="modern-card-title">{{ article.title }}</h2>
+                    
+                    <!-- 抜粋 -->
+                    <p class="modern-card-excerpt">
+                        {% if article.summary %}
+                            {{ article.summary | truncate(120, True) }}
+                        {% elif article.body %}
+                            {{ article.body | striptags | truncate(120, True) }}
+                        {% else %}
+                            記事の概要が設定されていません。
+                        {% endif %}
+                    </p>
+                    
+                    <!-- カテゴリタグ -->
+                    {% if article.categories %}
+                        <div class="modern-card-tags">
+                            {% for category in article.categories %}
+                                <a href="{{ url_for('category_page', slug=category.slug) }}" class="modern-tag">
+                                    {{ category.name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- アクション -->
+                    <div class="modern-card-actions">
+                        <div class="read-time">
+                            <i class="bi bi-clock"></i>
+                            <span>計算中...</span>
+                        </div>
+                        <a href="{{ url_for('article_detail', slug=article.slug) }}" class="read-more-btn">
+                            <span>続きを読む</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-file-text"></i>
+                <h3>記事がありません</h3>
+                <p>まだ記事が投稿されていません。</p>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('admin.create_article') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>
+                        最初の記事を作成
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- モダンページネーション -->
+        {% if pagination and pagination.pages > 1 %}
+        <nav aria-label="記事ページネーション" class="modern-pagination">
+            <!-- 前のページ -->
+            {% if pagination.has_prev %}
+                <a class="pagination-btn" href="{{ url_for('home', page=pagination.prev_num) }}" aria-label="前のページ">
+                    <i class="bi bi-chevron-left"></i>
+                    <span>前へ</span>
+                </a>
+            {% else %}
+                <span class="pagination-btn" disabled>
+                    <i class="bi bi-chevron-left"></i>
+                    <span>前へ</span>
+                </span>
+            {% endif %}
+            
+            <!-- ページ番号 -->
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                        <a class="pagination-btn" href="{{ url_for('home', page=page_num) }}">{{ page_num }}</a>
+                    {% else %}
+                        <span class="pagination-btn active">{{ page_num }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="pagination-btn" disabled>...</span>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- 次のページ -->
+            {% if pagination.has_next %}
+                <a class="pagination-btn" href="{{ url_for('home', page=pagination.next_num) }}" aria-label="次のページ">
+                    <span>次へ</span>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            {% else %}
+                <span class="pagination-btn" disabled>
+                    <span>次へ</span>
+                    <i class="bi bi-chevron-right"></i>
+                </span>
+            {% endif %}
+        </nav>
+        
+        <!-- ページ情報 -->
+        <div class="text-center mt-3">
+            <small class="text-muted">
+                {{ pagination.total }}件中 {{ (pagination.page - 1) * pagination.per_page + 1 }}〜{{ pagination.page * pagination.per_page if pagination.page * pagination.per_page < pagination.total else pagination.total }}件を表示
+                ({{ pagination.page }}/{{ pagination.pages }}ページ)
+            </small>
+        </div>
+        {% endif %}
+</main>
+{% endblock %}

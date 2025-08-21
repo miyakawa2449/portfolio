@@ -1,0 +1,452 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}拡張Google Analytics設定{% endblock %}
+{% block page_title %}🚀 拡張Google Analytics設定{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>ツール</li>
+<li>拡張Google Analytics設定</li>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    
+    <!-- 現在のステータス -->
+    <div class="analytics-status {% if current_settings.google_analytics_enabled == 'true' %}enabled{% else %}disabled{% endif %}">
+        <h5>
+            {% if current_settings.google_analytics_enabled == 'true' %}
+                <i class="fas fa-check-circle text-success"></i> Google Analytics 有効
+            {% else %}
+                <i class="fas fa-times-circle text-danger"></i> Google Analytics 無効
+            {% endif %}
+        </h5>
+        
+        <div class="row">
+            <div class="col-md-6">
+                {% if current_settings.google_analytics_enabled == 'true' %}
+                    <p class="mb-2">🚀 Google Analytics 4が設定されており、高度な追跡機能が利用可能です。</p>
+                    {% if current_settings.google_analytics_id %}
+                        <small class="text-muted">📊 測定ID: {{ current_settings.google_analytics_id }}</small>
+                    {% endif %}
+                {% else %}
+                    <p class="mb-2">⚠️ Google Analyticsが無効になっています。設定を行ってください。</p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="small text-muted">GDPR対応</div>
+                        <div>
+                            <span class="status-indicator {% if current_settings.gdpr_mode == 'true' %}enabled{% else %}disabled{% endif %}"></span>
+                            {{ '有効' if current_settings.gdpr_mode == 'true' else '無効' }}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted">Cookie同意</div>
+                        <div>
+                            <span class="status-indicator {% if current_settings.cookie_consent_enabled == 'true' %}enabled{% else %}disabled{% endif %}"></span>
+                            {{ '有効' if current_settings.cookie_consent_enabled == 'true' else '無効' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定フォーム -->
+    <form method="POST" id="analyticsForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- 基本設定 -->
+        <div class="form-section">
+            <h6><i class="fas fa-cog"></i> 基本設定</h6>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    {{ form.google_analytics_enabled(class="form-check-input") }}
+                    <label for="{{ form.google_analytics_enabled.id }}" class="form-check-label fw-bold">
+                        {{ form.google_analytics_enabled.label.text }}
+                    </label>
+                </div>
+                <div class="help-text">
+                    <i class="fas fa-info-circle"></i>
+                    このオプションをONにすると、GA4の高度な追跡機能がサイトに自動実装されます。
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Analytics & GTM設定 -->
+        <div class="settings-grid">
+            <div class="settings-card">
+                <h6><i class="fab fa-google"></i> Google Analytics 4</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">{{ form.google_analytics_id.label.text }}</label>
+                    {{ form.google_analytics_id(class="form-control", placeholder="G-XXXXXXXXXX") }}
+                    <div class="help-text">
+                        GA4の測定IDを入力してください。<br>
+                        Google Analyticsで「データストリーム」→「ウェブ」→「測定ID」から取得
+                    </div>
+                    {% if form.google_analytics_id.errors %}
+                        {% for error in form.google_analytics_id.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h6><i class="fas fa-tag"></i> Google Tag Manager</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">{{ form.google_tag_manager_id.label.text }}</label>
+                    {{ form.google_tag_manager_id(class="form-control", placeholder="GTM-XXXXXXX") }}
+                    <div class="help-text">
+                        GTMを使用する場合のコンテナID。<br>
+                        GA4との併用でより高度な管理が可能です。（オプション）
+                    </div>
+                    {% if form.google_tag_manager_id.errors %}
+                        {% for error in form.google_tag_manager_id.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced E-commerce -->
+        <div class="advanced-section">
+            <h6><i class="fas fa-shopping-cart"></i> Enhanced E-commerce設定</h6>
+            
+            <div class="tracking-feature">
+                <div class="form-check">
+                    {{ form.enhanced_ecommerce_enabled(class="form-check-input") }}
+                    <label for="{{ form.enhanced_ecommerce_enabled.id }}" class="form-check-label">
+                        {{ form.enhanced_ecommerce_enabled.label.text }}
+                    </label>
+                </div>
+                <div class="description">
+                    <small class="text-muted">コンテンツエンゲージメントの詳細な追跡とコンバージョン分析</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- カスタムイベント追跡 -->
+        <div class="form-section">
+            <h6><i class="fas fa-chart-line"></i> カスタムイベント追跡</h6>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.track_scroll_events(class="form-check-input") }}
+                            <label for="{{ form.track_scroll_events.id }}" class="form-check-label">
+                                スクロール追跡
+                            </label>
+                        </div>
+                    </div>
+                    <small class="text-muted">ページスクロール率と読了率を測定</small>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.track_file_downloads(class="form-check-input") }}
+                            <label for="{{ form.track_file_downloads.id }}" class="form-check-label">
+                                ダウンロード追跡
+                            </label>
+                        </div>
+                    </div>
+                    <small class="text-muted">PDF、資料などのダウンロードを記録</small>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.track_external_links(class="form-check-input") }}
+                            <label for="{{ form.track_external_links.id }}" class="form-check-label">
+                                外部リンク追跡
+                            </label>
+                        </div>
+                    </div>
+                    <small class="text-muted">外部サイトへのクリックを追跡</small>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.track_page_engagement(class="form-check-input") }}
+                            <label for="{{ form.track_page_engagement.id }}" class="form-check-label">
+                                エンゲージメント追跡
+                            </label>
+                        </div>
+                    </div>
+                    <small class="text-muted">滞在時間と参加度を詳細に分析</small>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.track_site_search(class="form-check-input") }}
+                            <label for="{{ form.track_site_search.id }}" class="form-check-label">
+                                サイト内検索追跡
+                            </label>
+                        </div>
+                    </div>
+                    <small class="text-muted">検索キーワードと結果の効果を測定</small>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.track_user_properties(class="form-check-input") }}
+                            <label for="{{ form.track_user_properties.id }}" class="form-check-label">
+                                ユーザープロパティ
+                            </label>
+                        </div>
+                    </div>
+                    <small class="text-muted">カスタムユーザー属性の追跡</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- プライバシー・GDPR対応 -->
+        <div class="gdpr-section">
+            <h6><i class="fas fa-shield-alt"></i> プライバシー・GDPR対応</h6>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.cookie_consent_enabled(class="form-check-input") }}
+                            <label for="{{ form.cookie_consent_enabled.id }}" class="form-check-label fw-bold">
+                                Cookie同意バナー
+                            </label>
+                        </div>
+                        <div class="description">
+                            <small class="text-muted">GDPR/CCPA準拠のCookie同意管理</small>
+                        </div>
+                    </div>
+                    
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.gdpr_mode(class="form-check-input") }}
+                            <label for="{{ form.gdpr_mode.id }}" class="form-check-label">
+                                GDPR対応モード
+                            </label>
+                        </div>
+                        <div class="description">
+                            <small class="text-muted">EU地域向けプライバシー強化</small>
+                        </div>
+                    </div>
+                    
+                    <div class="tracking-feature">
+                        <div class="form-check">
+                            {{ form.ccpa_mode(class="form-check-input") }}
+                            <label for="{{ form.ccpa_mode.id }}" class="form-check-label">
+                                CCPA対応モード
+                            </label>
+                        </div>
+                        <div class="description">
+                            <small class="text-muted">カリフォルニア州プライバシー法対応</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Analytics Storage</label>
+                        {{ form.analytics_storage(class="form-select") }}
+                        <div class="help-text">
+                            分析用Cookieの初期設定（ユーザーが変更可能）
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Ad Storage</label>
+                        {{ form.ad_storage(class="form-select") }}
+                        <div class="help-text">
+                            広告用Cookieの初期設定（ユーザーが変更可能）
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cookie同意バナー設定 -->
+        <div class="privacy-section">
+            <h6><i class="fas fa-cookie-bite"></i> Cookie同意バナー設定</h6>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.consent_banner_text.label.text }}</label>
+                        {{ form.consent_banner_text(class="form-control", rows="3") }}
+                        <div class="help-text">
+                            ユーザーに表示されるCookie使用説明文
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.privacy_policy_url.label.text }}</label>
+                        {{ form.privacy_policy_url(class="form-control", placeholder="/privacy-policy") }}
+                        <div class="help-text">
+                            プライバシーポリシーページのURL
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="consent-preview">
+                        <h6>🔍 バナープレビュー</h6>
+                        <div style="background: #333; color: white; padding: 10px; border-radius: 4px; font-size: 0.9rem;">
+                            <p id="bannerPreview" style="margin: 0 0 8px 0;">{{ form.consent_banner_text.data or form.consent_banner_text.default }}</p>
+                            <div>
+                                <a href="#" style="color: #fff; text-decoration: underline; margin-right: 10px;">プライバシーポリシー</a>
+                                <button style="background: #007bff; color: white; border: none; padding: 4px 8px; margin: 0 2px; border-radius: 3px;">同意する</button>
+                                <button style="background: #6c757d; color: white; border: none; padding: 4px 8px; margin: 0 2px; border-radius: 3px;">拒否する</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 詳細設定 -->
+        <div class="form-section">
+            <h6><i class="fas fa-cogs"></i> 詳細設定</h6>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.analytics_track_admin(class="form-check-input") }}
+                            <label for="{{ form.analytics_track_admin.id }}" class="form-check-label">
+                                {{ form.analytics_track_admin.label.text }}
+                            </label>
+                        </div>
+                        <div class="help-text">
+                            通常は無効推奨。正確な統計のため管理者アクセスは除外します。
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.custom_analytics_code.label.text }}</label>
+                        {{ form.custom_analytics_code(class="form-control", rows="4", placeholder="<script>// カスタムトラッキングコード</script>") }}
+                        <div class="help-text">
+                            その他のアナリティクスサービス用のコード
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 保存ボタン -->
+        <div class="d-grid gap-2">
+            {{ form.submit(class="btn btn-primary btn-lg") }}
+        </div>
+    </form>
+
+    <!-- 実装ガイド -->
+    <div class="form-section mt-4">
+        <h6><i class="fas fa-book"></i> 実装ガイド</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <h6>🚀 GA4設定手順</h6>
+                <ol class="small">
+                    <li><a href="https://analytics.google.com/" target="_blank">Google Analytics</a>でプロパティ作成</li>
+                    <li>データストリーム（ウェブ）を設定</li>
+                    <li>測定IDをコピーして上記フォームに入力</li>
+                    <li>必要な追跡機能を選択</li>
+                    <li>Cookie同意設定を確認</li>
+                </ol>
+            </div>
+            <div class="col-md-4">
+                <h6>🛡️ プライバシー対応</h6>
+                <ul class="small">
+                    <li><strong>GDPR</strong>: EU地域ユーザー向け</li>
+                    <li><strong>CCPA</strong>: カリフォルニア州向け</li>
+                    <li><strong>Cookie同意</strong>: 必須設定</li>
+                    <li><strong>Consent Mode</strong>: 自動実装</li>
+                    <li>プライバシーポリシーの更新</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6>📊 追跡可能データ</h6>
+                <ul class="small">
+                    <li>ページビュー・セッション</li>
+                    <li>スクロール深度・読了率</li>
+                    <li>ファイルダウンロード</li>
+                    <li>外部リンククリック</li>
+                    <li>サイト内検索</li>
+                    <li>ユーザーエンゲージメント</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const enabledCheckbox = document.getElementById('google_analytics_enabled');
+    const bannerTextArea = document.getElementById('consent_banner_text');
+    const bannerPreview = document.getElementById('bannerPreview');
+    
+    // フィールドの有効/無効切り替え
+    function toggleFields() {
+        const isEnabled = enabledCheckbox.checked;
+        
+        // 全てのinputとselectを取得
+        const allInputs = document.querySelectorAll('#analyticsForm input:not([type="hidden"]), #analyticsForm select, #analyticsForm textarea');
+        
+        allInputs.forEach(input => {
+            if (input.id !== 'google_analytics_enabled') {
+                input.disabled = !isEnabled;
+                if (!isEnabled) {
+                    input.style.backgroundColor = '#f8f9fa';
+                    input.style.color = '#6c757d';
+                } else {
+                    input.style.backgroundColor = '';
+                    input.style.color = '';
+                }
+            }
+        });
+    }
+    
+    // バナーテキストのプレビュー更新
+    function updateBannerPreview() {
+        if (bannerTextArea && bannerPreview) {
+            bannerPreview.textContent = bannerTextArea.value || bannerTextArea.placeholder;
+        }
+    }
+    
+    // イベントリスナー設定
+    enabledCheckbox.addEventListener('change', toggleFields);
+    if (bannerTextArea) {
+        bannerTextArea.addEventListener('input', updateBannerPreview);
+    }
+    
+    // 初期状態を設定
+    toggleFields();
+    updateBannerPreview();
+    
+    // フォーム送信時の確認
+    document.getElementById('analyticsForm').addEventListener('submit', function(e) {
+        if (enabledCheckbox.checked) {
+            const analyticsId = document.getElementById('google_analytics_id').value;
+            if (!analyticsId) {
+                if (!confirm('Google Analytics IDが入力されていません。このまま保存しますか？')) {
+                    e.preventDefault();
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

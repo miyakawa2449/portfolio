@@ -1,0 +1,389 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}画像管理{% endblock %}
+{% block page_title %}画像管理{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>画像管理</li>
+{% endblock %}
+
+{% block content %}
+<!-- 統計カード -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_images }}</div>
+        <div class="stat-label">
+            <i class="fa fa-images me-1"></i>総画像数
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_size_mb }}</div>
+        <div class="stat-label">
+            <i class="fa fa-hdd me-1"></i>総サイズ（MB）
+        </div>
+    </div>
+    {% if stats.search_results is not none %}
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.search_results }}</div>
+        <div class="stat-label">
+            <i class="fa fa-search me-1"></i>検索結果
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 検索セクション -->
+<div class="search-section">
+    <form method="GET" class="row g-3 align-items-end">
+        <div class="col-md-8">
+            <label for="search" class="form-label">
+                <i class="fa fa-search me-1"></i>画像を検索
+            </label>
+            <input type="text" 
+                   class="form-control" 
+                   id="search" 
+                   name="search" 
+                   value="{{ search or '' }}" 
+                   placeholder="ファイル名、Alt属性、キャプション、説明で検索...">
+        </div>
+        <div class="col-md-4">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-search me-1"></i>検索
+                </button>
+                {% if search %}
+                <a href="{{ url_for('admin.images_manager') }}" class="btn btn-outline-secondary">
+                    <i class="fa fa-times me-1"></i>クリア
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 画像グリッド -->
+{% if images.items %}
+<div class="image-grid">
+    {% for image in images.items %}
+    <div class="image-card" data-image-id="{{ image.id }}">
+        <div class="image-preview">
+            <img src="{{ image.file_url }}" alt="{{ image.alt_text or image.original_filename }}" loading="lazy">
+            <div class="image-overlay">
+                {{ image.width }}×{{ image.height }}
+            </div>
+        </div>
+        <div class="image-info">
+            <div class="image-title">
+                {{ image.alt_text or image.original_filename }}
+            </div>
+            {% if image.caption %}
+            <div class="text-muted small mb-2">
+                <i class="fa fa-comment me-1"></i>{{ image.caption|truncate(50) }}
+            </div>
+            {% endif %}
+            <div class="image-meta">
+                <div><i class="fa fa-file me-1"></i>{{ image.original_filename }}</div>
+                <div><i class="fa fa-calendar me-1"></i>{{ image.upload_date.strftime('%Y-%m-%d %H:%M') }}</div>
+                <div><i class="fa fa-weight me-1"></i>{{ image.file_size_mb }} MB</div>
+                {% if image.usage_count > 0 %}
+                <div><i class="fa fa-chart-line me-1"></i>{{ image.usage_count }}回使用</div>
+                {% endif %}
+            </div>
+            <div class="image-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="copyMarkdown({{ image.id }})">
+                    <i class="fa fa-copy me-1"></i>MD
+                </button>
+                <button class="btn btn-sm btn-outline-info" onclick="copyUrl('{{ image.file_url }}')">
+                    <i class="fa fa-link me-1"></i>URL
+                </button>
+                <button class="btn btn-sm btn-outline-warning" onclick="editImage({{ image.id }})">
+                    <i class="fa fa-edit me-1"></i>編集
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteImage({{ image.id }})">
+                    <i class="fa fa-trash me-1"></i>削除
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ページネーション -->
+{% if images.pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="画像ページネーション">
+        <ul class="pagination">
+            {% if images.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.images_manager', page=images.prev_num, search=search) }}">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page in images.iter_pages() %}
+                {% if page %}
+                    {% if page != images.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.images_manager', page=page, search=search) }}">{{ page }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if images.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.images_manager', page=images.next_num, search=search) }}">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<!-- 空の状態 -->
+<div class="empty-state">
+    {% if search %}
+    <i class="fa fa-search"></i>
+    <h4>検索結果が見つかりません</h4>
+    <p>「{{ search }}」に一致する画像はありませんでした。<br>検索条件を変更してお試しください。</p>
+    <a href="{{ url_for('admin.images_manager') }}" class="btn btn-primary">
+        <i class="fa fa-list me-1"></i>すべての画像を表示
+    </a>
+    {% else %}
+    <i class="fa fa-images"></i>
+    <h4>アップロード済み画像がありません</h4>
+    <p>まだ画像がアップロードされていません。<br>記事作成ページから画像をアップロードしてください。</p>
+    <a href="{{ url_for('admin.create_article') }}" class="btn btn-primary">
+        <i class="fa fa-plus me-1"></i>記事を作成
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- 画像編集モーダル -->
+<div class="modal fade" id="editImageModal" tabindex="-1" aria-labelledby="editImageModalLabel">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editImageModalLabel">
+                    <i class="fa fa-edit me-2"></i>画像情報編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editImageForm">
+                    <input type="hidden" id="editImageId">
+                    
+                    <!-- 画像プレビュー -->
+                    <div class="mb-3 text-center">
+                        <img id="editImagePreview" class="img-fluid border rounded" style="max-height: 200px;">
+                    </div>
+                    
+                    <!-- Alt属性 -->
+                    <div class="mb-3">
+                        <label for="editImageAlt" class="form-label">Alt属性</label>
+                        <input type="text" class="form-control" id="editImageAlt" required>
+                    </div>
+                    
+                    <!-- キャプション -->
+                    <div class="mb-3">
+                        <label for="editImageCaption" class="form-label">キャプション</label>
+                        <textarea class="form-control" id="editImageCaption" rows="2"></textarea>
+                    </div>
+                    
+                    <!-- 説明 -->
+                    <div class="mb-3">
+                        <label for="editImageDescription" class="form-label">説明（管理用）</label>
+                        <textarea class="form-control" id="editImageDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa fa-times me-1"></i>キャンセル
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveImageEdit()">
+                    <i class="fa fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// 画像データをキャッシュ
+let imageData = {};
+
+// ページ読み込み時に画像データを取得
+document.addEventListener('DOMContentLoaded', function() {
+    // 画像データを収集（サーバーから取得）
+    {% for image in images.items %}
+    imageData[{{ image.id }}] = {
+        id: {{ image.id }},
+        url: '{{ image.file_url }}',
+        alt_text: '{{ image.alt_text|e }}',
+        caption: '{{ image.caption|e }}',
+        description: '{{ image.description|e }}',
+        markdown: '{{ image.markdown_syntax|e }}'
+    };
+    {% endfor %}
+});
+
+// マークダウンをクリップボードにコピー
+function copyMarkdown(imageId) {
+    const image = imageData[imageId];
+    if (!image) return;
+    
+    // JavaScriptで正しいMarkdownを生成（エスケープ問題を回避）
+    let markdown;
+    if (image.caption && image.caption.trim()) {
+        // キャプション付き（ダブルクォートをエスケープしない）
+        markdown = `![${image.alt_text}](${image.url} "${image.caption}")`;
+    } else {
+        // キャプションなし
+        markdown = `![${image.alt_text}](${image.url})`;
+    }
+    
+    navigator.clipboard.writeText(markdown).then(() => {
+        showCopyFeedback('マークダウンをコピーしました');
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        alert('コピーに失敗しました');
+    });
+}
+
+// URLをクリップボードにコピー
+function copyUrl(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        showCopyFeedback('URLをコピーしました');
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        alert('コピーに失敗しました');
+    });
+}
+
+// コピー成功のフィードバック
+function showCopyFeedback(message) {
+    // 一時的な成功メッセージを表示
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fa fa-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // 3秒後に自動削除
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+
+// 画像編集モーダルを開く
+function editImage(imageId) {
+    const image = imageData[imageId];
+    if (!image) return;
+    
+    document.getElementById('editImageId').value = image.id;
+    document.getElementById('editImagePreview').src = image.url;
+    document.getElementById('editImageAlt').value = image.alt_text || '';
+    document.getElementById('editImageCaption').value = image.caption || '';
+    document.getElementById('editImageDescription').value = image.description || '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editImageModal'));
+    modal.show();
+}
+
+// 画像編集を保存
+function saveImageEdit() {
+    const imageId = document.getElementById('editImageId').value;
+    const formData = new FormData();
+    
+    formData.append('alt_text', document.getElementById('editImageAlt').value);
+    formData.append('caption', document.getElementById('editImageCaption').value);
+    formData.append('description', document.getElementById('editImageDescription').value);
+    
+    // CSRF トークンを追加
+    const csrfToken = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+    if (csrfToken) {
+        formData.append('csrf_token', csrfToken);
+    }
+    
+    fetch(`/management-panel-2024/images/${imageId}`, {
+        method: 'PUT',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // モーダルを閉じる
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editImageModal'));
+            modal.hide();
+            
+            // ページをリロード
+            location.reload();
+        } else {
+            alert('編集に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Edit error:', error);
+        alert('編集に失敗しました');
+    });
+}
+
+// 画像削除
+function deleteImage(imageId) {
+    if (!confirm('この画像を削除しますか？この操作は取り消せません。')) {
+        return;
+    }
+    
+    fetch(`/management-panel-2024/images/${imageId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 画像カードを削除
+            const imageCard = document.querySelector(`[data-image-id="${imageId}"]`);
+            if (imageCard) {
+                imageCard.remove();
+            }
+            
+            showCopyFeedback('画像を削除しました');
+            
+            // 統計を更新（簡易的にページリロード）
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        alert('削除に失敗しました');
+    });
+}
+</script>
+{% endblock %}

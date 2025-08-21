@@ -1,0 +1,570 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}カテゴリ編集: {{ category.name }}{% endblock %}
+{% block page_title %}カテゴリ編集{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li><a href="{{ url_for('admin.categories') }}">カテゴリ管理</a></li>
+<li>{{ category.name }}</li>
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data" data-validate>
+    {{ form.hidden_tag() }}
+    
+    <div class="row">
+        <!-- メインコンテンツ -->
+        <div class="col-lg-8">
+            <!-- 基本情報 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa fa-tags me-2"></i>カテゴリ情報</h5>
+                </div>
+                <div class="card-body">
+                    <!-- カテゴリ名 -->
+                    <div class="form-floating mb-3">
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="カテゴリ名を入力してください", required=true) }}
+                        <label for="{{ form.name.id }}" class="required-field">{{ form.name.label.text }}</label>
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- スラッグ -->
+                    {% if form.slug %}
+                    <div class="mb-3">
+                        <label for="{{ form.slug.id }}" class="form-label">{{ form.slug.label.text }}</label>
+                        {{ form.slug(class="form-control" + (" is-invalid" if form.slug.errors else ""), placeholder="category-slug") }}
+                        {% if form.slug.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.slug.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fa fa-warning me-1 text-warning"></i>変更すると既存のURLが無効になる可能性があります
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">プレビュー URL: </small>
+                            <div class="slug-preview" id="slugPreview">{{ url_for('home') }}category/{{ category.slug }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 説明 -->
+                    {% if form.description %}
+                    <div class="form-floating mb-3">
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), placeholder="カテゴリの説明", rows="4") }}
+                        <label for="{{ form.description.id }}">{{ form.description.label.text }}</label>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 親カテゴリ -->
+                    {% if form.parent_id %}
+                    <div class="mb-3">
+                        <label for="{{ form.parent_id.id }}" class="form-label">{{ form.parent_id.label.text }}</label>
+                        {{ form.parent_id(class="form-select" + (" is-invalid" if form.parent_id.errors else "")) }}
+                        {% if form.parent_id.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.parent_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- サイドバー -->
+        <div class="col-lg-4">
+            <!-- カテゴリ情報 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa fa-info-circle me-2"></i>カテゴリ情報</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row small">
+                        <dt class="col-sm-4">ID:</dt>
+                        <dd class="col-sm-8">{{ category.id }}</dd>
+                        
+                        <dt class="col-sm-4">作成日:</dt>
+                        <dd class="col-sm-8">{{ category.created_at.strftime('%Y-%m-%d %H:%M') if category.created_at else 'N/A' }}</dd>
+                        
+                        <dt class="col-sm-4">記事数:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-info">{{ category.articles|length }}</span>
+                        </dd>
+                        
+                        {% if category.parent %}
+                        <dt class="col-sm-4">親カテゴリ:</dt>
+                        <dd class="col-sm-8">{{ category.parent.name }}</dd>
+                        {% endif %}
+                    </dl>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('category_page', slug=category.slug) }}" target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="fa fa-external-link me-1"></i>カテゴリページを表示
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- カテゴリ画像 -->
+            {% if form.ogp_image %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa fa-image me-2"></i>カテゴリ画像</h5>
+                </div>
+                <div class="card-body">
+                    <!-- 現在の画像表示 -->
+                    {% if category.ogp_image %}
+                        <div class="mb-3" id="currentCategoryImage">
+                            <p><strong>現在の画像:</strong></p>
+                            <div class="current-image-preview">
+                                <img src="{{ url_for('static', filename=category.ogp_image) }}?t={{ range(1, 100000) | random }}" 
+                                     alt="現在のカテゴリ画像" 
+                                     class="image-preview"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <div class="mt-2 d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fa fa-file me-1"></i>{{ category.ogp_image }}
+                                    </small>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="removeCategoryImageBtn">
+                                        <i class="fa fa-trash me-1"></i>削除
+                                    </button>
+                                </div>
+                                <div class="alert alert-warning small mt-2" style="display:none;">
+                                    <i class="fa fa-exclamation-triangle me-1"></i>画像ファイルが見つかりません
+                                </div>
+                            </div>
+                            <input type="hidden" name="remove_category_image" id="removeCategoryImage" value="false">
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.ogp_image.id }}" class="form-label">{{ form.ogp_image.label.text }}</label>
+                        {{ form.ogp_image(class="form-control" + (" is-invalid" if form.ogp_image.errors else ""), onchange="previewImage(event)") }}
+                        {% if form.ogp_image.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.ogp_image.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            推奨サイズ: 1200×630px（1.91:1比率、OGP対応、JPG/PNG形式）<br>
+                            新しい画像をアップロードする場合のみ選択してください
+                        </div>
+                    </div>
+                    
+                    <div id="imagePreviewContainer" class="preview-container" style="display: none;">
+                        <img id="imagePreview" class="image-preview" alt="プレビュー">
+                        <div class="mt-2">
+                            <small class="text-muted">新しい画像のプレビュー</small>
+                        </div>
+                        
+                        <!-- クロップボタン -->
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="startCropping()">
+                                <i class="fa fa-crop"></i> 画像をトリミング
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- クロップモーダル -->
+                    <div class="modal fade" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" style="max-width: 90vw; margin: 1rem auto;">
+                            <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+                                <div class="modal-header" style="flex-shrink: 0;">
+                                    <h5 class="modal-title" id="cropModalLabel">画像トリミング</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body" style="flex: 1; overflow-y: auto; max-height: calc(90vh - 120px);">
+                                    <div class="mb-3">
+                                        <div class="alert alert-info">
+                                            <i class="fa fa-info-circle me-2"></i>
+                                            <strong>トリミング方法:</strong>
+                                            <ul class="mb-0 mt-2">
+                                                <li>選択範囲をドラッグして移動できます</li>
+                                                <li>角や辺をドラッグしてサイズを調整できます</li>
+                                                <li>マウスホイールで拡大・縮小できます</li>
+                                                <li>選択外の部分は半透明で表示されます</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="crop-container" style="max-height: 50vh; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+                                        <img id="cropImage" style="max-width: 100%; max-height: 50vh; object-fit: contain;">
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperZoomIn()">
+                                                    <i class="fa fa-search-plus"></i> 拡大
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperZoomOut()">
+                                                    <i class="fa fa-search-minus"></i> 縮小
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveLeft()">
+                                                    <i class="fa fa-arrow-left"></i> 左移動
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveRight()">
+                                                    <i class="fa fa-arrow-right"></i> 右移動
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveUp()">
+                                                    <i class="fa fa-arrow-up"></i> 上移動
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveDown()">
+                                                    <i class="fa fa-arrow-down"></i> 下移動
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="cropperReset()">
+                                                    <i class="fa fa-refresh"></i> リセット
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer" style="flex-shrink: 0;">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                    <button type="button" class="btn btn-primary" onclick="applyCrop()">トリミングを適用</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 隠しフィールド（クロップデータ） -->
+                    {% if form.ogp_crop_x %}{{ form.ogp_crop_x() }}{% else %}<input type="hidden" name="ogp_crop_x" id="ogp_crop_x">{% endif %}
+                    {% if form.ogp_crop_y %}{{ form.ogp_crop_y() }}{% else %}<input type="hidden" name="ogp_crop_y" id="ogp_crop_y">{% endif %}
+                    {% if form.ogp_crop_width %}{{ form.ogp_crop_width() }}{% else %}<input type="hidden" name="ogp_crop_width" id="ogp_crop_width">{% endif %}
+                    {% if form.ogp_crop_height %}{{ form.ogp_crop_height() }}{% else %}<input type="hidden" name="ogp_crop_height" id="ogp_crop_height">{% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- 編集のヒント -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa fa-lightbulb me-2"></i>編集のヒント</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><i class="fa fa-exclamation-triangle text-warning me-2"></i>スラッグの変更は慎重に</li>
+                        <li class="mb-2"><i class="fa fa-check text-success me-2"></i>説明文でSEO効果向上</li>
+                        <li class="mb-2"><i class="fa fa-check text-success me-2"></i>定期的に記事数を確認</li>
+                        <li class="mb-2"><i class="fa fa-check text-success me-2"></i>階層構造の見直し</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- アクションボタン -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            <i class="fa fa-info-circle me-1"></i>
+                            変更内容を確認してカテゴリを更新してください
+                        </div>
+                        <div>
+                            <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary me-2">
+                                <i class="fa fa-times me-1"></i>キャンセル
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save me-1"></i>変更を保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<script>
+let cropper = null;
+
+// ページの読み込み完了を待つ
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded, Bootstrap available:', typeof bootstrap !== 'undefined');
+    console.log('Cropper available:', typeof Cropper !== 'undefined');
+    
+    // カテゴリ画像削除ボタンのイベント設定
+    const removeCategoryImageBtn = document.getElementById('removeCategoryImageBtn');
+    if (removeCategoryImageBtn) {
+        removeCategoryImageBtn.addEventListener('click', function() {
+            if (confirm('カテゴリ画像を削除しますか？\n※画像ファイル自体は削除されず、カテゴリとの関連付けのみ解除されます。')) {
+                // 現在の画像プレビューを非表示
+                const currentImage = document.getElementById('currentCategoryImage');
+                if (currentImage) {
+                    currentImage.style.display = 'none';
+                }
+                
+                // 削除フラグを設定
+                const removeFlag = document.getElementById('removeCategoryImage');
+                if (removeFlag) {
+                    removeFlag.value = 'true';
+                }
+                
+                // ファイル入力をリセット
+                const fileInput = document.querySelector('input[name="ogp_image"]');
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                
+                // プレビューコンテナも非表示
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                if (previewContainer) {
+                    previewContainer.style.display = 'none';
+                }
+                
+                // 成功メッセージ
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fa fa-info-circle me-2"></i>
+                    カテゴリ画像の削除をマークしました。保存ボタンを押すと削除が確定します。
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                const cardBody = currentImage.closest('.card-body');
+                if (cardBody) {
+                    cardBody.insertBefore(alertDiv, cardBody.firstChild);
+                }
+            }
+        });
+    }
+});
+// 画像プレビュー
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            const container = document.getElementById('imagePreviewContainer');
+            preview.src = e.target.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// スラッグプレビュー更新
+{% if form.slug %}
+function updateSlugPreview() {
+    const slugField = document.getElementById('{{ form.slug.id }}');
+    const preview = document.getElementById('slugPreview');
+    
+    slugField.addEventListener('input', function() {
+        const slug = this.value || '{{ category.slug }}';
+        preview.textContent = '{{ url_for("home") }}category/' + slug;
+    });
+}
+
+updateSlugPreview();
+{% endif %}
+
+// フォーム送信前の確認
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('{{ form.name.id }}').value.trim();
+    
+    if (!name) {
+        e.preventDefault();
+        alert('カテゴリ名を入力してください。');
+        return false;
+    }
+});
+
+// クロップ機能
+function startCropping() {
+    const preview = document.getElementById('imagePreview');
+    const cropImage = document.getElementById('cropImage');
+    
+    if (preview.src) {
+        cropImage.src = preview.src;
+        // Bootstrapがロードされるまで待機
+        if (typeof bootstrap !== 'undefined') {
+            const modal = new bootstrap.Modal(document.getElementById('cropModal'));
+            modal.show();
+        } else {
+            // フォールバック: 直接モーダルを表示
+            const modalElement = document.getElementById('cropModal');
+            modalElement.style.display = 'block';
+            modalElement.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+        
+        // モーダルが完全に表示された後にCropperを初期化
+        const initCropper = () => {
+            if (cropper) {
+                cropper.destroy();
+            }
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 1200 / 630, // OGP画像のアスペクト比
+                viewMode: 1, // 画像がコンテナを超えないように制限
+                dragMode: 'crop', // ドラッグでクロップボックスを移動
+                autoCropArea: 0.7, // 初期クロップエリアを少し小さく
+                responsive: true,
+                restore: false,
+                checkCrossOrigin: false,
+                checkOrientation: false,
+                modal: true, // マスクを表示（選択外を半透明にする）
+                guides: true, // ガイドラインを表示
+                center: true, // 中央線を表示
+                highlight: true, // ハイライト表示
+                background: true, // グリッド背景を表示
+                autoCrop: true, // 自動でクロップエリアを作成
+                movable: true, // 画像の移動を許可
+                rotatable: false, // 回転は無効化
+                scalable: true, // 拡大縮小を許可
+                zoomable: true, // ズーム機能を有効
+                zoomOnTouch: true, // タッチでズーム
+                zoomOnWheel: true, // マウスホイールでズーム
+                wheelZoomRatio: 0.1,
+                cropBoxMovable: true, // クロップボックスの移動を許可
+                cropBoxResizable: true, // クロップボックスのリサイズを許可
+                toggleDragModeOnDblclick: false, // ダブルクリックでのモード切替を無効化
+                // 最小クロップボックスサイズ
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 52, // 100 * (630/1200) = 52.5
+                ready: function () {
+                    console.log('Cropper ready');
+                }
+            });
+        };
+        
+        // Bootstrap modalイベントかタイムアウトでCropper初期化
+        if (typeof bootstrap !== 'undefined') {
+            document.getElementById('cropModal').addEventListener('shown.bs.modal', initCropper, { once: true });
+        } else {
+            // フォールバック: 少し待ってから初期化
+            setTimeout(initCropper, 300);
+        }
+    }
+}
+
+function applyCrop() {
+    if (cropper) {
+        // getData()メソッドでより正確なクロップデータを取得
+        const cropData = cropper.getData();
+        
+        // クロップデータを隠しフィールドに設定（画像の実際のサイズに対する値）
+        document.getElementById('ogp_crop_x').value = Math.round(cropData.x);
+        document.getElementById('ogp_crop_y').value = Math.round(cropData.y);
+        document.getElementById('ogp_crop_width').value = Math.round(cropData.width);
+        document.getElementById('ogp_crop_height').value = Math.round(cropData.height);
+        
+        console.log('Crop data:', cropData);
+        
+        // クロップされた画像をプレビューに表示
+        const canvas = cropper.getCroppedCanvas({
+            width: 1200,
+            height: 630 // 1200:630の比率を維持（OGP対応）
+        });
+        
+        document.getElementById('imagePreview').src = canvas.toDataURL();
+        
+        // モーダルを閉じる
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cropModal'));
+            if (modal) {
+                modal.hide();
+            }
+        } else {
+            // フォールバック
+            const modalElement = document.getElementById('cropModal');
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+        
+        // Cropperを破棄
+        cropper.destroy();
+        cropper = null;
+    }
+}
+
+// Cropperコントロール関数群
+function cropperZoomIn() {
+    if (cropper) {
+        cropper.zoom(0.1);
+    }
+}
+
+function cropperZoomOut() {
+    if (cropper) {
+        cropper.zoom(-0.1);
+    }
+}
+
+function cropperMoveLeft() {
+    if (cropper) {
+        cropper.move(-10, 0);
+    }
+}
+
+function cropperMoveRight() {
+    if (cropper) {
+        cropper.move(10, 0);
+    }
+}
+
+function cropperMoveUp() {
+    if (cropper) {
+        cropper.move(0, -10);
+    }
+}
+
+function cropperMoveDown() {
+    if (cropper) {
+        cropper.move(0, 10);
+    }
+}
+
+function cropperReset() {
+    if (cropper) {
+        cropper.reset();
+    }
+}
+
+// モーダルが閉じられた時にCropperを破棄
+document.getElementById('cropModal').addEventListener('hidden.bs.modal', function () {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+});
+</script>
+{% endblock %}

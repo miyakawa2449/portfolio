@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token_value() }}">
+    <title>{% block title %}管理画面 - ミニブログ{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- RDash inspired Admin CSS -->
+    <link href="{{ url_for('static', filename='css/rdash-admin.css') }}" rel="stylesheet">
+    <!-- 共通コンポーネント CSS -->
+    <link href="{{ url_for('static', filename='css/components.css') }}" rel="stylesheet">
+    <!-- 管理画面強化 CSS -->
+    <link href="{{ url_for('static', filename='css/admin-enhanced.css') }}" rel="stylesheet">
+    
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body class="rdash">
+    <div id="page-wrapper" class="open">
+        <!-- サイドバー -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar">
+                <!-- サイドバーヘッダー -->
+                <li class="sidebar-main">
+                    <a href="{{ url_for('admin.dashboard') }}">
+                        <i class="fa fa-cogs"></i>
+                        ミニブログ管理
+                        <span id="main-menu-toggle" class="menu-toggle">
+                            <i class="fa fa-angle-double-left"></i>
+                        </span>
+                    </a>
+                </li>
+                
+                <!-- ダッシュボード -->
+                <li class="sidebar-title">
+                    <span>ナビゲーション</span>
+                </li>
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}">
+                    <a href="{{ url_for('admin.dashboard') }}">
+                        <i class="fa fa-dashboard"></i>
+                        <span class="menu-text">ダッシュボード</span>
+                    </a>
+                </li>
+                
+                <!-- 記事管理 -->
+                <li class="sidebar-list">
+                    <a href="#" class="has-submenu {{ 'active' if 'article' in request.endpoint else '' }}">
+                        <i class="fa fa-file-text"></i>
+                        <span class="menu-text">記事管理</span>
+                        <i class="fa fa-angle-right arrow"></i>
+                    </a>
+                    <ul class="submenu {{ 'show' if 'article' in request.endpoint else '' }}">
+                        <li><a href="{{ url_for('admin.articles') }}" class="{{ 'active' if request.endpoint == 'admin.articles' else '' }}">
+                            <i class="fa fa-list"></i>記事一覧
+                        </a></li>
+                        <li><a href="{{ url_for('admin.create_article') }}" class="{{ 'active' if request.endpoint == 'admin.create_article' else '' }}">
+                            <i class="fa fa-plus"></i>新規作成
+                        </a></li>
+                    </ul>
+                </li>
+                
+                <!-- カテゴリ管理 -->
+                <li class="sidebar-list">
+                    <a href="#" class="has-submenu {{ 'active' if 'categor' in request.endpoint else '' }}">
+                        <i class="fa fa-tags"></i>
+                        <span class="menu-text">カテゴリ管理</span>
+                        <i class="fa fa-angle-right arrow"></i>
+                    </a>
+                    <ul class="submenu {{ 'show' if 'categor' in request.endpoint else '' }}">
+                        <li><a href="{{ url_for('admin.categories') }}" class="{{ 'active' if request.endpoint == 'admin.categories' else '' }}">
+                            <i class="fa fa-list"></i>カテゴリ一覧
+                        </a></li>
+                        <li><a href="{{ url_for('admin.create_category') }}" class="{{ 'active' if request.endpoint == 'admin.create_category' else '' }}">
+                            <i class="fa fa-plus"></i>新規作成
+                        </a></li>
+                    </ul>
+                </li>
+                
+                <!-- ユーザ管理 -->
+                <li class="sidebar-list {{ 'active' if 'user' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.users') }}">
+                        <i class="fa fa-users"></i>
+                        <span class="menu-text">ユーザ管理</span>
+                    </a>
+                </li>
+                
+                <!-- コメント管理 -->
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.comments' else '' }}">
+                    <a href="{{ url_for('admin.comments') }}">
+                        <i class="fa fa-comments"></i>
+                        <span class="menu-text">コメント管理</span>
+                    </a>
+                </li>
+                
+                <!-- 画像管理 -->
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.images' else '' }}">
+                    <a href="{{ url_for('admin.images_manager') }}">
+                        <i class="fa fa-images"></i>
+                        <span class="menu-text">画像管理</span>
+                    </a>
+                </li>
+                
+                <!-- セキュリティ -->
+                <li class="sidebar-title">
+                    <span>セキュリティ</span>
+                </li>
+                <li class="sidebar-list">
+                    <a href="#" class="has-submenu">
+                        <i class="fa fa-shield-alt"></i>
+                        <span class="menu-text">2段階認証</span>
+                        <i class="fa fa-angle-right arrow"></i>
+                    </a>
+                    <ul class="submenu">
+                        {% if current_user.totp_enabled %}
+                        <li><a href="{{ url_for('totp_disable') }}">
+                            <i class="fa fa-times text-danger"></i>無効化
+                        </a></li>
+                        {% else %}
+                        <li><a href="{{ url_for('totp_setup') }}">
+                            <i class="fa fa-plus text-success"></i>有効化
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                
+                <!-- ツール -->
+                <li class="sidebar-title">
+                    <span>ツール</span>
+                </li>
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.wordpress_import' else '' }}">
+                    <a href="{{ url_for('admin.wordpress_import') }}">
+                        <i class="fa fa-download"></i>
+                        <span class="menu-text">WordPress インポート</span>
+                    </a>
+                </li>
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.analytics_settings' else '' }}">
+                    <a href="{{ url_for('admin.analytics_settings') }}">
+                        <i class="fa fa-chart-line"></i>
+                        <span class="menu-text">Google Analytics</span>
+                    </a>
+                </li>
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.access_logs' else '' }}">
+                    <a href="{{ url_for('admin.access_logs') }}">
+                        <i class="fa fa-chart-bar"></i>
+                        <span class="menu-text">アクセスログ分析</span>
+                    </a>
+                </li>
+                <li class="sidebar-list {{ 'active' if 'seo' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.seo_tools') }}">
+                        <i class="fa fa-search"></i>
+                        <span class="menu-text">SEO対策ツール</span>
+                    </a>
+                </li>
+                
+                <!-- 設定 -->
+                <li class="sidebar-title">
+                    <span>設定</span>
+                </li>
+                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.site_settings' else '' }}">
+                    <a href="{{ url_for('admin.site_settings') }}">
+                        <i class="fa fa-cog"></i>
+                        <span class="menu-text">サイト設定</span>
+                    </a>
+                </li>
+                
+                <!-- その他の機能 -->
+                <li class="sidebar-title">
+                    <span>その他</span>
+                </li>
+                <li class="sidebar-list">
+                    <a href="{{ url_for('home') }}" target="_blank">
+                        <i class="fa fa-external-link"></i>
+                        <span class="menu-text">サイトを表示</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- メインコンテンツエリア -->
+        <div id="content-wrapper">
+            <!-- トップバー -->
+            <div class="page-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1>{% block page_title %}{% endblock %}</h1>
+                        <ol class="breadcrumb">
+                            {% block breadcrumb %}
+                            <li><a href="{{ url_for('admin.dashboard') }}">ホーム</a></li>
+                            {% endblock %}
+                        </ol>
+                    </div>
+                    <div class="header-right">
+                        <div class="header-user-dropdown">
+                            <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fa fa-user"></i>
+                                {{ current_user.name }}
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fa fa-sign-out"></i> ログアウト
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- フラッシュメッセージ -->
+            <div class="flash-messages">
+                {% include '_flash_messages.html' %}
+            </div>
+            
+            <!-- ページコンテンツ -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- RDash Admin JS -->
+    <script src="{{ url_for('static', filename='js/rdash-admin.js') }}"></script>
+    
+    {% block scripts_extra %}{% endblock %}
+</body>
+</html>
