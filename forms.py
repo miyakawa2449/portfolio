@@ -118,33 +118,6 @@ class PasswordResetForm(FlaskForm):
         if field.data != self.password.data:
             raise ValidationError('パスワードが一致しません。')
 
-class WordPressImportForm(FlaskForm):
-    """WordPress インポートフォーム"""
-    xml_file = FileField('WordPress エクスポートファイル (XML)', validators=[
-        FileRequired('XMLファイルを選択してください'),
-        FileAllowed(['xml'], 'XMLファイルのみアップロード可能です')
-    ])
-    author_id = SelectField('記事の著者', coerce=int, validators=[DataRequired()])
-    dry_run = BooleanField('テスト実行（実際にはインポートしない）', default=False)
-    
-    # 詳細オプション
-    import_categories = BooleanField('カテゴリをインポート', default=True)
-    import_images = BooleanField('画像をダウンロード', default=True)
-    skip_duplicates = BooleanField('重複データをスキップ', default=True)
-    
-    submit = SubmitField('インポート開始')
-    
-    def __init__(self, *args, **kwargs):
-        super(WordPressImportForm, self).__init__(*args, **kwargs)
-        # 著者選択肢を動的に設定
-        from models import User
-        self.author_id.choices = [(user.id, f"{user.name} ({user.email})") 
-                                  for user in User.query.filter_by(role='admin').all()]
-        if not self.author_id.choices:
-            # 管理者がいない場合は全ユーザーから選択
-            self.author_id.choices = [(user.id, f"{user.name} ({user.email})") 
-                                      for user in User.query.all()]
-
 class GoogleAnalyticsForm(FlaskForm):
     """Google Analytics設定フォーム"""
     google_analytics_enabled = BooleanField('Google Analyticsを有効にする', default=False)

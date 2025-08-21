@@ -132,12 +132,6 @@
                 <li class="sidebar-title">
                     <span>ツール</span>
                 </li>
-                <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.wordpress_import' else '' }}">
-                    <a href="{{ url_for('admin.wordpress_import') }}">
-                        <i class="fa fa-download"></i>
-                        <span class="menu-text">WordPress インポート</span>
-                    </a>
-                </li>
                 <li class="sidebar-list {{ 'active' if request.endpoint == 'admin.analytics_settings' else '' }}">
                     <a href="{{ url_for('admin.analytics_settings') }}">
                         <i class="fa fa-chart-line"></i>
