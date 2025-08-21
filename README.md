@@ -70,5 +70,5 @@ portfolio/
 
 ## 連絡先
 
-- GitHub: [あなたのGitHubユーザー名]
-- Email: [あなたのメールアドレス]
+- GitHub: [miyakawa2449]
+- Email: [t.miyakawa244@gmail.com]
