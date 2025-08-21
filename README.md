@@ -2,6 +2,21 @@
 
 このサイトは、Pythonプログラミング100日チャレンジの学習記録と成果を公開するポートフォリオサイトです。
 
+## 🚀 移行作業進捗
+
+### 現在の進捗: フェーズ2/8完了 (25%)
+
+- ✅ **フェーズ0**: リポジトリ準備と移行作業
+- ✅ **フェーズ0.5**: データベース名の変更と環境設定の更新
+- ✅ **フェーズ1**: 現状調査とバックアップ
+- ✅ **フェーズ2**: データベースリセットと基本設定
+- ⬜ **フェーズ3**: トップページ（ランディングページ）の実装
+- ⬜ **フェーズ4**: 100日チャレンジ進捗機能の実装
+- ⬜ **フェーズ5**: プロジェクト展示ページの実装
+- ⬜ **フェーズ6**: AI SEO（AIO/LLMO）機能とsitemap.xmlの実装
+- ⬜ **フェーズ7**: 検索機能の修正
+- ⬜ **フェーズ8**: UIの調整とテスト
+
 ## 概要
 
 - **目的**: Pythonでのプログラミングスキル向上と学習過程の記録
@@ -10,11 +25,31 @@
 
 ## 技術スタック
 
-- **Backend**: Python 3.10+, Flask 2.x
-- **Database**: SQLite with Flask-Migrate
-- **Frontend**: Bootstrap 5, ES6+ JavaScript
-- **Authentication**: Flask-Login with TOTP/2FA
-- **Deployment**: Gunicorn, Nginx
+### **バックエンド**
+- **Framework**: Python 3.10, Flask 2.3.3
+- **Database**: MySQL 8.0 + SQLAlchemy 2.0 ORM
+- **Authentication**: Flask-Login + TOTP 2FA
+- **Email**: AWS SES統合（開発・本番対応）
+- **Migration**: Flask-Migrate (Alembic)
+
+### **セキュリティ**
+- **CSRF Protection**: Flask-WTF
+- **XSS Prevention**: Bleach HTML Sanitization
+- **Password**: Werkzeug Security (ハッシュ化)
+- **Security Headers**: X-Frame-Options, CSP, HSTS等
+- **URL Obfuscation**: カスタム管理画面URL
+
+### **フロントエンド**
+- **UI Framework**: Bootstrap 5
+- **Image Processing**: Cropper.js + PIL
+- **JavaScript**: ES6+, リアルタイムプレビュー
+- **Icons**: Font Awesome
+
+### **インフラ・デプロイ**
+- **Production**: Ubuntu 24.04 LTS + Nginx + Gunicorn
+- **Cloud**: AWS Lightsail/EC2対応
+- **SSL**: Let's Encrypt自動化
+- **Security**: fail2ban, UFW firewall
 
 ## セットアップ
 
