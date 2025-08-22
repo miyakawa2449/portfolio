@@ -52,7 +52,7 @@
                         </div>
                         <div class="mt-2">
                             <small class="text-muted">プレビュー URL: </small>
-                            <div class="slug-preview" id="slugPreview">{{ url_for('home') }}category/{{ category.slug }}</div>
+                            <div class="slug-preview" id="slugPreview">{{ url_for('landing', _external=True)[:-1] }}/category/{{ category.slug }}</div>
                         </div>
                     </div>
                     {% endif %}
@@ -389,7 +389,7 @@ function updateSlugPreview() {
     
     slugField.addEventListener('input', function() {
         const slug = this.value || '{{ category.slug }}';
-        preview.textContent = '{{ url_for("home") }}category/' + slug;
+        preview.textContent = '{{ url_for("landing", _external=True)[:-1] }}/category/' + slug;
     });
 }
 

@@ -211,13 +211,13 @@
     <nav class="modern-navbar">
         <div class="container-responsive">
             <div class="navbar-content">
-                <a class="navbar-brand" href="{{ url_for('home') }}">
+                <a class="navbar-brand" href="{{ url_for('landing') }}">
                 {% if site_settings.site_logo_url %}
-                <img src="{{ site_settings.site_logo_url }}" alt="{{ site_settings.site_name or 'ミニブログ' }}" style="height: 32px; margin-right: 8px;">
+                <img src="{{ site_settings.site_logo_url }}" alt="{{ site_settings.site_name or 'Python 100 Days' }}" style="height: 32px; margin-right: 8px;">
                 {% else %}
                 <i class="bi bi-journal-text"></i>
                 {% endif %}
-                    {{ site_settings.site_name or 'ミニブログ' }}
+                    {{ site_settings.site_name or 'Python 100 Days' }}
                 </a>
                 
                 <!-- ハンバーガーメニューボタン -->
@@ -229,8 +229,14 @@
                 
                 <!-- ナビゲーションメニュー -->
                 <div class="navbar-menu" role="menu">
-                    <a class="navbar-link" href="{{ url_for('home') }}" role="menuitem">
+                    <a class="navbar-link" href="{{ url_for('landing') }}" role="menuitem">
                         <i class="bi bi-house-door"></i> ホーム
+                    </a>
+                    <a class="navbar-link" href="{{ url_for('blog') }}" role="menuitem">
+                        <i class="bi bi-book"></i> ブログ
+                    </a>
+                    <a class="navbar-link" href="{{ url_for('projects') }}" role="menuitem">
+                        <i class="bi bi-code-square"></i> プロジェクト
                     </a>
                     
                     <!-- SNSアイコン -->

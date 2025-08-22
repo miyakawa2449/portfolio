@@ -17,8 +17,8 @@
     <div class="container">
         <!-- パンくずナビ -->
         <nav class="breadcrumb-nav">
-            <a href="{{ url_for('home') }}" class="breadcrumb-link">
-                <i class="bi bi-house-door"></i> ホーム
+            <a href="{{ url_for('blog') }}" class="breadcrumb-link">
+                <i class="bi bi-book"></i> ブログ
             </a>
             {% if article.categories %}
                 {% for category in article.categories %}
@@ -234,7 +234,7 @@
         <!-- ナビゲーション -->
         <nav class="article-navigation">
             <div class="nav-buttons">
-                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                <a href="{{ url_for('blog') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i>
                     記事一覧に戻る
                 </a>

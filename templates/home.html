@@ -10,18 +10,60 @@
         <p class="hero-subtitle">{{ site_settings.site_description or 'プログラミング、テック、ライフスタイルに関する記事をお届けします' }}</p>
         
         <!-- 検索フォーム -->
-        <form class="search-form" method="GET" action="{{ url_for('home') }}">
-            <input type="text" name="q" class="search-input" placeholder="記事を検索..." value="{{ request.args.get('q', '') }}">
+        <form class="search-form" method="GET" action="{{ url_for('blog') }}">
+            <input type="text" name="q" class="search-input" placeholder="記事を検索..." value="{{ search_query or '' }}">
             <button type="submit" class="search-btn">
                 <i class="bi bi-search"></i>
                 <span>検索</span>
             </button>
         </form>
+        
+        <!-- チャレンジフィルター -->
+        {% if challenges %}
+        <div class="challenge-filter mt-4">
+            <div class="btn-group" role="group" aria-label="チャレンジフィルター">
+                <a href="{{ url_for('blog') }}" class="btn {{ 'btn-primary' if not current_challenge else 'btn-outline-primary' }}">
+                    すべて
+                </a>
+                {% for challenge in challenges %}
+                <a href="{{ url_for('blog', challenge_id=challenge.id) }}" 
+                   class="btn {{ 'btn-primary' if current_challenge and current_challenge.id == challenge.id else 'btn-outline-primary' }}">
+                    {{ challenge.name }}
+                    {% if challenge.status == 'completed' %}<span class="badge bg-success ms-1">完了</span>{% endif %}
+                    {% if challenge.status == 'active' %}<span class="badge bg-info ms-1">進行中</span>{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </section>
 
 <!-- メインコンテンツ -->
 <main class="container-responsive">
+    <!-- 検索・フィルター結果表示 -->
+    {% if search_query or current_challenge %}
+    <div class="search-results-info mb-4">
+        {% if search_query %}
+        <p class="mb-0">
+            <i class="bi bi-search"></i> 
+            検索結果: <strong>"{{ search_query }}"</strong>
+            {% if current_challenge %}
+            <span class="mx-2">×</span>
+            <span class="badge bg-info">{{ current_challenge.name }}</span>
+            {% endif %}
+            <a href="{{ url_for('blog') }}" class="btn btn-sm btn-outline-secondary ms-2">クリア</a>
+        </p>
+        {% elif current_challenge %}
+        <p class="mb-0">
+            <i class="bi bi-filter"></i> 
+            フィルター: <span class="badge bg-info">{{ current_challenge.name }}</span>
+            <a href="{{ url_for('blog') }}" class="btn btn-sm btn-outline-secondary ms-2">すべて表示</a>
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
     {% if articles %}
         <div class="article-grid">
             {% for article in articles %}
@@ -54,6 +96,14 @@
                         <div class="modern-card-date">
                             {{ article.created_at.strftime('%m/%d') }}
                         </div>
+                        {% if article.challenge %}
+                        <div class="challenge-info ms-2">
+                            <span class="badge bg-info">{{ article.challenge.name }}</span>
+                            {% if article.challenge_day %}
+                            <span class="badge bg-secondary">Day {{ article.challenge_day }}</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <!-- タイトル -->
@@ -115,7 +165,7 @@
         <nav aria-label="記事ページネーション" class="modern-pagination">
             <!-- 前のページ -->
             {% if pagination.has_prev %}
-                <a class="pagination-btn" href="{{ url_for('home', page=pagination.prev_num) }}" aria-label="前のページ">
+                <a class="pagination-btn" href="{{ url_for('blog', page=pagination.prev_num) }}" aria-label="前のページ">
                     <i class="bi bi-chevron-left"></i>
                     <span>前へ</span>
                 </a>
@@ -130,7 +180,7 @@
             {% for page_num in pagination.iter_pages() %}
                 {% if page_num %}
                     {% if page_num != pagination.page %}
-                        <a class="pagination-btn" href="{{ url_for('home', page=page_num) }}">{{ page_num }}</a>
+                        <a class="pagination-btn" href="{{ url_for('blog', page=page_num) }}">{{ page_num }}</a>
                     {% else %}
                         <span class="pagination-btn active">{{ page_num }}</span>
                     {% endif %}
@@ -141,7 +191,7 @@
             
             <!-- 次のページ -->
             {% if pagination.has_next %}
-                <a class="pagination-btn" href="{{ url_for('home', page=pagination.next_num) }}" aria-label="次のページ">
+                <a class="pagination-btn" href="{{ url_for('blog', page=pagination.next_num) }}" aria-label="次のページ">
                     <span>次へ</span>
                     <i class="bi bi-chevron-right"></i>
                 </a>

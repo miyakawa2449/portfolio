@@ -80,6 +80,40 @@
                         </a></li>
                     </ul>
                 </li>
+
+                <!-- チャレンジ管理 -->
+                <li class="sidebar-list">
+                    <a href="#" class="has-submenu {{ 'active' if 'challenge' in request.endpoint else '' }}">
+                        <i class="fa fa-trophy"></i>
+                        <span class="menu-text">チャレンジ管理</span>
+                        <i class="fa fa-angle-right arrow"></i>
+                    </a>
+                    <ul class="submenu {{ 'show' if 'challenge' in request.endpoint else '' }}">
+                        <li><a href="{{ url_for('admin.challenges') }}" class="{{ 'active' if request.endpoint == 'admin.challenges' else '' }}">
+                            <i class="fa fa-list"></i>チャレンジ一覧
+                        </a></li>
+                        <li><a href="{{ url_for('admin.create_challenge') }}" class="{{ 'active' if request.endpoint == 'admin.create_challenge' else '' }}">
+                            <i class="fa fa-plus"></i>新規作成
+                        </a></li>
+                    </ul>
+                </li>
+
+                <!-- プロジェクト管理 -->
+                <li class="sidebar-list">
+                    <a href="#" class="has-submenu {{ 'active' if 'project' in request.endpoint else '' }}">
+                        <i class="fa fa-code"></i>
+                        <span class="menu-text">プロジェクト管理</span>
+                        <i class="fa fa-angle-right arrow"></i>
+                    </a>
+                    <ul class="submenu {{ 'show' if 'project' in request.endpoint else '' }}">
+                        <li><a href="{{ url_for('admin.projects') }}" class="{{ 'active' if request.endpoint == 'admin.projects' else '' }}">
+                            <i class="fa fa-list"></i>プロジェクト一覧
+                        </a></li>
+                        <li><a href="{{ url_for('admin.create_project') }}" class="{{ 'active' if request.endpoint == 'admin.create_project' else '' }}">
+                            <i class="fa fa-plus"></i>新規作成
+                        </a></li>
+                    </ul>
+                </li>
                 
                 <!-- ユーザ管理 -->
                 <li class="sidebar-list {{ 'active' if 'user' in request.endpoint else '' }}">
@@ -167,7 +201,7 @@
                     <span>その他</span>
                 </li>
                 <li class="sidebar-list">
-                    <a href="{{ url_for('home') }}" target="_blank">
+                    <a href="{{ url_for('landing') }}" target="_blank">
                         <i class="fa fa-external-link"></i>
                         <span class="menu-text">サイトを表示</span>
                     </a>

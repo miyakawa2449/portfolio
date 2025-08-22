@@ -185,6 +185,23 @@
                                             {{ form.category_id.label(class="form-label") }}
                                             {{ form.category_id(class="form-select") }}
                                         </div>
+                                        
+                                        <!-- チャレンジ情報 -->
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="mb-3">
+                                                    {{ form.challenge_id.label(class="form-label") }}
+                                                    {{ form.challenge_id(class="form-select", id="challengeSelect") }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    {{ form.challenge_day.label(class="form-label") }}
+                                                    {{ form.challenge_day(class="form-control", placeholder="例: 15", id="challengeDay") }}
+                                                    <div class="form-text">チャレンジの何日目かを入力</div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
