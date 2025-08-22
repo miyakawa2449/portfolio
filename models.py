@@ -7,10 +7,179 @@ from datetime import datetime, timedelta
 from flask_login import UserMixin
 import pyotp
 import secrets
+import json
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import select, func
 
 db = SQLAlchemy()
+
+# --- 新規：Challengeモデル ---
+class Challenge(db.Model):
+    __tablename__ = 'challenges'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)  # "Python 100 Days Challenge #1"
+    slug = db.Column(db.String(255), unique=True, nullable=False)  # "python-100-days-1"
+    description = db.Column(db.Text)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date)  # 完了日（NULL = 進行中）
+    target_days = db.Column(db.Integer, default=100)  # 目標日数
+    github_repos = db.Column(db.Text)  # JSON形式で複数リポジトリを保存
+    is_active = db.Column(db.Boolean, default=False)  # 現在アクティブなチャレンジ
+    display_order = db.Column(db.Integer, default=0)  # 表示順
+    
+    # 手動調整用フィールド
+    manual_days = db.Column(db.Integer, nullable=True)  # 手動で設定した日数
+    manual_adjustment_date = db.Column(db.Date, nullable=True)  # 手動調整を行った日
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # リレーション
+    articles = db.relationship('Article', backref='challenge', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Challenge {self.name}>'
+    
+    @property
+    def days_elapsed(self):
+        """経過日数を計算（手動調整対応）"""
+        if self.end_date:
+            # 完了済みの場合
+            return (self.end_date - self.start_date).days + 1
+        
+        # 手動調整が行われている場合
+        if self.manual_days is not None and self.manual_adjustment_date is not None:
+            today = datetime.now().date()
+            # 調整日からの経過日数を加算
+            days_since_adjustment = (today - self.manual_adjustment_date).days
+            total_days = self.manual_days + days_since_adjustment
+            return min(total_days, self.target_days)
+        
+        # 通常の自動計算
+        today = datetime.now().date()
+        days = (today - self.start_date).days + 1
+        return min(days, self.target_days)
+    
+    @property
+    def progress_percentage(self):
+        """進捗率を計算"""
+        return min(100, (self.days_elapsed / self.target_days) * 100)
+    
+    @property
+    def status(self):
+        """チャレンジのステータス"""
+        if self.end_date:
+            return 'completed'
+        elif self.is_active:
+            return 'active'
+        else:
+            return 'paused'
+    
+    @property
+    def github_repositories(self):
+        """GitHubリポジトリ一覧を取得"""
+        import json
+        if self.github_repos:
+            try:
+                return json.loads(self.github_repos)
+            except json.JSONDecodeError:
+                return []
+        return []
+    
+    def add_github_repo(self, name, url, description=None):
+        """GitHubリポジトリを追加"""
+        import json
+        repos = self.github_repositories
+        new_repo = {
+            'name': name,
+            'url': url,
+            'description': description
+        }
+        repos.append(new_repo)
+        self.github_repos = json.dumps(repos, ensure_ascii=False)
+    
+    def remove_github_repo(self, index):
+        """GitHubリポジトリを削除（インデックス指定）"""
+        import json
+        repos = self.github_repositories
+        if 0 <= index < len(repos):
+            repos.pop(index)
+            self.github_repos = json.dumps(repos, ensure_ascii=False)
+    
+    def set_github_repos(self, repos_list):
+        """GitHubリポジトリ一覧を設定"""
+        import json
+        self.github_repos = json.dumps(repos_list, ensure_ascii=False) if repos_list else None
+
+# --- プロジェクト管理 ---
+
+class Project(db.Model):
+    """プロジェクト管理モデル"""
+    __tablename__ = 'projects'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    slug = db.Column(db.String(255), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    long_description = db.Column(db.Text)  # 詳細説明
+    
+    # 技術情報
+    technologies = db.Column(db.Text)  # JSON形式で技術スタック
+    github_url = db.Column(db.String(500))
+    demo_url = db.Column(db.String(500))
+    
+    # 画像
+    featured_image = db.Column(db.String(255))  # メイン画像
+    screenshot_images = db.Column(db.Text)  # JSON形式でスクリーンショット画像
+    
+    # 関連情報
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=True)
+    challenge_day = db.Column(db.Integer, nullable=True)  # 何日目のプロジェクトか
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=True)  # 関連記事
+    
+    # ステータス・表示設定
+    status = db.Column(db.String(50), default='active')  # active, archived, private
+    is_featured = db.Column(db.Boolean, default=False)  # 注目プロジェクト
+    display_order = db.Column(db.Integer, default=0)
+    
+    # メタデータ
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # リレーション
+    challenge = db.relationship('Challenge', backref='projects')
+    article = db.relationship('Article', backref='projects')
+    
+    def __repr__(self):
+        return f'<Project {self.title}>'
+    
+    @property
+    def technology_list(self):
+        """技術スタックのリストを取得"""
+        if not self.technologies:
+            return []
+        try:
+            return json.loads(self.technologies)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    def set_technologies(self, tech_list):
+        """技術スタックを設定"""
+        self.technologies = json.dumps(tech_list, ensure_ascii=False)
+    
+    @property
+    def screenshot_list(self):
+        """スクリーンショット画像のリストを取得"""
+        if not self.screenshot_images:
+            return []
+        try:
+            return json.loads(self.screenshot_images)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    def set_screenshots(self, screenshot_list):
+        """スクリーンショット画像を設定"""
+        self.screenshot_images = json.dumps(screenshot_list, ensure_ascii=False)
 
 # --- 中間テーブル: Article と Category の多対多関連 ---
 article_categories = db.Table('article_categories',
@@ -127,6 +296,10 @@ class Article(db.Model):
     
     # legacy_body_backup は削除せず保持（データ保護のため）
     legacy_body_backup = db.Column(db.Text, nullable=True)  # 従来のbodyフィールドのバックアップ
+    
+    # チャレンジ関連
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=True)
+    challenge_day = db.Column(db.Integer, nullable=True)  # Day 1, Day 2, etc.
     
     # 拡張用
     ext_json = db.Column(db.Text, nullable=True)
