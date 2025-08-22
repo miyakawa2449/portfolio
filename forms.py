@@ -5,7 +5,7 @@
 """
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SubmitField, FileField, IntegerField, HiddenField, PasswordField, BooleanField, SelectField
-from wtforms.validators import DataRequired, Optional, URL, Length, Email, ValidationError
+from wtforms.validators import DataRequired, Optional, URL, Length, Email, ValidationError, NumberRange
 import re
 from wtforms.widgets import HiddenInput
 from flask_wtf.file import FileAllowed, FileRequired
@@ -62,6 +62,8 @@ class ArticleForm(FlaskForm):
     
     # 公開設定
     category_id = SelectField('カテゴリ', coerce=int, validators=[Optional()])
+    challenge_id = SelectField('チャレンジ', coerce=int, validators=[Optional()])
+    challenge_day = IntegerField('チャレンジ日数', validators=[Optional(), NumberRange(min=1, max=1000)])
     is_published = BooleanField('公開する', validators=[Optional()])
     allow_comments = BooleanField('コメントを許可', validators=[Optional()])
     
@@ -170,3 +172,30 @@ class GoogleAnalyticsForm(FlaskForm):
         """Google Tag Manager IDの形式チェック"""
         if field.data and not field.data.startswith('GTM-'):
             raise ValidationError('Google Tag Manager IDは "GTM-" で始まる必要があります（例: GTM-XXXXXXX）')
+
+class ProjectForm(FlaskForm):
+    """プロジェクト作成・編集フォーム"""
+    title = StringField('プロジェクトタイトル', validators=[DataRequired(), Length(max=255)])
+    description = TextAreaField('プロジェクト説明', validators=[Optional(), Length(max=500)])
+    technologies = StringField('技術スタック', validators=[Optional(), Length(max=500)])
+    
+    # チャレンジ関連
+    challenge_id = SelectField('チャレンジ', coerce=int, validators=[Optional()])
+    challenge_day = IntegerField('チャレンジ日数', validators=[Optional(), NumberRange(min=1, max=100)])
+    
+    # URL情報
+    github_url = StringField('GitHub URL', validators=[Optional(), URL(), Length(max=500)])
+    demo_url = StringField('デモ URL', validators=[Optional(), URL(), Length(max=500)])
+    
+    # ステータス・設定
+    status = SelectField('ステータス', 
+                        choices=[('active', 'アクティブ'), ('private', 'プライベート'), ('archived', 'アーカイブ')],
+                        default='active')
+    is_featured = BooleanField('注目プロジェクト')
+    
+    # 画像アップロード
+    featured_image = FileField('注目画像', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif'], '画像ファイルのみアップロード可能です。')
+    ])
+    
+    submit = SubmitField('保存')

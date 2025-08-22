@@ -44,7 +44,7 @@ def clear_ogp_cache():
 
 
 # models.py から db インスタンスとモデルクラスをインポートします
-from models import db, User, Article, Category, Comment, EmailChangeRequest, article_categories
+from models import db, User, Article, Category, Comment, EmailChangeRequest, article_categories, Challenge, Project
 # forms.py からフォームクラスをインポート
 from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm, PasswordResetRequestForm, PasswordResetForm
 
@@ -1076,15 +1076,106 @@ ADMIN_URL_PREFIX = os.environ.get('ADMIN_URL_PREFIX', 'admin')
 app.register_blueprint(admin_bp, url_prefix=f'/{ADMIN_URL_PREFIX}')
 
 @app.route('/')
-@app.route('/page/<int:page>')
-def home(page=1):
-    from models import SiteSetting
+def landing():
+    """ポートフォリオのランディングページ"""
+    from models import SiteSetting, Challenge
+    
+    # アクティブなチャレンジを取得
+    active_challenge = db.session.execute(
+        select(Challenge).where(Challenge.is_active.is_(True))
+    ).scalar_one_or_none()
+    
+    if not active_challenge:
+        # アクティブなチャレンジがない場合、最新のチャレンジを取得
+        active_challenge = db.session.execute(
+            select(Challenge).order_by(Challenge.display_order.desc())
+        ).scalar_one_or_none()
+    
+    # 最新記事を取得（アクティブチャレンジの記事を優先）
+    if active_challenge:
+        latest_articles_query = select(Article).where(
+            Article.is_published.is_(True)
+        ).order_by(
+            # アクティブチャレンジの記事を優先、その後公開日順
+            (Article.challenge_id == active_challenge.id).desc(),
+            Article.published_at.desc()
+        ).limit(5)
+    else:
+        latest_articles_query = select(Article).where(
+            Article.is_published.is_(True)
+        ).order_by(Article.published_at.desc()).limit(5)
+    
+    latest_articles = db.session.execute(latest_articles_query).scalars().all()
+    
+    # 記事の総数を取得
+    total_articles = db.session.execute(
+        select(func.count(Article.id)).where(Article.is_published.is_(True))
+    ).scalar()
+    
+    # スキルカテゴリを取得
+    skill_categories = db.session.execute(
+        select(Category).where(Category.parent_id.is_(None)).order_by(Category.name)
+    ).scalars().all()
+    
+    # すべてのチャレンジを取得（一覧表示用）
+    all_challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order)
+    ).scalars().all()
+    
+    # 注目プロジェクトを取得（最大3件）
+    from models import Project
+    featured_projects = db.session.execute(
+        select(Project).where(
+            Project.status == 'active',
+            Project.is_featured.is_(True)
+        ).order_by(Project.display_order).limit(3)
+    ).scalars().all()
+    
+    return render_template('landing.html',
+                         active_challenge=active_challenge,
+                         latest_articles=latest_articles,
+                         total_articles=total_articles,
+                         skill_categories=skill_categories,
+                         all_challenges=all_challenges,
+                         featured_projects=featured_projects)
+
+@app.route('/blog')
+@app.route('/blog/page/<int:page>')
+@app.route('/blog/challenge/<int:challenge_id>')
+@app.route('/blog/challenge/<int:challenge_id>/page/<int:page>')
+def blog(page=1, challenge_id=None):
+    """ブログ記事一覧ページ（旧ホームページ）"""
+    from models import SiteSetting, Challenge
     
     # 1ページあたりの記事数をサイト設定から取得
     per_page = int(SiteSetting.get_setting('posts_per_page', '5'))
     
-    # ページネーション付きで公開済み記事を取得
-    articles_query = select(Article).where(Article.is_published.is_(True)).order_by(Article.created_at.desc())
+    # 基本クエリ：公開済み記事
+    articles_query = select(Article).where(Article.is_published.is_(True))
+    
+    # 検索機能
+    search_query = request.args.get('q', '').strip()
+    if search_query:
+        # タイトル、概要、本文で検索
+        articles_query = articles_query.where(
+            Article.title.like(f'%{search_query}%') |
+            Article.summary.like(f'%{search_query}%') |
+            Article.body.like(f'%{search_query}%')
+        )
+    
+    # チャレンジフィルター
+    current_challenge = None
+    if challenge_id:
+        current_challenge = db.session.get(Challenge, challenge_id)
+        if current_challenge:
+            articles_query = articles_query.where(Article.challenge_id == challenge_id)
+    
+    articles_query = articles_query.order_by(Article.created_at.desc())
+    
+    # チャレンジ一覧を取得（フィルター用）
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order)
+    ).scalars().all()
     
     # SQLAlchemy 2.0のpaginateを使用
     articles_pagination = db.paginate(
@@ -1096,7 +1187,56 @@ def home(page=1):
     
     return render_template('home.html', 
                          articles=articles_pagination.items,
-                         pagination=articles_pagination)
+                         pagination=articles_pagination,
+                         challenges=challenges,
+                         current_challenge=current_challenge,
+                         search_query=search_query)
+
+@app.route('/projects')
+@app.route('/projects/page/<int:page>')
+@app.route('/projects/challenge/<int:challenge_id>')
+@app.route('/projects/challenge/<int:challenge_id>/page/<int:page>')
+def projects(page=1, challenge_id=None):
+    """プロジェクト一覧ページ"""
+    try:
+        per_page = 12  # プロジェクトは3x4のグリッド表示
+        
+        # チャレンジ一覧を取得
+        challenges = Challenge.query.order_by(Challenge.display_order).all()
+        
+        # 現在のチャレンジを取得
+        current_challenge = None
+        if challenge_id:
+            current_challenge = Challenge.query.get(challenge_id)
+        
+        # プロジェクトクエリを構築
+        query = Project.query.filter(Project.status == 'active')
+        
+        # チャレンジフィルター
+        if current_challenge:
+            query = query.filter(Project.challenge_id == challenge_id)
+        
+        # 並び順：注目プロジェクト優先、その後作成日順
+        query = query.order_by(Project.is_featured.desc(), Project.created_at.desc())
+        
+        # ページネーション
+        projects_pagination = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        return render_template('projects.html',
+                             projects=projects_pagination.items,
+                             pagination=projects_pagination,
+                             challenges=challenges,
+                             current_challenge=current_challenge)
+                             
+    except Exception as e:
+        print(f"Projects route error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"エラーが発生しました: {str(e)}", 500
 
 # 環境変数でログインURLをカスタマイズ可能
 LOGIN_URL_PATH = os.environ.get('LOGIN_URL_PATH', 'login')
@@ -1104,7 +1244,7 @@ LOGIN_URL_PATH = os.environ.get('LOGIN_URL_PATH', 'login')
 @app.route(f'/{LOGIN_URL_PATH}/', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('landing'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -1121,7 +1261,7 @@ def login():
                 session['user_id'] = user.id
                 flash('ログインしました。', 'success')
                 next_page = request.args.get('next')
-                return redirect(next_page or url_for('home'))
+                return redirect(next_page or url_for('landing'))
         else:
             # ログイン失敗をログに記録（セキュリティ監視用）
             current_app.logger.warning(f"Failed login attempt for email: {email}")
@@ -1137,7 +1277,7 @@ login_manager.login_message_category = "info"
 @app.route('/totp_verify/', methods=['GET', 'POST'])
 def totp_verify():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('landing'))
     
     temp_user_id = session.get('temp_user_id')
     if not temp_user_id:
@@ -1158,7 +1298,7 @@ def totp_verify():
             session.pop('temp_user_id', None)
             flash('ログインしました。', 'success')
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('home'))
+            return redirect(next_page or url_for('landing'))
         else:
             flash('認証コードが正しくありません。', 'danger')
     
@@ -1237,7 +1377,7 @@ def totp_disable():
 @app.route('/password_reset_request/', methods=['GET', 'POST'])
 def password_reset_request():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('landing'))
     
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
@@ -1256,7 +1396,7 @@ def password_reset_request():
 @app.route('/password_reset/<token>/', methods=['GET', 'POST'])
 def password_reset(token):
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('landing'))
     
     user = db.session.execute(select(User).where(User.reset_token == token)).scalar_one_or_none()
     if not user or not user.verify_reset_token(token):
@@ -1360,7 +1500,7 @@ def article_detail(slug):
     if not article.is_published:
         if not current_user.is_authenticated or current_user.role != 'admin':
             flash('この記事は公開されていません。', 'warning')
-            return redirect(url_for('home'))
+            return redirect(url_for('landing'))
     
     # 承認済みコメントを取得（親コメントのみ）
     approved_comments = []
@@ -1641,13 +1781,13 @@ def confirm_email_change(token):
         
         if not change_request:
             flash('無効または期限切れの確認リンクです。', 'danger')
-            return redirect(url_for('home'))
+            return redirect(url_for('landing'))
         
         # ユーザー取得
         user = db.session.get(User, change_request.user_id)
         if not user:
             flash('ユーザーが見つかりません。', 'danger')
-            return redirect(url_for('home'))
+            return redirect(url_for('landing'))
         
         # メールアドレス重複チェック（再確認）
         existing_user = db.session.execute(
@@ -1656,7 +1796,7 @@ def confirm_email_change(token):
         
         if existing_user:
             flash('そのメールアドレスは既に使用されています。', 'danger')
-            return redirect(url_for('home'))
+            return redirect(url_for('landing'))
         
         # メールアドレス変更実行
         old_email = user.email
@@ -1681,7 +1821,7 @@ def confirm_email_change(token):
         db.session.rollback()
         current_app.logger.error(f'Email change confirmation error: {e}')
         flash('メールアドレス変更中にエラーが発生しました。', 'danger')
-        return redirect(url_for('home'))
+        return redirect(url_for('landing'))
 
 if __name__ == '__main__':
     # 本番環境では通常WSGI サーバー（Gunicorn等）を使用

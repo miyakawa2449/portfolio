@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session, current_app, jsonify
 from flask_login import login_required, current_user
-from models import db, User, Article, Category, Comment, SiteSetting, UploadedImage, LoginHistory, SEOAnalysis, EmailChangeRequest, article_categories
+from models import db, User, Article, Category, Comment, SiteSetting, UploadedImage, LoginHistory, SEOAnalysis, EmailChangeRequest, article_categories, Challenge
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Message
 from werkzeug.utils import secure_filename
@@ -12,7 +12,7 @@ from PIL import Image
 import time
 import re
 import json
-from forms import CategoryForm, ArticleForm, GoogleAnalyticsForm
+from forms import CategoryForm, ArticleForm, GoogleAnalyticsForm, ProjectForm
 
 # 新しいサービスクラスをインポート
 from article_service import ArticleService, CategoryService, ImageProcessingService, UserService
@@ -954,6 +954,8 @@ def create_article():
     
     # カテゴリ選択肢を設定
     ArticleService.setup_category_choices(form)
+    # チャレンジ選択肢を設定
+    ArticleService.setup_challenge_choices(form)
     
     if form.validate_on_submit():
         # バリデーション
@@ -978,6 +980,8 @@ def create_article():
             'meta_keywords': form.meta_keywords.data,
             'canonical_url': form.canonical_url.data,
             'category_id': form.category_id.data,
+            'challenge_id': form.challenge_id.data,
+            'challenge_day': form.challenge_day.data,
             'cropped_image_data': request.form.get('cropped_image_data'),
             'featured_image': request.files.get('featured_image'),
             'featured_crop_x': request.form.get('featured_crop_x'),
@@ -1011,11 +1015,19 @@ def edit_article(article_id):
     
     # カテゴリ選択肢を設定
     ArticleService.setup_category_choices(form)
+    # チャレンジ選択肢を設定
+    ArticleService.setup_challenge_choices(form)
     
     # 現在のカテゴリを設定
     current_category = article.categories[0] if article.categories else None
     if current_category:
         form.category_id.data = current_category.id
+    
+    # 現在のチャレンジ情報を設定
+    if article.challenge_id:
+        form.challenge_id.data = article.challenge_id
+    if article.challenge_day:
+        form.challenge_day.data = article.challenge_day
     
     if form.validate_on_submit():
         # バリデーション
@@ -2802,4 +2814,407 @@ def send_ses_email(subject, recipient, html_body):
     except Exception as e:
         current_app.logger.error(f'SES send email unexpected error: {e}')
         raise
+
+
+# ========================================
+# チャレンジ管理
+# ========================================
+
+@admin_bp.route('/challenges')
+@admin_required
+def challenges():
+    """チャレンジ一覧"""
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order)
+    ).scalars().all()
+    return render_template('admin/challenges.html', challenges=challenges)
+
+@admin_bp.route('/challenge/new', methods=['GET', 'POST'])
+@admin_required
+def create_challenge():
+    """新規チャレンジ作成"""
+    if request.method == 'POST':
+        try:
+            # フォームデータの取得
+            name = request.form.get('name', '').strip()
+            slug = request.form.get('slug', '').strip()
+            description = request.form.get('description', '').strip()
+            start_date = request.form.get('start_date')
+            end_date = request.form.get('end_date') or None
+            target_days = int(request.form.get('target_days', 100))
+            is_active = bool(request.form.get('is_active'))
+            display_order = int(request.form.get('display_order', 0))
+            
+            # 日付の変換
+            from datetime import datetime
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            if end_date:
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            
+            # アクティブチャレンジの重複チェック
+            if is_active:
+                existing_active = db.session.execute(
+                    select(Challenge).where(Challenge.is_active.is_(True))
+                ).scalar_one_or_none()
+                if existing_active:
+                    existing_active.is_active = False
+            
+            # チャレンジ作成
+            challenge = Challenge(
+                name=name,
+                slug=slug,
+                description=description,
+                start_date=start_date,
+                end_date=end_date,
+                target_days=target_days,
+                is_active=is_active,
+                display_order=display_order
+            )
+            
+            db.session.add(challenge)
+            db.session.commit()
+            
+            flash('チャレンジを作成しました', 'success')
+            return redirect(url_for('admin.challenges'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'チャレンジの作成に失敗しました: {str(e)}', 'error')
+    
+    return render_template('admin/challenge_form.html', challenge=None, action='create')
+
+@admin_bp.route('/challenge/<int:challenge_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_challenge(challenge_id):
+    """チャレンジ編集"""
+    challenge = db.session.execute(
+        select(Challenge).where(Challenge.id == challenge_id)
+    ).scalar_one_or_none()
+    
+    if not challenge:
+        flash('チャレンジが見つかりません', 'error')
+        return redirect(url_for('admin.challenges'))
+    
+    if request.method == 'POST':
+        try:
+            # フォームデータの取得
+            challenge.name = request.form.get('name', '').strip()
+            challenge.slug = request.form.get('slug', '').strip()
+            challenge.description = request.form.get('description', '').strip()
+            challenge.target_days = int(request.form.get('target_days', 100))
+            challenge.display_order = int(request.form.get('display_order', 0))
+            
+            # 日付の更新
+            start_date = request.form.get('start_date')
+            end_date = request.form.get('end_date') or None
+            
+            from datetime import datetime
+            challenge.start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            if end_date:
+                challenge.end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            else:
+                challenge.end_date = None
+            
+            # アクティブ状態の管理
+            is_active = bool(request.form.get('is_active'))
+            if is_active and not challenge.is_active:
+                # 他のアクティブチャレンジを無効化
+                db.session.execute(
+                    Challenge.__table__.update().where(
+                        Challenge.is_active.is_(True)
+                    ).values(is_active=False)
+                )
+            challenge.is_active = is_active
+            
+            # 手動日数調整の処理
+            clear_manual = bool(request.form.get('clear_manual'))
+            manual_days = request.form.get('manual_days')
+            
+            if clear_manual:
+                # 手動調整をクリア
+                challenge.manual_days = None
+                challenge.manual_adjustment_date = None
+            elif manual_days and manual_days.strip():
+                # 新しい手動調整を設定
+                try:
+                    days = int(manual_days)
+                    if 1 <= days <= challenge.target_days:
+                        challenge.manual_days = days
+                        challenge.manual_adjustment_date = datetime.now().date()
+                except ValueError:
+                    pass  # 無効な値は無視
+            
+            # GitHubリポジトリの更新
+            repos_data = []
+            repo_names = request.form.getlist('repo_names[]')
+            repo_urls = request.form.getlist('repo_urls[]')
+            repo_descriptions = request.form.getlist('repo_descriptions[]')
+            
+            for name, url, desc in zip(repo_names, repo_urls, repo_descriptions):
+                if name.strip() and url.strip():
+                    repos_data.append({
+                        'name': name.strip(),
+                        'url': url.strip(),
+                        'description': desc.strip() if desc.strip() else None
+                    })
+            
+            challenge.set_github_repos(repos_data)
+            
+            db.session.commit()
+            flash('チャレンジを更新しました', 'success')
+            return redirect(url_for('admin.challenges'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'チャレンジの更新に失敗しました: {str(e)}', 'error')
+    
+    return render_template('admin/challenge_form.html', challenge=challenge, action='edit')
+
+@admin_bp.route('/challenge/<int:challenge_id>/delete', methods=['POST'])
+@admin_required
+def delete_challenge(challenge_id):
+    """チャレンジ削除"""
+    challenge = db.session.execute(
+        select(Challenge).where(Challenge.id == challenge_id)
+    ).scalar_one_or_none()
+    
+    if not challenge:
+        flash('チャレンジが見つかりません', 'error')
+        return redirect(url_for('admin.challenges'))
+    
+    try:
+        # 関連記事の確認
+        article_count = db.session.execute(
+            select(func.count(Article.id)).where(Article.challenge_id == challenge_id)
+        ).scalar()
+        
+        if article_count > 0:
+            flash(f'このチャレンジには{article_count}件の記事が関連付けられています。先に記事を削除するか、別のチャレンジに移動してください。', 'error')
+            return redirect(url_for('admin.challenges'))
+        
+        db.session.delete(challenge)
+        db.session.commit()
+        flash('チャレンジを削除しました', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'チャレンジの削除に失敗しました: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.challenges'))
+
+
+
+# --- プロジェクト管理 ---
+
+@admin_bp.route("/projects")
+@admin_required
+def projects():
+    """プロジェクト一覧"""
+    from models import Project
+    projects = db.session.execute(
+        select(Project).order_by(Project.display_order, Project.created_at.desc())
+    ).scalars().all()
+    return render_template("admin/projects.html", projects=projects)
+
+@admin_bp.route("/project/new", methods=["GET", "POST"])
+@admin_required
+def create_project():
+    """プロジェクト新規作成"""
+    from models import Project, Challenge
+    import os
+    from werkzeug.utils import secure_filename
+    
+    form = ProjectForm()
+    
+    # チャレンジ選択肢を設定
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order)
+    ).scalars().all()
+    form.challenge_id.choices = [(0, '選択してください')] + [(c.id, c.name) for c in challenges]
+    
+    if form.validate_on_submit():
+        try:
+            # 技術スタックをリストに変換
+            tech_list = []
+            if form.technologies.data:
+                tech_list = [tech.strip() for tech in form.technologies.data.split(',') if tech.strip()]
+            
+            # スラッグを生成（タイトルベース + タイムスタンプでユニーク性を保証）
+            
+            title = form.title.data.strip()
+            # 英数字と一部記号のみ残してスラッグ化
+            base_slug = re.sub(r'[^\w\s-]', '', title.lower())
+            base_slug = re.sub(r'[\s_-]+', '-', base_slug).strip('-')
+            
+            # 日本語タイトルでスラッグが空になった場合はproject-をベースにする
+            if not base_slug:
+                base_slug = 'project'
+            
+            # タイムスタンプを追加してユニーク性を保証
+            timestamp = str(int(time.time()))[-6:]  # 末尾6桁
+            slug = f"{base_slug}-{timestamp}"
+            
+            # プロジェクト作成
+            project = Project(
+                title=title,
+                slug=slug,
+                description=form.description.data,
+                github_url=form.github_url.data or None,
+                demo_url=form.demo_url.data or None,
+                challenge_id=form.challenge_id.data if form.challenge_id.data != 0 else None,
+                challenge_day=form.challenge_day.data,
+                status=form.status.data,
+                is_featured=form.is_featured.data
+            )
+            
+            # 技術スタックを設定
+            if tech_list:
+                project.set_technologies(tech_list)
+            
+            # 画像アップロード処理
+            if form.featured_image.data:
+                file = form.featured_image.data
+                if file.filename:
+                    filename = secure_filename(file.filename)
+                    # ファイル名にタイムスタンプを追加してユニークにする
+                    timestamp = str(int(time.time()))
+                    name, ext = os.path.splitext(filename)
+                    filename = f"project_{timestamp}_{name}{ext}"
+                    
+                    # アップロード先ディレクトリを確保
+                    upload_path = os.path.join(current_app.root_path, 'static', 'uploads', 'projects')
+                    os.makedirs(upload_path, exist_ok=True)
+                    
+                    file_path = os.path.join(upload_path, filename)
+                    file.save(file_path)
+                    project.featured_image = f'uploads/projects/{filename}'
+            
+            db.session.add(project)
+            db.session.commit()
+            flash("プロジェクトを作成しました", "success")
+            return redirect(url_for("admin.projects"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"プロジェクトの作成に失敗しました: {str(e)}", "error")
+    
+    return render_template("admin/project_form.html", 
+                         form=form,
+                         project=None)
+
+@admin_bp.route("/project/<int:project_id>/edit", methods=["GET", "POST"])
+@admin_required
+def edit_project(project_id):
+    """プロジェクト編集"""
+    from models import Project, Challenge
+    import os
+    from werkzeug.utils import secure_filename
+    
+    project = db.session.get(Project, project_id)
+    if not project:
+        flash("プロジェクトが見つかりません", "error")
+        return redirect(url_for("admin.projects"))
+    
+    form = ProjectForm(obj=project)
+    
+    # チャレンジ選択肢を設定
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order)
+    ).scalars().all()
+    form.challenge_id.choices = [(0, '選択してください')] + [(c.id, c.name) for c in challenges]
+    
+    # 現在の値をフォームに設定
+    if request.method == "GET":
+        form.challenge_id.data = project.challenge_id or 0
+        if project.technology_list:
+            form.technologies.data = ', '.join(project.technology_list)
+    
+    if form.validate_on_submit():
+        try:
+            # 技術スタックをリストに変換
+            tech_list = []
+            if form.technologies.data:
+                tech_list = [tech.strip() for tech in form.technologies.data.split(',') if tech.strip()]
+            
+            # プロジェクト更新
+            project.title = form.title.data.strip()
+            project.description = form.description.data
+            project.github_url = form.github_url.data or None
+            project.demo_url = form.demo_url.data or None
+            project.challenge_id = form.challenge_id.data if form.challenge_id.data != 0 else None
+            project.challenge_day = form.challenge_day.data
+            project.status = form.status.data
+            project.is_featured = form.is_featured.data
+            
+            # 技術スタックを設定
+            if tech_list:
+                project.set_technologies(tech_list)
+            else:
+                project.technologies = None
+            
+            # 画像削除処理
+            if request.form.get('remove_featured_image') == 'true':
+                if project.featured_image:
+                    old_file_path = os.path.join(current_app.root_path, 'static', project.featured_image)
+                    if os.path.exists(old_file_path):
+                        os.remove(old_file_path)
+                project.featured_image = None
+            
+            # 画像アップロード処理
+            elif form.featured_image.data:
+                file = form.featured_image.data
+                if file.filename:
+                    filename = secure_filename(file.filename)
+                    # ファイル名にタイムスタンプを追加してユニークにする
+                    timestamp = str(int(time.time()))
+                    name, ext = os.path.splitext(filename)
+                    filename = f"project_{timestamp}_{name}{ext}"
+                    
+                    # アップロード先ディレクトリを確保
+                    upload_path = os.path.join(current_app.root_path, 'static', 'uploads', 'projects')
+                    os.makedirs(upload_path, exist_ok=True)
+                    
+                    # 古い画像を削除（オプション）
+                    if project.featured_image:
+                        old_file_path = os.path.join(current_app.root_path, 'static', project.featured_image)
+                        if os.path.exists(old_file_path):
+                            os.remove(old_file_path)
+                    
+                    file_path = os.path.join(upload_path, filename)
+                    file.save(file_path)
+                    project.featured_image = f'uploads/projects/{filename}'
+            
+            db.session.commit()
+            flash("プロジェクトを更新しました", "success")
+            return redirect(url_for("admin.projects"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"プロジェクトの更新に失敗しました: {str(e)}", "error")
+    
+    return render_template("admin/project_form.html", 
+                         form=form,
+                         project=project)
+
+@admin_bp.route("/project/<int:project_id>/delete", methods=["POST"])
+@admin_required
+def delete_project(project_id):
+    """プロジェクト削除"""
+    from models import Project
+    
+    project = db.session.get(Project, project_id)
+    if not project:
+        flash("プロジェクトが見つかりません", "error")
+        return redirect(url_for("admin.projects"))
+    
+    try:
+        db.session.delete(project)
+        db.session.commit()
+        flash("プロジェクトを削除しました", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"プロジェクトの削除に失敗しました: {str(e)}", "error")
+    
+    return redirect(url_for("admin.projects"))
 

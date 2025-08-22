@@ -36,6 +36,8 @@ class ArticleService:
                 meta_keywords=form_data.get('meta_keywords', ''),
                 canonical_url=form_data.get('canonical_url', ''),
                 author_id=author_id,
+                challenge_id=form_data.get('challenge_id') if form_data.get('challenge_id') else None,
+                challenge_day=form_data.get('challenge_day'),
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )
@@ -124,6 +126,13 @@ class ArticleService:
         """フォームにカテゴリ選択肢を設定"""
         categories = db.session.execute(select(Category).order_by(Category.name)).scalars().all()
         form.category_id.choices = [(0, 'カテゴリを選択')] + [(c.id, c.name) for c in categories]
+    
+    @staticmethod
+    def setup_challenge_choices(form):
+        """フォームにチャレンジ選択肢を設定"""
+        from models import Challenge
+        challenges = db.session.execute(select(Challenge).order_by(Challenge.display_order)).scalars().all()
+        form.challenge_id.choices = [(0, 'チャレンジを選択')] + [(c.id, c.name) for c in challenges]
     
     @staticmethod
     def generate_unique_slug(title, article_id=None):
