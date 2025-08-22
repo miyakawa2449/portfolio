@@ -1,0 +1,180 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}プロジェクト管理{% endblock %}
+
+{% block breadcrumb %}
+<li><a href="{{ url_for('admin.dashboard') }}">ホーム</a></li>
+<li class="active">プロジェクト管理</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>プロジェクト管理</h2>
+    <a href="{{ url_for('admin.create_project') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 新しいプロジェクトを作成
+    </a>
+</div>
+
+{% if projects %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>プロジェクト</th>
+                <th>技術スタック</th>
+                <th>チャレンジ</th>
+                <th>ステータス</th>
+                <th>リンク</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in projects %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        {% if project.featured_image %}
+                        <img src="{{ url_for('static', filename=project.featured_image) }}" 
+                             alt="{{ project.title }}" 
+                             class="me-3" 
+                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                        {% else %}
+                        <div class="me-3 bg-light d-flex align-items-center justify-content-center" 
+                             style="width: 60px; height: 60px; border-radius: 8px;">
+                            <i class="fas fa-code text-muted"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-1">{{ project.title }}</h6>
+                            {% if project.description %}
+                            <small class="text-muted">{{ project.description[:80] }}{% if project.description|length > 80 %}...{% endif %}</small>
+                            {% endif %}
+                            {% if project.is_featured %}
+                            <br><span class="badge bg-warning text-dark mt-1"><i class="fas fa-star"></i> 注目</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if project.technology_list %}
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for tech in project.technology_list[:3] %}
+                        <span class="badge bg-secondary">{{ tech }}</span>
+                        {% endfor %}
+                        {% if project.technology_list|length > 3 %}
+                        <span class="badge bg-light text-dark">+{{ project.technology_list|length - 3 }}</span>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <span class="text-muted">未設定</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if project.challenge %}
+                    <div>
+                        <span class="badge bg-info">{{ project.challenge.name }}</span>
+                        {% if project.challenge_day %}
+                        <br><small class="text-muted">Day {{ project.challenge_day }}</small>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <span class="text-muted">未設定</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if project.status == 'active' %}
+                        <span class="badge bg-success">アクティブ</span>
+                    {% elif project.status == 'archived' %}
+                        <span class="badge bg-secondary">アーカイブ</span>
+                    {% else %}
+                        <span class="badge bg-warning">プライベート</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        {% if project.github_url %}
+                        <a href="{{ project.github_url }}" target="_blank" class="btn btn-sm btn-outline-dark" title="GitHub">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        {% endif %}
+                        {% if project.demo_url %}
+                        <a href="{{ project.demo_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="デモ">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('admin.edit_project', project_id=project.id) }}" 
+                           class="btn btn-sm btn-outline-primary" title="編集">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button type="button" 
+                                class="btn btn-sm btn-outline-danger" 
+                                onclick="deleteProject({{ project.id }}, '{{ project.title }}')"
+                                title="削除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="alert alert-info mt-4">
+    <h6><i class="fas fa-info-circle"></i> プロジェクト管理について</h6>
+    <ul class="mb-0">
+        <li>プロジェクトはポートフォリオサイトで公開され、訪問者が閲覧できます。</li>
+        <li>注目プロジェクトはランディングページで優先的に表示されます。</li>
+        <li>チャレンジと関連付けることで、学習の成果として整理できます。</li>
+        <li>技術スタックは自動的にスキル一覧として活用されます。</li>
+    </ul>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-code fa-4x text-muted mb-3"></i>
+    <h4 class="text-muted">プロジェクトがまだありません</h4>
+    <p class="text-muted">最初のプロジェクトを作成してください。</p>
+    <a href="{{ url_for('admin.create_project') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 新しいプロジェクトを作成
+    </a>
+</div>
+{% endif %}
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">プロジェクトの削除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>プロジェクト「<span id="project-name"></span>」を削除しますか？</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    この操作は取り消せません。プロジェクトに関連するすべての情報が削除されます。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form id="delete-form" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">削除する</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteProject(projectId, projectName) {
+    document.getElementById('project-name').textContent = projectName;
+    document.getElementById('delete-form').action = '{{ url_for("admin.delete_project", project_id=0) }}'.replace('0', projectId);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

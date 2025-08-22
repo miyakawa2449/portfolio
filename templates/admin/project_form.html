@@ -1,0 +1,482 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    {% if project %}プロジェクト編集{% else %}新しいプロジェクト{% endif %}
+{% endblock %}
+
+{% block head_extra %}
+<!-- Cropper.js CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<li><a href="{{ url_for('admin.dashboard') }}">ホーム</a></li>
+<li><a href="{{ url_for('admin.projects') }}">プロジェクト管理</a></li>
+<li class="active">
+    {% if project %}編集: {{ project.title }}{% else %}新しいプロジェクト{% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    {% if project %}
+                        <i class="fas fa-edit"></i> プロジェクトを編集
+                    {% else %}
+                        <i class="fas fa-plus"></i> 新しいプロジェクトを作成
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- プロジェクトタイトル -->
+                    <div class="mb-4">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                        {% if form.title.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.title.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- プロジェクト説明 -->
+                    <div class="mb-4">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="4") }}
+                        <div class="form-text">プロジェクトの概要を簡潔に説明してください。</div>
+                    </div>
+
+                    <!-- 技術スタック -->
+                    <div class="mb-4">
+                        {{ form.technologies.label(class="form-label") }}
+                        {{ form.technologies(class="form-control") }}
+                        <div class="form-text">
+                            使用した技術やフレームワークをカンマ区切りで入力してください。<br>
+                            例: Python, Flask, SQLAlchemy, Bootstrap
+                        </div>
+                        <div id="tech-preview" class="mt-2"></div>
+                    </div>
+
+                    <!-- チャレンジ関連付け -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            {{ form.challenge_id.label(class="form-label") }}
+                            {{ form.challenge_id(class="form-select") }}
+                            <div class="form-text">このプロジェクトが属するチャレンジを選択してください。</div>
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.challenge_day.label(class="form-label") }}
+                            {{ form.challenge_day(class="form-control", type="number", min="1", max="100") }}
+                            <div class="form-text">チャレンジの何日目かを入力してください。</div>
+                        </div>
+                    </div>
+
+                    <!-- URL情報 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            {{ form.github_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fab fa-github"></i></span>
+                                {{ form.github_url(class="form-control", placeholder="https://github.com/username/repo") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.demo_url.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-external-link-alt"></i></span>
+                                {{ form.demo_url(class="form-control", placeholder="https://example.com/demo") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ステータス設定 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            {{ form.status.label(class="form-label") }}
+                            {{ form.status(class="form-select") }}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                {{ form.is_featured(class="form-check-input") }}
+                                {{ form.is_featured.label(class="form-check-label") }}
+                                <div class="form-text">注目プロジェクトはランディングページで優先表示されます。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 画像アップロード -->
+                    <div class="mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">注目画像</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if project and project.featured_image %}
+                                <div class="current-image-preview mb-3" id="currentFeaturedImage">
+                                    <img src="{{ url_for('static', filename=project.featured_image) }}" 
+                                         alt="現在の注目画像" class="image-preview">
+                                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">現在の画像</small>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeFeaturedImageBtn">
+                                            <i class="fa fa-trash me-1"></i>削除
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="remove_featured_image" id="removeFeaturedImage" value="false">
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    {{ form.featured_image.label(class="form-label") }}
+                                    {{ form.featured_image(class="form-control", accept="image/*", id="featuredImageUpload", onchange="previewFeaturedImage(event)") }}
+                                    <div class="form-text">
+                                        プロジェクトのスクリーンショットや代表画像をアップロードしてください。<br>
+                                        推奨サイズ: 800x600px以上、ファイル形式: JPG, PNG
+                                    </div>
+                                </div>
+                                
+                                <div id="featuredImagePreviewContainer" class="preview-container" style="display: none;">
+                                    <img id="featuredImagePreview" class="image-preview" alt="プレビュー">
+                                    <div class="mt-2">
+                                        <small class="text-muted">画像プレビュー</small>
+                                    </div>
+                                    
+                                    <!-- クロップボタン -->
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-primary btn-sm w-100" onclick="startFeaturedCropping()">
+                                            <i class="fa fa-crop"></i> 画像をトリミング
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 送信ボタン -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin.projects') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> 戻る
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if project %}更新{% else %}作成{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- プロジェクト作成のヒント -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb"></i> プロジェクト作成のヒント
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>タイトル</strong><br>
+                        <small class="text-muted">わかりやすく具体的な名前をつけましょう</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>説明</strong><br>
+                        <small class="text-muted">プロジェクトの目的と機能を簡潔に説明</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>技術スタック</strong><br>
+                        <small class="text-muted">使用した主要な技術を記載して学習成果をアピール</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>チャレンジ関連付け</strong><br>
+                        <small class="text-muted">どのチャレンジの一環で作成したかを記録</small>
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>画像</strong><br>
+                        <small class="text-muted">スクリーンショットや図解で視覚的にアピール</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ステータス説明 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> ステータスについて
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="badge bg-success">アクティブ</span>
+                    <small class="text-muted ms-2">公開され、ポートフォリオに表示されます</small>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-warning">プライベート</span>
+                    <small class="text-muted ms-2">管理画面のみで表示され、一般には非公開です</small>
+                </div>
+                <div>
+                    <span class="badge bg-secondary">アーカイブ</span>
+                    <small class="text-muted ms-2">過去のプロジェクトとして保存されます</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 技術スタックのプレビュー機能
+document.addEventListener('DOMContentLoaded', function() {
+    const techInput = document.getElementById('technologies');
+    const techPreview = document.getElementById('tech-preview');
+    
+    function updateTechPreview() {
+        const technologies = techInput.value.split(',').map(tech => tech.trim()).filter(tech => tech);
+        if (technologies.length > 0) {
+            techPreview.innerHTML = technologies.map(tech => 
+                `<span class="badge bg-secondary me-1">${tech}</span>`
+            ).join('');
+        } else {
+            techPreview.innerHTML = '';
+        }
+    }
+    
+    techInput.addEventListener('input', updateTechPreview);
+    updateTechPreview(); // 初期表示
+});
+
+// フォーム送信前の確認
+document.querySelector('form').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    if (!title) {
+        alert('プロジェクトタイトルは必須です。');
+        e.preventDefault();
+        return;
+    }
+    
+    // 送信ボタンの二重クリック防止
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
+});
+
+// 画像アップロード関連の変数
+let cropper;
+let cropperMode = null;
+
+// フォーム読み込み時の初期化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('プロジェクトフォーム: 画像アップロード機能を初期化中...');
+    
+    // 既存画像の削除ボタン
+    const removeBtn = document.getElementById('removeFeaturedImageBtn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            if (confirm('現在の画像を削除しますか？')) {
+                document.getElementById('removeFeaturedImage').value = 'true';
+                document.getElementById('currentFeaturedImage').style.display = 'none';
+            }
+        });
+    }
+});
+
+// 注目画像のプレビュー機能
+function previewFeaturedImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        if (file.size > 10 * 1024 * 1024) {
+            alert('ファイルサイズが大きすぎます。10MB以下の画像を選択してください。');
+            event.target.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('featuredImagePreview');
+            const container = document.getElementById('featuredImagePreviewContainer');
+            
+            preview.src = e.target.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// 注目画像のクロッピング開始
+function startFeaturedCropping() {
+    const preview = document.getElementById('featuredImagePreview');
+    const cropImage = document.getElementById('cropImage');
+    
+    if (preview.src) {
+        cropperMode = 'featured';
+        cropImage.src = preview.src;
+        
+        // モーダルタイトルとメッセージを変更
+        document.getElementById('cropModalLabel').textContent = 'プロジェクト画像トリミング';
+        document.getElementById('cropModalAspectInfo').textContent = 'プロジェクト用画像として最適なサイズでトリミングされます';
+        
+        // モーダルを表示
+        const modal = new bootstrap.Modal(document.getElementById('cropModal'));
+        modal.show();
+        
+        // Cropperを初期化（モーダルが表示された後）
+        document.getElementById('cropModal').addEventListener('shown.bs.modal', function () {
+            try {
+                // 既存のCropperがあれば破棄
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+                
+                // 少し遅延してからCropperを初期化
+                setTimeout(() => {
+                    cropper = new Cropper(cropImage, {
+                        aspectRatio: 1.6, // プロジェクト画像用の比率
+                        viewMode: 1,
+                        autoCropArea: 0.8,
+                        responsive: true,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                        ready: function() {
+                            console.log('Cropper ready for project image');
+                        }
+                    });
+                }, 100);
+            } catch (error) {
+                console.error('Cropper initialization error:', error);
+                alert('トリミング機能の初期化に失敗しました。ページを再読み込みしてください。');
+            }
+        }, {once: true});
+    }
+}
+
+// トリミング適用
+function applyCrop() {
+    if (cropper && cropperMode) {
+        // Canvas を取得してdata URLに変換
+        const canvas = cropper.getCroppedCanvas({
+            width: 800,  // プロジェクト画像の推奨幅
+            height: 500, // プロジェクト画像の推奨高さ
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+        
+        // data URLを取得
+        const dataURL = canvas.toDataURL('image/png', 0.9);
+        
+        if (cropperMode === 'featured') {
+            // プレビュー画像を更新 (data URL使用でCSP問題解決)
+            const preview = document.getElementById('featuredImagePreview');
+            preview.src = dataURL;
+            
+            // Blobに変換してファイル入力を更新
+            canvas.toBlob(function(blob) {
+                const fileInput = document.getElementById('featuredImageUpload');
+                const dt = new DataTransfer();
+                const file = new File([blob], 'cropped-image.png', { type: 'image/png' });
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            });
+        }
+        
+        // モーダルを閉じる前にCropperを破棄
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        
+        // モーダルを閉じる
+        const modalElement = document.getElementById('cropModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+        
+        // モーダル閉じる際のクリーンアップ
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            // aria-hidden属性を適切に管理
+            modalElement.removeAttribute('aria-hidden');
+            
+            // cropperModeをリセット
+            cropperMode = null;
+            
+            console.log('クロップモーダルが閉じられました');
+        }, {once: true});
+    }
+}
+</script>
+
+<!-- 共通クロップモーダル -->
+<div class="modal fade" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 90vw; margin: 1rem auto;">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="flex-shrink: 0;">
+                <h5 class="modal-title" id="cropModalLabel">画像トリミング</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="flex: 1; overflow: auto; padding: 1rem;">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="cropModalAspectInfo">画像をトリミングして最適なサイズに調整できます</span>
+                </div>
+                <div class="crop-container">
+                    <img id="cropImage" style="max-width: 100%;">
+                </div>
+            </div>
+            <div class="modal-footer" style="flex-shrink: 0;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="applyCrop()">
+                    <i class="fas fa-check"></i> トリミングを適用
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cropper.js JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+
+<style>
+.image-preview {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.preview-container {
+    padding: 15px;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.crop-container {
+    max-height: 60vh;
+    overflow: hidden;
+}
+
+.cropper-container {
+    max-height: 50vh !important;
+}
+</style>
+{% endblock %}

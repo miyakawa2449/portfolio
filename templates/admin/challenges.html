@@ -1,0 +1,172 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}チャレンジ管理{% endblock %}
+
+{% block breadcrumb %}
+<li><a href="{{ url_for('admin.dashboard') }}">ホーム</a></li>
+<li class="active">チャレンジ管理</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>チャレンジ管理</h2>
+    <a href="{{ url_for('admin.create_challenge') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 新しいチャレンジを作成
+    </a>
+</div>
+
+{% if challenges %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>名前</th>
+                <th>期間</th>
+                <th>進捗</th>
+                <th>状態</th>
+                <th>リポジトリ数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for challenge in challenges %}
+            <tr>
+                <td>
+                    <strong>{{ challenge.name }}</strong>
+                    {% if challenge.description %}
+                    <br><small class="text-muted">{{ challenge.description[:80] }}{% if challenge.description|length > 80 %}...{% endif %}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <small>
+                        {{ challenge.start_date.strftime('%Y/%m/%d') }}<br>
+                        {% if challenge.end_date %}
+                            ～ {{ challenge.end_date.strftime('%Y/%m/%d') }}
+                        {% else %}
+                            ～ 進行中
+                        {% endif %}
+                    </small>
+                </td>
+                <td>
+                    <div class="progress" style="height: 20px; min-width: 100px;">
+                        <div class="progress-bar 
+                            {% if challenge.status == 'completed' %}bg-success
+                            {% elif challenge.status == 'active' %}bg-primary
+                            {% else %}bg-secondary{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ challenge.progress_percentage }}%">
+                            {{ challenge.days_elapsed }}/{{ challenge.target_days }}
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ "%.1f"|format(challenge.progress_percentage) }}%</small>
+                </td>
+                <td>
+                    {% if challenge.status == 'completed' %}
+                        <span class="badge bg-success">完了</span>
+                    {% elif challenge.status == 'active' %}
+                        <span class="badge bg-primary">進行中</span>
+                    {% else %}
+                        <span class="badge bg-secondary">停止中</span>
+                    {% endif %}
+                    {% if challenge.is_active %}
+                        <br><small class="text-success"><i class="fas fa-star"></i> アクティブ</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if challenge.github_repositories %}
+                        <span class="badge bg-info">{{ challenge.github_repositories|length }}</span>
+                        {% if challenge.github_repositories|length > 0 %}
+                        <br>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fab fa-github"></i> 詳細
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% for repo in challenge.github_repositories %}
+                                <li><a class="dropdown-item" href="{{ repo.url }}" target="_blank">
+                                    {{ repo.name }}
+                                    {% if repo.description %}<br><small class="text-muted">{{ repo.description }}</small>{% endif %}
+                                </a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">なし</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('admin.edit_challenge', challenge_id=challenge.id) }}" 
+                           class="btn btn-sm btn-outline-primary" title="編集">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% if not challenge.is_active %}
+                        <button type="button" 
+                                class="btn btn-sm btn-outline-danger" 
+                                onclick="deleteChallenge({{ challenge.id }}, '{{ challenge.name }}')"
+                                title="削除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="alert alert-info mt-4">
+    <h6><i class="fas fa-info-circle"></i> チャレンジ管理について</h6>
+    <ul class="mb-0">
+        <li>アクティブなチャレンジは1つまでです。新しいチャレンジをアクティブにすると、既存のアクティブチャレンジは自動的に非アクティブになります。</li>
+        <li>アクティブなチャレンジは削除できません。削除するには、まず別のチャレンジをアクティブにするか、非アクティブに設定してください。</li>
+        <li>進捗は開始日からの経過日数で自動計算されます。</li>
+    </ul>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-trophy fa-4x text-muted mb-3"></i>
+    <h4 class="text-muted">チャレンジがまだありません</h4>
+    <p class="text-muted">最初のチャレンジを作成してください。</p>
+    <a href="{{ url_for('admin.create_challenge') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> 新しいチャレンジを作成
+    </a>
+</div>
+{% endif %}
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">チャレンジの削除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>チャレンジ「<span id="challenge-name"></span>」を削除しますか？</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    この操作は取り消せません。関連する記事のチャレンジ情報も削除されます。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form id="delete-form" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">削除する</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteChallenge(challengeId, challengeName) {
+    document.getElementById('challenge-name').textContent = challengeName;
+    document.getElementById('delete-form').action = '{{ url_for("admin.delete_challenge", challenge_id=0) }}'.replace('0', challengeId);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}
