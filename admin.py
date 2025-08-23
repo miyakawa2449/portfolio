@@ -952,10 +952,12 @@ def create_article():
     """記事作成（統一版）"""
     form = ArticleForm()
     
-    # カテゴリ選択肢を設定
-    ArticleService.setup_category_choices(form)
+    # カテゴリ選択肢を設定（チャレンジ選択後に動的更新）
+    ArticleService.setup_category_choices(form, None)  # 初期状態では全て表示
     # チャレンジ選択肢を設定
     ArticleService.setup_challenge_choices(form)
+    # プロジェクト選択肢を設定
+    ArticleService.setup_project_choices(form)
     
     if form.validate_on_submit():
         # バリデーション
@@ -990,10 +992,24 @@ def create_article():
             'featured_crop_height': request.form.get('featured_crop_height')
         }
         
+        # ギャラリーから選択された画像の処理
+        if request.form.get('selected_gallery_image'):
+            selected_image_url = request.form.get('selected_gallery_image')
+            # URLからファイル名を抽出 (/static/uploads/category/filename.ext -> category/filename.ext)
+            if selected_image_url.startswith('/static/uploads/'):
+                relative_path = selected_image_url.replace('/static/uploads/', '')
+                form_data['featured_image'] = relative_path
+        
         # 記事作成
         article, error = ArticleService.create_article(form_data, current_user.id)
         
         if article:
+            # プロジェクト関連付けを保存
+            if form.related_projects.data:
+                import json
+                article.project_ids = json.dumps(form.related_projects.data)
+                db.session.commit()
+            
             flash('記事が作成されました。', 'success')
             return redirect(url_for('admin.articles'))
         else:
@@ -1013,10 +1029,12 @@ def edit_article(article_id):
     
     form = ArticleForm(obj=article)
     
-    # カテゴリ選択肢を設定
-    ArticleService.setup_category_choices(form)
+    # カテゴリ選択肢を設定（記事のチャレンジに関連するカテゴリを表示）
+    ArticleService.setup_category_choices(form, article.challenge_id)
     # チャレンジ選択肢を設定
     ArticleService.setup_challenge_choices(form)
+    # プロジェクト選択肢を設定
+    ArticleService.setup_project_choices(form, article.challenge_id)
     
     # 現在のカテゴリを設定
     current_category = article.categories[0] if article.categories else None
@@ -1028,6 +1046,15 @@ def edit_article(article_id):
         form.challenge_id.data = article.challenge_id
     if article.challenge_day:
         form.challenge_day.data = article.challenge_day
+    
+    # 現在のプロジェクト関連を設定
+    if article.project_ids:
+        try:
+            import json
+            project_ids = json.loads(article.project_ids)
+            form.related_projects.data = project_ids
+        except:
+            pass
     
     if form.validate_on_submit():
         # バリデーション
@@ -1058,10 +1085,26 @@ def edit_article(article_id):
                 'remove_featured_image': request.form.get('remove_featured_image') == 'true'
             }
             
+            # ギャラリーから選択された画像の処理
+            if request.form.get('selected_gallery_image'):
+                selected_image_url = request.form.get('selected_gallery_image')
+                # URLからファイル名を抽出 (/static/uploads/category/filename.ext -> category/filename.ext)
+                if selected_image_url.startswith('/static/uploads/'):
+                    relative_path = selected_image_url.replace('/static/uploads/', '')
+                    form_data['featured_image'] = relative_path
+            
             # 記事更新
             updated_article, error = ArticleService.update_article(article, form_data)
             
             if updated_article:
+                # プロジェクト関連付けを更新
+                import json
+                if form.related_projects.data:
+                    article.project_ids = json.dumps(form.related_projects.data)
+                else:
+                    article.project_ids = None
+                db.session.commit()
+                
                 flash('記事が更新されました。', 'success')
                 return redirect(url_for('admin.articles'))
             else:
@@ -1174,22 +1217,29 @@ def categories():
 @admin_required
 def create_category():
     """カテゴリ作成"""
+    from article_service import CategoryService
     form = CategoryForm()
+    
+    # チャレンジ選択肢を設定
+    CategoryService.setup_challenge_choices(form)
     
     if form.validate_on_submit():
         # スラッグ自動生成
         slug = form.slug.data or generate_slug_from_name(form.name.data)
         if not slug:
             flash('有効なスラッグを生成できませんでした。', 'danger')
+            CategoryService.setup_challenge_choices(form)
             return render_template('admin/create_category.html', form=form)
         
         # 重複チェック
         if db.session.execute(select(Category).where(Category.slug == slug)).scalar_one_or_none():
             flash('そのスラッグは既に使用されています。', 'danger')
+            CategoryService.setup_challenge_choices(form)
             return render_template('admin/create_category.html', form=form)
         
         if db.session.execute(select(Category).where(Category.name == form.name.data)).scalar_one_or_none():
             flash('そのカテゴリ名は既に使用されています。', 'danger')
+            CategoryService.setup_challenge_choices(form)
             return render_template('admin/create_category.html', form=form)
         
         try:
@@ -1198,6 +1248,7 @@ def create_category():
                 name=form.name.data,
                 slug=slug,
                 description=form.description.data,
+                challenge_id=form.challenge_id.data if form.challenge_id.data else None,
                 created_at=datetime.utcnow()
             )
             
@@ -1244,8 +1295,12 @@ def create_category():
 @admin_required
 def edit_category(category_id):
     """カテゴリ編集"""
+    from article_service import CategoryService
     category = db.get_or_404(Category, category_id)
     form = CategoryForm(obj=category)
+    
+    # チャレンジ選択肢を設定
+    CategoryService.setup_challenge_choices(form)
     
     if form.validate_on_submit():
         
@@ -1254,6 +1309,7 @@ def edit_category(category_id):
             category.name = form.name.data
             category.slug = form.slug.data
             category.description = form.description.data
+            category.challenge_id = form.challenge_id.data if form.challenge_id.data else None
             
             # カテゴリ画像削除処理
             if request.form.get('remove_category_image') == 'true':

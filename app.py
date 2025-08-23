@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, session, request, current_app, abort
+from flask import Flask, render_template, redirect, url_for, flash, session, request, current_app, abort, jsonify
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail, Message
@@ -1237,6 +1237,79 @@ def projects(page=1, challenge_id=None):
         import traceback
         traceback.print_exc()
         return f"エラーが発生しました: {str(e)}", 500
+
+# APIエンドポイント
+@app.route('/api/projects/by-challenge/<int:challenge_id>')
+def api_projects_by_challenge(challenge_id):
+    """チャレンジIDに基づくプロジェクトリストを返すAPI"""
+    projects = Project.query.filter_by(
+        challenge_id=challenge_id, 
+        status='active'
+    ).order_by(Project.created_at.desc()).all()
+    
+    return jsonify({
+        'projects': [{
+            'id': p.id,
+            'title': p.title,
+            'challenge_day': p.challenge_day
+        } for p in projects]
+    })
+
+@app.route('/api/categories/by-challenge/<int:challenge_id>')
+def api_categories_by_challenge(challenge_id):
+    """チャレンジIDに基づくカテゴリリストを返すAPI"""
+    categories = Category.query.filter_by(
+        challenge_id=challenge_id
+    ).order_by(Category.name).all()
+    
+    return jsonify({
+        'categories': [{
+            'id': c.id,
+            'name': c.name
+        } for c in categories]
+    })
+
+@app.route('/api/images/gallery')
+def api_images_gallery():
+    """アップロード済み画像のギャラリーを返すAPI"""
+    import os
+    import glob
+    from datetime import datetime
+    
+    images = []
+    upload_dirs = [
+        ('articles', 'static/uploads/articles/'),
+        ('projects', 'static/uploads/projects/'),
+        ('categories', 'static/uploads/categories/'),
+        ('content', 'static/uploads/content/')
+    ]
+    
+    for category, upload_path in upload_dirs:
+        if os.path.exists(upload_path):
+            # 画像ファイルを取得
+            image_extensions = ['*.jpg', '*.jpeg', '*.png', '*.gif', '*.webp']
+            for ext in image_extensions:
+                for filepath in glob.glob(os.path.join(upload_path, ext)):
+                    filename = os.path.basename(filepath)
+                    # ファイル情報を取得
+                    stat = os.stat(filepath)
+                    
+                    images.append({
+                        'filename': filename,
+                        'url': f'/static/uploads/{category}/{filename}',
+                        'category': category,
+                        'size': stat.st_size,
+                        'created_at': datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                        'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                    })
+    
+    # 更新日時で降順ソート
+    images.sort(key=lambda x: x['modified_at'], reverse=True)
+    
+    return jsonify({
+        'images': images,
+        'total': len(images)
+    })
 
 # 環境変数でログインURLをカスタマイズ可能
 LOGIN_URL_PATH = os.environ.get('LOGIN_URL_PATH', 'login')
