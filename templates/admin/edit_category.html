@@ -82,6 +82,22 @@
                         {% endif %}
                     </div>
                     {% endif %}
+                    
+                    <!-- チャレンジ選択 -->
+                    {% if form.challenge_id %}
+                    <div class="mb-3">
+                        <label for="{{ form.challenge_id.id }}" class="form-label">{{ form.challenge_id.label.text }}</label>
+                        {{ form.challenge_id(class="form-select" + (" is-invalid" if form.challenge_id.errors else "")) }}
+                        {% if form.challenge_id.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.challenge_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fa fa-info-circle me-1"></i>このカテゴリを特定のチャレンジに関連付けることができます
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
