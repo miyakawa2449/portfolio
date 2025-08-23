@@ -122,9 +122,12 @@ class ArticleService:
             return None, str(e)
     
     @staticmethod
-    def setup_category_choices(form):
+    def setup_category_choices(form, challenge_id=None):
         """フォームにカテゴリ選択肢を設定"""
-        categories = db.session.execute(select(Category).order_by(Category.name)).scalars().all()
+        query = select(Category).order_by(Category.name)
+        if challenge_id:
+            query = query.where(Category.challenge_id == challenge_id)
+        categories = db.session.execute(query).scalars().all()
         form.category_id.choices = [(0, 'カテゴリを選択')] + [(c.id, c.name) for c in categories]
     
     @staticmethod
@@ -133,6 +136,17 @@ class ArticleService:
         from models import Challenge
         challenges = db.session.execute(select(Challenge).order_by(Challenge.display_order)).scalars().all()
         form.challenge_id.choices = [(0, 'チャレンジを選択')] + [(c.id, c.name) for c in challenges]
+    
+    @staticmethod
+    def setup_project_choices(form, challenge_id=None):
+        """フォームにプロジェクト選択肢を設定"""
+        from models import Project
+        query = select(Project).where(Project.status == 'active')
+        if challenge_id:
+            query = query.where(Project.challenge_id == challenge_id)
+        query = query.order_by(Project.created_at.desc())
+        projects = db.session.execute(query).scalars().all()
+        form.related_projects.choices = [(p.id, f"{p.title} (Day {p.challenge_day})" if p.challenge_day else p.title) for p in projects]
     
     @staticmethod
     def generate_unique_slug(title, article_id=None):
@@ -176,6 +190,16 @@ class ArticleService:
             existing = db.session.execute(query).scalar_one_or_none()
             if existing:
                 errors.append("このスラッグは既に使用されています")
+        
+        # チャレンジとカテゴリの整合性チェック
+        if form.challenge_id.data and form.category_id.data and form.category_id.data != 0:
+            from models import Category
+            category = db.session.execute(
+                select(Category).where(Category.id == form.category_id.data)
+            ).scalar_one_or_none()
+            
+            if category and category.challenge_id and category.challenge_id != form.challenge_id.data:
+                errors.append(f"選択されたカテゴリ「{category.name}」は、選択されたチャレンジに対応していません")
         
         return errors
     
@@ -277,6 +301,13 @@ class CategoryService:
     """カテゴリ管理サービスクラス"""
     
     @staticmethod
+    def setup_challenge_choices(form):
+        """カテゴリフォームにチャレンジ選択肢を設定"""
+        from models import Challenge
+        challenges = db.session.execute(select(Challenge).order_by(Challenge.display_order)).scalars().all()
+        form.challenge_id.choices = [(0, 'チャレンジを選択')] + [(c.id, c.name) for c in challenges]
+    
+    @staticmethod
     def create_category(form_data):
         """カテゴリ作成"""
         try:
@@ -284,6 +315,7 @@ class CategoryService:
                 name=form_data['name'],
                 slug=CategoryService.generate_unique_slug(form_data['slug'] or form_data['name']),
                 description=form_data.get('description', ''),
+                challenge_id=form_data.get('challenge_id') if form_data.get('challenge_id') else None,
                 meta_title=form_data.get('meta_title', ''),
                 meta_description=form_data.get('meta_description', ''),
                 ogp_title=form_data.get('ogp_title', ''),
@@ -314,6 +346,7 @@ class CategoryService:
             category.name = form_data['name']
             category.slug = CategoryService.generate_unique_slug(form_data['slug'] or form_data['name'], category.id)
             category.description = form_data.get('description', '')
+            category.challenge_id = form_data.get('challenge_id') if form_data.get('challenge_id') else None
             category.meta_title = form_data.get('meta_title', '')
             category.meta_description = form_data.get('meta_description', '')
             category.ogp_title = form_data.get('ogp_title', '')

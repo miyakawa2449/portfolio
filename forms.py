@@ -4,7 +4,7 @@
 ユーザー入力フォームとバリデーション定義
 """
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField, FileField, IntegerField, HiddenField, PasswordField, BooleanField, SelectField
+from wtforms import StringField, TextAreaField, SubmitField, FileField, IntegerField, HiddenField, PasswordField, BooleanField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Optional, URL, Length, Email, ValidationError, NumberRange
 import re
 from wtforms.widgets import HiddenInput
@@ -15,6 +15,7 @@ class CategoryForm(FlaskForm):
     slug = StringField('スラッグ', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('説明', validators=[Optional()])
     parent_id = IntegerField('親カテゴリID', validators=[Optional()])
+    challenge_id = SelectField('チャレンジ', coerce=int, validators=[Optional()])
 
     # OGP画像関連
     ogp_image = FileField('OGP画像', validators=[
@@ -66,6 +67,9 @@ class ArticleForm(FlaskForm):
     challenge_day = IntegerField('チャレンジ日数', validators=[Optional(), NumberRange(min=1, max=1000)])
     is_published = BooleanField('公開する', validators=[Optional()])
     allow_comments = BooleanField('コメントを許可', validators=[Optional()])
+    
+    # プロジェクト関連（Multiple選択用のFieldListを使用）
+    related_projects = SelectMultipleField('関連プロジェクト', coerce=int, validators=[Optional()])
     
     submit = SubmitField('保存')
 
