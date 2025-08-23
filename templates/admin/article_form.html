@@ -202,6 +202,16 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        
+                                        <!-- 関連プロジェクト -->
+                                        <div class="mb-3">
+                                            {{ form.related_projects.label(class="form-label") }}
+                                            {{ form.related_projects(class="form-select", multiple=true, size=5, id="relatedProjects") }}
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle"></i> 
+                                                Ctrl/Cmdキーを押しながらクリックで複数選択できます
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -227,9 +237,34 @@
                                         
                                         <div class="mb-3">
                                             <label for="featuredImageUpload" class="form-label">画像ファイル</label>
-                                            <input type="file" name="featured_image" id="featuredImageUpload" class="form-control" accept="image/*" onchange="previewFeaturedImage(event)">
-                                            <div class="form-text">
-                                                推奨サイズ: 1200×630px（1.91:1比率、OGP対応、JPG/PNG形式）
+                                            
+                                            <!-- アップロード方式選択 -->
+                                            <div class="btn-group w-100 mb-3" role="group" aria-label="画像選択方式">
+                                                <button type="button" class="btn btn-outline-primary active" id="uploadNewBtn">
+                                                    <i class="fas fa-upload me-2"></i>新規アップロード
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary" id="selectFromGalleryBtn">
+                                                    <i class="fas fa-images me-2"></i>ギャラリーから選択
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- 新規アップロード -->
+                                            <div id="uploadNewSection">
+                                                <input type="file" name="featured_image" id="featuredImageUpload" class="form-control" accept="image/*" onchange="previewFeaturedImage(event)">
+                                                <div class="form-text">
+                                                    推奨サイズ: 1200×630px（1.91:1比率、OGP対応、JPG/PNG形式）
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- ギャラリー選択 -->
+                                            <div id="gallerySelectionSection" style="display: none;">
+                                                <button type="button" class="btn btn-outline-info w-100" id="openImageGalleryBtn">
+                                                    <i class="fas fa-folder-open me-2"></i>画像ギャラリーを開く
+                                                </button>
+                                                <div class="form-text">
+                                                    過去にアップロードした画像から選択できます
+                                                </div>
+                                                <input type="hidden" id="selectedGalleryImage" name="selected_gallery_image">
                                             </div>
                                         </div>
                                         
@@ -330,6 +365,65 @@
                                         <input type="hidden" name="featured_crop_y" id="featured_crop_y">
                                         <input type="hidden" name="featured_crop_width" id="featured_crop_width">
                                         <input type="hidden" name="featured_crop_height" id="featured_crop_height">
+                                        
+                                        <!-- 画像ギャラリーモーダル -->
+                                        <div class="modal fade" id="imageGalleryModal" tabindex="-1" aria-labelledby="imageGalleryModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog modal-xl">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="imageGalleryModalLabel">
+                                                            <i class="fas fa-images me-2"></i>画像ギャラリー
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <!-- 検索・フィルター -->
+                                                        <div class="row mb-3">
+                                                            <div class="col-md-6">
+                                                                <div class="input-group">
+                                                                    <input type="text" class="form-control" id="imageSearchInput" placeholder="ファイル名で検索...">
+                                                                    <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                                                                        <i class="fas fa-times"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <select class="form-select" id="imageCategoryFilter">
+                                                                    <option value="">すべてのカテゴリ</option>
+                                                                    <option value="articles">記事</option>
+                                                                    <option value="projects">プロジェクト</option>
+                                                                    <option value="categories">カテゴリ</option>
+                                                                    <option value="content">コンテンツ</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- ローディング -->
+                                                        <div id="galleryLoading" class="text-center py-4">
+                                                            <div class="spinner-border text-primary" role="status">
+                                                                <span class="visually-hidden">読み込み中...</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- 画像グリッド -->
+                                                        <div id="imageGalleryGrid" style="display: none;">
+                                                            <!-- JavaScript で動的に生成 -->
+                                                        </div>
+                                                        
+                                                        <!-- 画像が見つからない場合 -->
+                                                        <div id="noImagesMessage" class="text-center py-4" style="display: none;">
+                                                            <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                                                            <h5 class="text-muted">画像が見つかりません</h5>
+                                                            <p class="text-muted">検索条件を変更するか、新しい画像をアップロードしてください。</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                                        <button type="button" class="btn btn-primary" id="selectImageBtn" disabled>この画像を選択</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1384,7 +1478,420 @@ document.getElementById('cropModal').addEventListener('hidden.bs.modal', functio
         cropper = null;
     }
 });
+
+// チャレンジ選択時にプロジェクトリストとカテゴリリストを更新
+document.getElementById('challengeSelect').addEventListener('change', function() {
+    const challengeId = this.value;
+    const projectSelect = document.getElementById('relatedProjects');
+    const categorySelect = document.getElementById('category_id');
+    
+    // 現在選択されているプロジェクトとカテゴリを保存
+    const selectedProjects = Array.from(projectSelect.selectedOptions).map(option => option.value);
+    const selectedCategory = categorySelect ? categorySelect.value : null;
+    
+    if (challengeId && challengeId !== '0') {
+        // APIエンドポイントでプロジェクトを取得
+        fetch(`/api/projects/by-challenge/${challengeId}`)
+            .then(response => response.json())
+            .then(data => {
+                // プロジェクトリストをクリア
+                projectSelect.innerHTML = '';
+                
+                // 新しいオプションを追加
+                data.projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.challenge_day ? 
+                        `${project.title} (Day ${project.challenge_day})` : 
+                        project.title;
+                    
+                    // 以前選択されていた場合は選択状態を復元
+                    if (selectedProjects.includes(String(project.id))) {
+                        option.selected = true;
+                    }
+                    
+                    projectSelect.appendChild(option);
+                });
+                
+                if (data.projects.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'このチャレンジにはプロジェクトがありません';
+                    option.disabled = true;
+                    projectSelect.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('プロジェクトの取得に失敗しました:', error);
+            });
+        
+        // APIエンドポイントでカテゴリを取得
+        if (categorySelect) {
+            fetch(`/api/categories/by-challenge/${challengeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // カテゴリリストをクリア
+                    categorySelect.innerHTML = '';
+                    
+                    // デフォルトオプションを追加
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '0';
+                    defaultOption.textContent = 'カテゴリを選択';
+                    categorySelect.appendChild(defaultOption);
+                    
+                    // 新しいオプションを追加
+                    data.categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        
+                        // 以前選択されていた場合は選択状態を復元
+                        if (selectedCategory && selectedCategory === String(category.id)) {
+                            option.selected = true;
+                        }
+                        
+                        categorySelect.appendChild(option);
+                    });
+                    
+                    if (data.categories.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'このチャレンジにはカテゴリがありません';
+                        option.disabled = true;
+                        categorySelect.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error('カテゴリの取得に失敗しました:', error);
+                });
+        }
+    }
+});
+
+// 初期ロード時にもプロジェクトリストとカテゴリリストを更新
+if (document.getElementById('challengeSelect').value) {
+    document.getElementById('challengeSelect').dispatchEvent(new Event('change'));
+}
+
+// === 画像ギャラリー機能 ===
+let galleryImages = [];
+let selectedImage = null;
+
+// アップロード方式切り替え
+document.getElementById('uploadNewBtn').addEventListener('click', function() {
+    // ボタンの状態を切り替え
+    this.classList.add('active');
+    document.getElementById('selectFromGalleryBtn').classList.remove('active');
+    
+    // セクションの表示切り替え
+    document.getElementById('uploadNewSection').style.display = 'block';
+    document.getElementById('gallerySelectionSection').style.display = 'none';
+});
+
+document.getElementById('selectFromGalleryBtn').addEventListener('click', function() {
+    // ボタンの状態を切り替え
+    this.classList.add('active');
+    document.getElementById('uploadNewBtn').classList.remove('active');
+    
+    // セクションの表示切り替え
+    document.getElementById('uploadNewSection').style.display = 'none';
+    document.getElementById('gallerySelectionSection').style.display = 'block';
+});
+
+// 画像ギャラリーを開く
+document.getElementById('openImageGalleryBtn').addEventListener('click', function() {
+    const modal = new bootstrap.Modal(document.getElementById('imageGalleryModal'));
+    modal.show();
+    loadImageGallery();
+});
+
+// 画像ギャラリーの読み込み
+function loadImageGallery() {
+    showGalleryLoading();
+    
+    fetch('/api/images/gallery')
+        .then(response => response.json())
+        .then(data => {
+            galleryImages = data.images;
+            displayImages(galleryImages);
+        })
+        .catch(error => {
+            console.error('画像ギャラリーの読み込みに失敗しました:', error);
+            hideGalleryLoading();
+            showNoImagesMessage();
+        });
+}
+
+// ローディング表示
+function showGalleryLoading() {
+    document.getElementById('galleryLoading').style.display = 'block';
+    document.getElementById('imageGalleryGrid').style.display = 'none';
+    document.getElementById('noImagesMessage').style.display = 'none';
+}
+
+function hideGalleryLoading() {
+    document.getElementById('galleryLoading').style.display = 'none';
+}
+
+// 画像を表示
+function displayImages(images) {
+    hideGalleryLoading();
+    
+    const grid = document.getElementById('imageGalleryGrid');
+    
+    if (images.length === 0) {
+        showNoImagesMessage();
+        return;
+    }
+    
+    grid.innerHTML = '';
+    
+    images.forEach(image => {
+        const col = document.createElement('div');
+        col.className = '';
+        
+        col.innerHTML = `
+            <div class="gallery-card-item" data-url="${image.url}" data-filename="${image.filename}">
+                <div class="gallery-card">
+                    <div class="gallery-card-image">
+                        <img src="${image.url}" alt="${image.filename}" class="img-fluid">
+                    </div>
+                    <div class="gallery-card-body">
+                        <h6 class="gallery-card-title">${image.filename}</h6>
+                        <div class="gallery-card-details">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-folder me-1"></i>${image.category}
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-file-image me-1"></i>${formatFileSize(image.size)}
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-clock me-1"></i>${formatDate(image.modified_at)}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        grid.appendChild(col);
+    });
+    
+    grid.style.display = 'block';
+    document.getElementById('noImagesMessage').style.display = 'none';
+    
+    // 画像選択イベントを追加
+    addImageSelectionEvents();
+}
+
+// ユーティリティ関数
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+// 画像選択イベント
+function addImageSelectionEvents() {
+    document.querySelectorAll('.gallery-card-item').forEach(item => {
+        item.addEventListener('click', function() {
+            // 以前の選択をクリア
+            document.querySelectorAll('.gallery-card-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // 新しい選択を設定
+            this.classList.add('selected');
+            selectedImage = {
+                url: this.dataset.url,
+                filename: this.dataset.filename
+            };
+            
+            // 選択ボタンを有効化
+            document.getElementById('selectImageBtn').disabled = false;
+        });
+    });
+}
+
+// 検索・フィルター機能
+document.getElementById('imageSearchInput').addEventListener('input', filterImages);
+document.getElementById('imageCategoryFilter').addEventListener('change', filterImages);
+document.getElementById('clearSearchBtn').addEventListener('click', function() {
+    document.getElementById('imageSearchInput').value = '';
+    document.getElementById('imageCategoryFilter').value = '';
+    filterImages();
+});
+
+function filterImages() {
+    const searchTerm = document.getElementById('imageSearchInput').value.toLowerCase();
+    const categoryFilter = document.getElementById('imageCategoryFilter').value;
+    
+    const filteredImages = galleryImages.filter(image => {
+        const matchesSearch = image.filename.toLowerCase().includes(searchTerm);
+        const matchesCategory = !categoryFilter || image.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+    });
+    
+    displayImages(filteredImages);
+}
+
+// 画像選択確定
+document.getElementById('selectImageBtn').addEventListener('click', function() {
+    if (selectedImage) {
+        // 隠しフィールドに選択した画像URLを設定
+        document.getElementById('selectedGalleryImage').value = selectedImage.url;
+        
+        // プレビューを表示
+        showSelectedImagePreview(selectedImage);
+        
+        // モーダルを閉じる
+        bootstrap.Modal.getInstance(document.getElementById('imageGalleryModal')).hide();
+    }
+});
+
+// 選択した画像のプレビューを表示
+function showSelectedImagePreview(image) {
+    const previewContainer = document.getElementById('featuredImagePreviewContainer');
+    const previewImg = document.getElementById('featuredImagePreview');
+    
+    previewImg.src = image.url;
+    previewContainer.style.display = 'block';
+    
+    // アップロードファイルをクリア
+    document.getElementById('featuredImageUpload').value = '';
+}
+
+function showNoImagesMessage() {
+    document.getElementById('imageGalleryGrid').style.display = 'none';
+    document.getElementById('noImagesMessage').style.display = 'block';
+}
 </script>
+
+<!-- 画像ギャラリー用CSS -->
+<style>
+/* カード式画像ギャラリー */
+.gallery-card-item {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.gallery-card {
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.gallery-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    border-color: #0d6efd;
+}
+
+.gallery-card-item.selected .gallery-card {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+    transform: translateY(-2px);
+}
+
+.gallery-card-image {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    overflow: hidden;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-card-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+.gallery-card-body {
+    padding: 12px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.gallery-card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gallery-card-details {
+    flex-grow: 1;
+}
+
+.gallery-card-details small {
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.gallery-card-details i {
+    width: 14px;
+    text-align: center;
+}
+
+/* アップロード方式選択ボタン */
+.btn-group .btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+/* モーダルの高さ調整 */
+.modal-xl .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* タイル形式の画像ギャラリー */
+#imageGalleryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+/* 検索・フィルター */
+#imageSearchInput:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+#imageCategoryFilter:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+
 <!-- Markdown Processing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 {% endblock %}
