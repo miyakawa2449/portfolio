@@ -180,6 +180,28 @@ class Project(db.Model):
     def set_screenshots(self, screenshot_list):
         """スクリーンショット画像を設定"""
         self.screenshot_images = json.dumps(screenshot_list, ensure_ascii=False)
+    
+    @property
+    def related_articles(self):
+        """このプロジェクトに関連する記事のリストを取得"""
+        from models import Article
+        # project_idsにこのプロジェクトのIDが含まれている記事を検索
+        articles = Article.query.filter(
+            Article.is_published == True,
+            Article.project_ids.like(f'%{self.id}%')
+        ).all()
+        
+        # JSON形式で保存されているので、正確にフィルタリング
+        related = []
+        for article in articles:
+            try:
+                if article.project_ids:
+                    project_ids = json.loads(article.project_ids)
+                    if self.id in project_ids:
+                        related.append(article)
+            except:
+                pass
+        return related
 
 # --- 中間テーブル: Article と Category の多対多関連 ---
 article_categories = db.Table('article_categories',
@@ -301,6 +323,9 @@ class Article(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=True)
     challenge_day = db.Column(db.Integer, nullable=True)  # Day 1, Day 2, etc.
     
+    # プロジェクト関連
+    project_ids = db.Column(db.Text, nullable=True)  # JSON形式で複数プロジェクトID保存
+    
     # 拡張用
     ext_json = db.Column(db.Text, nullable=True)
 
@@ -318,6 +343,44 @@ class Article(db.Model):
     def get_text_content(self):
         """記事のテキストコンテンツを取得（検索用）"""
         return self.body or ''
+    
+    @property
+    def related_projects(self):
+        """関連プロジェクトのリストを取得"""
+        if not self.project_ids:
+            return []
+        try:
+            project_ids = json.loads(self.project_ids)
+            if not project_ids:
+                return []
+            # IDリストからプロジェクトを取得
+            from models import Project
+            return Project.query.filter(
+                Project.id.in_(project_ids),
+                Project.status == 'active'
+            ).all()
+        except (json.JSONDecodeError, Exception):
+            return []
+    
+    def add_project(self, project_id):
+        """プロジェクトを関連付け"""
+        try:
+            current_ids = json.loads(self.project_ids) if self.project_ids else []
+            if project_id not in current_ids:
+                current_ids.append(project_id)
+                self.project_ids = json.dumps(current_ids)
+        except:
+            self.project_ids = json.dumps([project_id])
+    
+    def remove_project(self, project_id):
+        """プロジェクトの関連付けを解除"""
+        try:
+            current_ids = json.loads(self.project_ids) if self.project_ids else []
+            if project_id in current_ids:
+                current_ids.remove(project_id)
+                self.project_ids = json.dumps(current_ids) if current_ids else None
+        except:
+            pass
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -326,6 +389,7 @@ class Category(db.Model):
     slug = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.Text, nullable=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -339,6 +403,7 @@ class Category(db.Model):
     ext_json = db.Column(db.Text, nullable=True)
 
     parent = db.relationship('Category', remote_side=[id], backref=db.backref('children', lazy='select'))
+    challenge = db.relationship('Challenge', backref=db.backref('categories', lazy='select'))
 
     # Category から Article へのリレーションシップ（パフォーマンス最適化）
     articles = db.relationship(
