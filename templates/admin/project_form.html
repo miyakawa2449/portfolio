@@ -80,20 +80,68 @@
                     </div>
 
                     <!-- URL情報 -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
+                    <div class="mb-4">
+                        <!-- GitHub URL -->
+                        <div class="mb-3">
                             {{ form.github_url.label(class="form-label") }}
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fab fa-github"></i></span>
                                 {{ form.github_url(class="form-control", placeholder="https://github.com/username/repo") }}
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            {{ form.demo_url.label(class="form-label") }}
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-external-link-alt"></i></span>
-                                {{ form.demo_url(class="form-control", placeholder="https://example.com/demo") }}
+
+                        <!-- 複数デモURL -->
+                        <div class="mb-3">
+                            <label class="form-label">デモURL</label>
+                            <div class="form-text mb-2">プロジェクトのデモやライブサイト、関連リンクを複数追加できます。</div>
+                            
+                            <div id="demoUrlsContainer">
+                                <!-- 既存のデモURLがある場合はここに表示 -->
+                                {% if project and project.demo_url_list %}
+                                    {% for demo in project.demo_url_list %}
+                                    <div class="demo-url-item mb-2">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control demo-name" placeholder="デモ名" value="{{ demo.name }}">
+                                            <select class="form-select demo-type" style="max-width: 120px;">
+                                                <option value="demo" {{ 'selected' if demo.type == 'demo' else '' }}>デモ</option>
+                                                <option value="live" {{ 'selected' if demo.type == 'live' else '' }}>ライブ</option>
+                                                <option value="docs" {{ 'selected' if demo.type == 'docs' else '' }}>ドキュメント</option>
+                                                <option value="video" {{ 'selected' if demo.type == 'video' else '' }}>動画</option>
+                                                <option value="other" {{ 'selected' if demo.type == 'other' else '' }}>その他</option>
+                                            </select>
+                                            <input type="url" class="form-control demo-url" placeholder="https://example.com" value="{{ demo.url }}">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeDemoUrl(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- 下位互換性: 古いdemo_urlがあれば表示 -->
+                                    {% if project and project.demo_url %}
+                                    <div class="demo-url-item mb-2">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control demo-name" placeholder="デモ名" value="デモ">
+                                            <select class="form-select demo-type" style="max-width: 120px;">
+                                                <option value="demo" selected>デモ</option>
+                                                <option value="live">ライブ</option>
+                                                <option value="docs">ドキュメント</option>
+                                                <option value="video">動画</option>
+                                                <option value="other">その他</option>
+                                            </select>
+                                            <input type="url" class="form-control demo-url" placeholder="https://example.com" value="{{ project.demo_url }}">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeDemoUrl(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
                             </div>
+                            
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDemoUrl()">
+                                <i class="fas fa-plus"></i> デモURLを追加
+                            </button>
                         </div>
                     </div>
 
@@ -259,6 +307,59 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTechPreview(); // 初期表示
 });
 
+// デモURL管理機能
+function addDemoUrl() {
+    const container = document.getElementById('demoUrlsContainer');
+    const demoItem = document.createElement('div');
+    demoItem.className = 'demo-url-item mb-2';
+    
+    demoItem.innerHTML = `
+        <div class="input-group">
+            <input type="text" class="form-control demo-name" placeholder="デモ名">
+            <select class="form-select demo-type" style="max-width: 120px;">
+                <option value="demo">デモ</option>
+                <option value="live">ライブ</option>
+                <option value="docs">ドキュメント</option>
+                <option value="video">動画</option>
+                <option value="other">その他</option>
+            </select>
+            <input type="url" class="form-control demo-url" placeholder="https://example.com">
+            <button type="button" class="btn btn-outline-danger" onclick="removeDemoUrl(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(demoItem);
+}
+
+function removeDemoUrl(button) {
+    if (confirm('このデモURLを削除しますか？')) {
+        button.closest('.demo-url-item').remove();
+    }
+}
+
+function collectDemoUrls() {
+    const demoItems = document.querySelectorAll('.demo-url-item');
+    const demoUrls = [];
+    
+    demoItems.forEach(item => {
+        const name = item.querySelector('.demo-name').value.trim();
+        const type = item.querySelector('.demo-type').value;
+        const url = item.querySelector('.demo-url').value.trim();
+        
+        if (name && url) {
+            demoUrls.push({
+                name: name,
+                type: type,
+                url: url
+            });
+        }
+    });
+    
+    return demoUrls;
+}
+
 // フォーム送信前の確認
 document.querySelector('form').addEventListener('submit', function(e) {
     const title = document.getElementById('title').value.trim();
@@ -267,6 +368,18 @@ document.querySelector('form').addEventListener('submit', function(e) {
         e.preventDefault();
         return;
     }
+    
+    // デモURL情報を収集してhiddenフィールドに設定
+    const demoUrls = collectDemoUrls();
+    let demoUrlsInput = document.getElementById('demo_urls_data');
+    if (!demoUrlsInput) {
+        demoUrlsInput = document.createElement('input');
+        demoUrlsInput.type = 'hidden';
+        demoUrlsInput.name = 'demo_urls_data';
+        demoUrlsInput.id = 'demo_urls_data';
+        e.target.appendChild(demoUrlsInput);
+    }
+    demoUrlsInput.value = JSON.stringify(demoUrls);
     
     // 送信ボタンの二重クリック防止
     const submitBtn = e.target.querySelector('button[type="submit"]');

@@ -126,7 +126,8 @@ class Project(db.Model):
     # 技術情報
     technologies = db.Column(db.Text)  # JSON形式で技術スタック
     github_url = db.Column(db.String(500))
-    demo_url = db.Column(db.String(500))
+    demo_url = db.Column(db.String(500))  # 下位互換性のため保持
+    demo_urls = db.Column(db.Text)  # JSON形式で複数デモURL
     
     # 画像
     featured_image = db.Column(db.String(255))  # メイン画像
@@ -166,6 +167,33 @@ class Project(db.Model):
     def set_technologies(self, tech_list):
         """技術スタックを設定"""
         self.technologies = json.dumps(tech_list, ensure_ascii=False)
+    
+    @property
+    def demo_url_list(self):
+        """デモURLのリストを取得"""
+        if not self.demo_urls:
+            # 下位互換性: 古いdemo_urlがあれば変換
+            if self.demo_url:
+                return [{"name": "デモ", "url": self.demo_url, "type": "demo"}]
+            return []
+        try:
+            return json.loads(self.demo_urls)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    def set_demo_urls(self, demo_list):
+        """デモURLを設定"""
+        if demo_list:
+            self.demo_urls = json.dumps(demo_list, ensure_ascii=False)
+        else:
+            self.demo_urls = None
+    
+    def add_demo_url(self, name, url, demo_type="demo"):
+        """デモURLを追加"""
+        current_demos = self.demo_url_list
+        new_demo = {"name": name, "url": url, "type": demo_type}
+        current_demos.append(new_demo)
+        self.set_demo_urls(current_demos)
     
     @property
     def screenshot_list(self):

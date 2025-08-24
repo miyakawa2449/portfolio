@@ -97,10 +97,52 @@
                             <i class="fab fa-github"></i>
                         </a>
                         {% endif %}
-                        {% if project.demo_url %}
-                        <a href="{{ project.demo_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="デモ">
-                            <i class="fas fa-external-link-alt"></i>
-                        </a>
+                        
+                        {% set demo_urls = project.demo_url_list %}
+                        {% if demo_urls %}
+                            {% if demo_urls|length == 1 %}
+                                <!-- 単一デモURL -->
+                                <a href="{{ demo_urls[0].url }}" target="_blank" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="{{ demo_urls[0].name }}">
+                                    {% if demo_urls[0].type == 'live' %}
+                                        <i class="fas fa-globe"></i>
+                                    {% elif demo_urls[0].type == 'video' %}
+                                        <i class="fas fa-video"></i>
+                                    {% elif demo_urls[0].type == 'docs' %}
+                                        <i class="fas fa-book"></i>
+                                    {% else %}
+                                        <i class="fas fa-external-link-alt"></i>
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                <!-- 複数デモURL - ドロップダウン -->
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-external-link-alt"></i> デモ ({{ demo_urls|length }})
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        {% for demo in demo_urls %}
+                                        <li>
+                                            <a class="dropdown-item" href="{{ demo.url }}" target="_blank">
+                                                {% if demo.type == 'live' %}
+                                                    <i class="fas fa-globe me-2"></i>
+                                                {% elif demo.type == 'video' %}
+                                                    <i class="fas fa-video me-2"></i>
+                                                {% elif demo.type == 'docs' %}
+                                                    <i class="fas fa-book me-2"></i>
+                                                {% else %}
+                                                    <i class="fas fa-external-link-alt me-2"></i>
+                                                {% endif %}
+                                                {{ demo.name }}
+                                            </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </td>
