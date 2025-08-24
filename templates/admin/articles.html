@@ -90,7 +90,7 @@
                             <th>著者</th>
                             <th>カテゴリ</th>
                             <th>状態</th>
-                            <th>作成日</th>
+                            <th>日付</th>
                             <th width="150">操作</th>
                         </tr>
                     </thead>
@@ -135,7 +135,13 @@
                             </td>
                             <td>
                                 <small class="text-muted">
-                                    {{ article.created_at.strftime('%Y-%m-%d') if article.created_at else 'N/A' }}
+                                    {% if article.is_published and article.published_at %}
+                                        {{ article.published_at.strftime('%Y-%m-%d %H:%M') }}
+                                        <i class="fas fa-globe text-success" title="公開日"></i>
+                                    {% else %}
+                                        {{ article.created_at.strftime('%Y-%m-%d %H:%M') if article.created_at else 'N/A' }}
+                                        <i class="fas fa-pencil-alt text-warning" title="作成日"></i>
+                                    {% endif %}
                                 </small>
                             </td>
                             <td>

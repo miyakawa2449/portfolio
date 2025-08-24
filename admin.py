@@ -923,7 +923,12 @@ def articles():
         .options(
             selectinload(Article.categories)
         )
-        .order_by(Article.created_at.desc()),
+        .order_by(
+            db.case(
+                (Article.published_at.isnot(None), Article.published_at),
+                else_=Article.created_at
+            ).desc()
+        ),
         page=page, 
         per_page=per_page, 
         error_out=False
@@ -976,6 +981,7 @@ def create_article():
             'summary': form.summary.data,
             'body': form.body.data,
             'is_published': form.is_published.data,
+            'published_at': form.published_at.data,
             'allow_comments': form.allow_comments.data,
             'meta_title': form.meta_title.data,
             'meta_description': form.meta_description.data,
@@ -1070,6 +1076,7 @@ def edit_article(article_id):
                 'summary': form.summary.data,
                 'body': form.body.data,
                 'is_published': form.is_published.data,
+                'published_at': form.published_at.data,
                 'allow_comments': form.allow_comments.data,
                 'meta_title': form.meta_title.data,
                 'meta_description': form.meta_description.data,
@@ -3127,6 +3134,16 @@ def create_project():
             if tech_list:
                 project.set_technologies(tech_list)
             
+            # 複数デモURL処理
+            demo_urls_data = request.form.get('demo_urls_data')
+            if demo_urls_data:
+                try:
+                    demo_urls = json.loads(demo_urls_data)
+                    if demo_urls:
+                        project.set_demo_urls(demo_urls)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            
             # 画像アップロード処理
             if form.featured_image.data:
                 file = form.featured_image.data
@@ -3207,6 +3224,20 @@ def edit_project(project_id):
                 project.set_technologies(tech_list)
             else:
                 project.technologies = None
+            
+            # 複数デモURL処理
+            demo_urls_data = request.form.get('demo_urls_data')
+            if demo_urls_data:
+                try:
+                    demo_urls = json.loads(demo_urls_data)
+                    if demo_urls:
+                        project.set_demo_urls(demo_urls)
+                    else:
+                        project.demo_urls = None
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            else:
+                project.demo_urls = None
             
             # 画像削除処理
             if request.form.get('remove_featured_image') == 'true':

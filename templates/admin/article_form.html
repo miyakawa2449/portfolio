@@ -12,6 +12,9 @@
 {% block head_extra %}
 <!-- Cropper.js CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+<!-- Flatpickr CSS for date picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
 {% endblock %}
 
 {% block content %}
@@ -171,6 +174,16 @@
                                             <div class="form-check">
                                                 {{ form.is_published(class="form-check-input") }}
                                                 {{ form.is_published.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 公開日時フィールド -->
+                                        <div class="mb-3" id="publishDateContainer" style="display: none;">
+                                            {{ form.published_at.label(class="form-label") }}
+                                            {{ form.published_at(class="form-control", id="publishedAtPicker") }}
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle"></i> 
+                                                公開日時を指定できます。空欄の場合は現在日時が設定されます。
                                             </div>
                                         </div>
                                         
@@ -678,6 +691,9 @@
 {% block scripts_extra %}
 <!-- Cropper.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<!-- Flatpickr JS for date picker -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
 
 <script>
 // 画像アップロード関連の変数
@@ -694,6 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded - initializing image upload functionality');
     setupImageUploadHandlers();
     setupMarkdownEditor();
+    setupPublishDatePicker();
     
     // アイキャッチ画像削除ボタンのイベント設定
     const removeFeaturedBtn = document.getElementById('removeFeaturedImageBtn');
@@ -1170,6 +1187,44 @@ function setupMarkdownEditor() {
             if (document.querySelector('.editor-tab[onclick="switchTab(\'preview\')"]')?.classList.contains('active')) {
                 updatePreview();
             }
+        });
+    }
+}
+
+// 公開日時選択機能のセットアップ
+function setupPublishDatePicker() {
+    const publishCheckbox = document.getElementById('is_published');
+    const publishDateContainer = document.getElementById('publishDateContainer');
+    const publishedAtPicker = document.getElementById('publishedAtPicker');
+    
+    if (publishCheckbox && publishDateContainer && publishedAtPicker) {
+        // 公開チェックボックスの状態に応じて表示/非表示を切り替え
+        function togglePublishDateVisibility() {
+            if (publishCheckbox.checked) {
+                publishDateContainer.style.display = 'block';
+            } else {
+                publishDateContainer.style.display = 'none';
+                publishedAtPicker.value = ''; // 非公開時は日付をクリア
+            }
+        }
+        
+        // 初期状態の設定
+        togglePublishDateVisibility();
+        
+        // チェックボックス変更時のイベント
+        publishCheckbox.addEventListener('change', togglePublishDateVisibility);
+        
+        // Flatpickrの初期化（日本語設定）
+        flatpickr(publishedAtPicker, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            locale: "ja",
+            defaultDate: publishedAtPicker.value || null,
+            allowInput: true,
+            altInput: true,
+            altFormat: "Y年n月j日 H:i",
+            placeholder: "公開日時を選択してください"
         });
     }
 }

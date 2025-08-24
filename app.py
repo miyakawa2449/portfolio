@@ -1131,10 +1131,22 @@ def landing():
         ).order_by(Project.display_order).limit(3)
     ).scalars().all()
     
+    # プロジェクト総数を取得
+    total_projects = db.session.execute(
+        select(func.count(Project.id)).where(Project.status == 'active')
+    ).scalar()
+    
+    # 現在の学習日数を計算（アクティブチャレンジベース）
+    current_day = 0
+    if active_challenge:
+        current_day = active_challenge.days_elapsed
+    
     return render_template('landing.html',
                          active_challenge=active_challenge,
                          latest_articles=latest_articles,
                          total_articles=total_articles,
+                         total_projects=total_projects,
+                         current_day=current_day,
                          skill_categories=skill_categories,
                          all_challenges=all_challenges,
                          featured_projects=featured_projects)
@@ -1170,7 +1182,13 @@ def blog(page=1, challenge_id=None):
         if current_challenge:
             articles_query = articles_query.where(Article.challenge_id == challenge_id)
     
-    articles_query = articles_query.order_by(Article.created_at.desc())
+    # 公開日でソート（公開日がない場合は作成日を使用）
+    articles_query = articles_query.order_by(
+        db.case(
+            (Article.published_at.isnot(None), Article.published_at),
+            else_=Article.created_at
+        ).desc()
+    )
     
     # チャレンジ一覧を取得（フィルター用）
     challenges = db.session.execute(
@@ -1552,7 +1570,12 @@ def category_page(slug):
     ).join(article_categories).where(
         article_categories.c.category_id == category.id,
         Article.is_published.is_(True)
-    ).order_by(Article.created_at.desc())
+    ).order_by(
+        db.case(
+            (Article.published_at.isnot(None), Article.published_at),
+            else_=Article.created_at
+        ).desc()
+    )
     
     articles_pagination = db.paginate(
         articles_query,
@@ -1665,7 +1688,12 @@ def profile(handle_name):
     
     # 公開記事のみ取得
     articles = db.session.execute(
-        select(Article).where(Article.author_id == user.id, Article.is_published.is_(True)).order_by(Article.created_at.desc())
+        select(Article).where(Article.author_id == user.id, Article.is_published.is_(True)).order_by(
+            db.case(
+                (Article.published_at.isnot(None), Article.published_at),
+                else_=Article.created_at
+            ).desc()
+        )
     ).scalars().all()
     
     return render_template('profile.html', user=user, articles=articles)
