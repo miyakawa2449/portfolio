@@ -7,7 +7,7 @@
 <section class="hero-section py-5 bg-primary text-white">
     <div class="container text-center">
         {% if active_challenge %}
-        <h1 class="display-3 fw-bold mb-4">{{ active_challenge.name }}</h1>
+        <h1 class="h2 h1-md fw-bold mb-4">{{ active_challenge.name }}</h1>
         <p class="lead mb-5">{{ active_challenge.description or '100日間のPython学習の旅を記録するポートフォリオサイト' }}</p>
         
         <!-- 進捗表示 -->
@@ -31,14 +31,27 @@
             </p>
         </div>
         
+        <!-- 個人情報ハイライト -->
+        <div class="hero-profile mb-4">
+            <p class="h5 mb-2">
+                <strong>Tsuyoshi Miyakawa</strong> のPython学習ポートフォリオ
+            </p>
+            <p class="text-light opacity-75">
+                データサイエンス・機械学習エンジニアを目指す100日間の挑戦記録
+            </p>
+        </div>
+        
         <!-- CTAボタン -->
-        <div class="hero-cta">
-            <a href="{{ url_for('blog') }}" class="btn btn-light btn-lg me-3">
-                <i class="fas fa-book-open"></i> 学習記録を見る
+        <div class="hero-cta d-flex flex-wrap justify-content-center align-items-center">
+            <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg me-3 mb-2">
+                <i class="fas fa-user"></i> プロフィール
+            </a>
+            <a href="{{ url_for('blog') }}" class="btn btn-light btn-lg me-3 mb-2" style="color: #333;">
+                <i class="fas fa-book-open"></i> 学習記録
             </a>
             {% if active_challenge.github_repositories %}
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-outline-light btn-lg dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="btn-group mb-2" role="group">
+                <button type="button" class="btn btn-light btn-lg dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="color: #333;">
                     <i class="fab fa-github"></i> GitHubリポジトリ
                 </button>
                 <ul class="dropdown-menu">
@@ -54,11 +67,24 @@
         </div>
         {% else %}
         <h1 class="display-3 fw-bold mb-4">Python 100 Days Challenge</h1>
-        <p class="lead mb-5">100日間のPython学習の旅を記録するポートフォリオサイト</p>
+        <p class="lead mb-4">100日間のPython学習の旅を記録するポートフォリオサイト</p>
         
-        <div class="hero-cta">
-            <a href="{{ url_for('blog') }}" class="btn btn-light btn-lg me-3">
-                <i class="fas fa-book-open"></i> 学習記録を見る
+        <!-- 個人情報ハイライト -->
+        <div class="hero-profile mb-4">
+            <p class="h5 mb-2">
+                <strong>Tsuyoshi Miyakawa</strong> のPython学習ポートフォリオ
+            </p>
+            <p class="text-light opacity-75">
+                データサイエンス・機械学習エンジニアを目指す学習記録
+            </p>
+        </div>
+        
+        <div class="hero-cta d-flex flex-wrap justify-content-center align-items-center">
+            <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg me-3 mb-2">
+                <i class="fas fa-user"></i> プロフィール
+            </a>
+            <a href="{{ url_for('blog') }}" class="btn btn-light btn-lg me-3 mb-2" style="color: #333;">
+                <i class="fas fa-book-open"></i> 学習記録
             </a>
         </div>
         {% endif %}
@@ -146,12 +172,41 @@
                                     <i class="fab fa-github"></i> Code
                                 </a>
                                 {% endif %}
-                                {% if project.demo_url %}
-                                <a href="{{ project.demo_url }}" target="_blank" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-external-link-alt"></i> Demo
-                                </a>
+                                
+                                {% set demo_urls = project.demo_url_list %}
+                                {% if demo_urls %}
+                                    {% if demo_urls|length == 1 %}
+                                        <!-- 単一デモURL -->
+                                        <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            {% if demo_urls[0].type == 'live' %}
+                                                <i class="fas fa-globe"></i> Live
+                                            {% elif demo_urls[0].type == 'video' %}
+                                                <i class="fas fa-video"></i> Video
+                                            {% elif demo_urls[0].type == 'docs' %}
+                                                <i class="fas fa-book"></i> Docs
+                                            {% else %}
+                                                <i class="fas fa-external-link-alt"></i> Demo
+                                            {% endif %}
+                                        </a>
+                                    {% else %}
+                                        <!-- 複数デモURL - メインボタン -->
+                                        <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            {% if demo_urls[0].type == 'live' %}
+                                                <i class="fas fa-globe"></i>
+                                            {% elif demo_urls[0].type == 'video' %}
+                                                <i class="fas fa-video"></i>
+                                            {% elif demo_urls[0].type == 'docs' %}
+                                                <i class="fas fa-book"></i>
+                                            {% else %}
+                                                <i class="fas fa-external-link-alt"></i>
+                                            {% endif %}
+                                            {{ demo_urls[0].name }}
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
-                                {% if not project.github_url and not project.demo_url %}
+                                
+                                {% set has_links = project.github_url or demo_urls %}
+                                {% if not has_links %}
                                 <a href="#" class="btn btn-outline-primary btn-sm w-100">
                                     <i class="fas fa-info-circle"></i> 詳細
                                 </a>
@@ -186,6 +241,85 @@
     </div>
 </section>
 {% endif %}
+
+<!-- プロフィールセクション -->
+<section class="profile-section py-5 bg-dark text-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-4 text-center mb-4 mb-lg-0">
+                <div class="profile-avatar mx-auto mb-3" style="width: 150px; height: 150px;">
+                    <div class="avatar-lg bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 100%; height: 100%; font-size: 64px; font-weight: bold;">
+                        T
+                    </div>
+                </div>
+                <h3 class="mb-1">Tsuyoshi Miyakawa</h3>
+                <p class="text-light mb-3">Python Developer / Data Enthusiast</p>
+                
+                <!-- ソーシャルリンク -->
+                <div class="social-links">
+                    {% if site_settings.social_media_links %}
+                        {% for platform, url in site_settings.social_media_links.items() if url %}
+                        <a href="{{ url }}" target="_blank" class="btn btn-outline-light btn-sm me-2 mb-2">
+                            {% if platform == 'twitter' %}
+                                <i class="bi bi-twitter"></i>
+                            {% elif platform == 'github' %}
+                                <i class="bi bi-github"></i>
+                            {% elif platform == 'linkedin' %}
+                                <i class="bi bi-linkedin"></i>
+                            {% else %}
+                                <i class="bi bi-link-45deg"></i>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="profile-content">
+                    <h2 class="mb-4">
+                        <i class="fas fa-rocket"></i> Python 100日チャレンジに挑戦中！
+                    </h2>
+                    <p class="lead mb-4">
+                        プログラミングスキルの向上を目指し、100日間の集中学習に取り組んでいます。
+                        毎日の学習内容、作成したプロジェクト、学んだ技術を詳細に記録し、
+                        成長の軌跡を公開しています。
+                    </p>
+                    
+                    <!-- 統計情報 -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="stat-item text-center">
+                                <div class="h2 mb-1 text-warning">{{ total_articles }}</div>
+                                <div class="small" style="color: #1e2125;">学習記録</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item text-center">
+                                <div class="h2 mb-1 text-info">{{ total_projects }}</div>
+                                <div class="small" style="color: #1e2125;">作成プロジェクト</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item text-center">
+                                <div class="h2 mb-1 text-success">{{ current_day }}</div>
+                                <div class="small" style="color: #1e2125;">学習日数</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-cta">
+                        <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg me-3">
+                            <i class="fas fa-user"></i> 詳しいプロフィール
+                        </a>
+                        <a href="{{ url_for('blog') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-book-open"></i> 学習の軌跡を見る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- 最新記事セクション -->
 <section class="latest-articles-section py-5">

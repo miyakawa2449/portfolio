@@ -55,11 +55,40 @@
         
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; font-size: 16px; }
+        
+        /* ヒーローセクションのタイトル調整 */
+        .hero-section h1 {
+            font-size: clamp(1.75rem, 4vw, 3.5rem);
+            line-height: 1.2;
+            word-break: break-word;
+            hyphens: auto;
+        }
         @media (max-width: 768px) { 
             html { font-size: 14px; }
             .hero-section { 
-                height: 320px; 
-                padding: 3rem 0;
+                height: auto; 
+                padding: 2rem 0;
+                min-height: 300px;
+            }
+            .h1, .h2, h1, h2, .display-4, .display-3 {
+                font-size: 1.75rem !important;
+                line-height: 1.2;
+            }
+            
+            .hero-section h1 {
+                font-size: 1.5rem !important;
+                word-break: break-word;
+                hyphens: auto;
+            }
+            .hero-cta {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .hero-cta .btn,
+            .hero-cta .btn-group {
+                width: 100%;
+                margin-right: 0 !important;
+                margin-bottom: 0.75rem;
             }
         }
         
@@ -95,7 +124,8 @@
             color: var(--white);
             padding: 4rem 0;
             text-align: center;
-            height: 400px;
+            height: auto;
+            min-height: 400px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -213,11 +243,11 @@
             <div class="navbar-content">
                 <a class="navbar-brand" href="{{ url_for('landing') }}">
                 {% if site_settings.site_logo_url %}
-                <img src="{{ site_settings.site_logo_url }}" alt="{{ site_settings.site_name or 'Python 100 Days' }}" style="height: 32px; margin-right: 8px;">
+                <img src="{{ site_settings.site_logo_url }}" alt="{{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}" style="height: 32px; margin-right: 8px;">
                 {% else %}
-                <i class="bi bi-journal-text"></i>
+                <i class="bi bi-journal-code"></i>
                 {% endif %}
-                    {{ site_settings.site_name or 'Python 100 Days' }}
+                    {{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}
                 </a>
                 
                 <!-- ハンバーガーメニューボタン -->
@@ -237,6 +267,9 @@
                     </a>
                     <a class="navbar-link" href="{{ url_for('projects') }}" role="menuitem">
                         <i class="bi bi-code-square"></i> プロジェクト
+                    </a>
+                    <a class="navbar-link" href="{{ url_for('profile', handle_name='Tsuyoshi') }}" role="menuitem">
+                        <i class="bi bi-person-circle"></i> プロフィール
                     </a>
                     
                     <!-- SNSアイコン -->
@@ -293,10 +326,27 @@
     <!-- フッター -->
     <footer class="site-footer">
         <div class="container text-center">
-            <p>{{ site_settings.footer_text or '© 2025 ミニブログ. All rights reserved.' }}</p>
+            <p>{{ site_settings.footer_text or '© 2025 Tsuyoshi Miyakawa - Python 100 Days Challenge Portfolio. All rights reserved.' }}</p>
+            <p class="small text-muted mb-2">
+                データサイエンス・機械学習エンジニアを目指すプログラマーの学習記録
+            </p>
             {% if site_settings.contact_email %}
             <p><i class="bi bi-envelope"></i> <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a></p>
             {% endif %}
+            
+            <!-- プロフィールへのクイックリンク -->
+            <div class="quick-links mb-3">
+                <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-sm btn-outline-primary me-2">
+                    <i class="bi bi-person-circle"></i> プロフィール
+                </a>
+                <a href="{{ url_for('projects') }}" class="btn btn-sm btn-outline-info me-2">
+                    <i class="bi bi-code-square"></i> プロジェクト
+                </a>
+                <a href="{{ url_for('blog') }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-book"></i> 学習記録
+                </a>
+            </div>
+            
             {% if site_settings.social_media_links %}
             <div class="social-links mt-2">
                 {% for platform, url in site_settings.social_media_links.items() if url %}
