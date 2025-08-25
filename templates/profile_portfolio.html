@@ -1,0 +1,314 @@
+{% extends "public_layout.html" %}
+
+{% block title %}{{ user.handle_name or user.name }} - Portfolio{% endblock %}
+
+{% block head_extra %}
+<meta name="description" content="{{ user.tagline or user.introduction[:150] if user.introduction else (user.handle_name or user.name) + 'のポートフォリオページです。' }}">
+<meta property="og:title" content="{{ user.handle_name or user.name }} - Portfolio">
+<meta property="og:description" content="{{ user.tagline or user.introduction[:150] if user.introduction else (user.handle_name or user.name) + 'のポートフォリオページです。' }}">
+<meta property="og:type" content="profile">
+{% endblock %}
+
+{% block content %}
+<!-- Simple Navigation -->
+<div class="container-fluid bg-light py-2">
+    <div class="container">
+        <a href="{{ url_for('landing') }}" class="text-decoration-none text-primary">
+            <i class="fas fa-home me-1"></i>ホーム
+        </a>
+    </div>
+</div>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center mb-4">
+                    {% if user.profile_photo %}
+                        <img src="{{ url_for('static', filename=user.profile_photo) }}" 
+                             alt="{{ user.name }}" 
+                             class="profile-photo me-4">
+                    {% else %}
+                        <div class="profile-photo bg-white text-primary d-flex align-items-center justify-content-center me-4" 
+                             style="font-size: 3rem;">
+                            {{ user.name[0].upper() if user.name else 'T' }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h1 class="display-5 fw-bold mb-2">{{ user.name }}{% if user.handle_name %} ({{ user.handle_name }}){% endif %}</h1>
+                        {% if user.job_title %}
+                            <h2 class="h4 mb-3 opacity-90">{{ user.job_title }}</h2>
+                        {% endif %}
+                        {% if user.tagline %}
+                            <p class="lead mb-0">{{ user.tagline }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Contact Buttons -->
+                <div class="d-flex flex-wrap">
+                    {% if user.portfolio_email %}
+                        <a href="mailto:{{ user.portfolio_email }}" class="contact-btn">
+                            <i class="fas fa-envelope me-2"></i>Contact
+                        </a>
+                    {% endif %}
+                    {% if user.linkedin_url %}
+                        <a href="{{ user.linkedin_url }}" target="_blank" class="contact-btn" rel="noopener">
+                            <i class="fab fa-linkedin me-2"></i>LinkedIn
+                        </a>
+                    {% endif %}
+                    {% if user.github_username %}
+                        <a href="https://github.com/{{ user.github_username }}" target="_blank" class="contact-btn" rel="noopener">
+                            <i class="fab fa-github me-2"></i>GitHub
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('download_resume', user_id=user.id) }}" class="contact-btn">
+                        <i class="fas fa-download me-2"></i>Resume PDF
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- Quick Stats -->
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="bg-white bg-opacity-10 backdrop-blur p-3 rounded text-center">
+                            <div class="h3 mb-1">{{ projects|length }}</div>
+                            <small>Projects</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-white bg-opacity-10 backdrop-blur p-3 rounded text-center">
+                            <div class="h3 mb-1">{{ articles|length }}</div>
+                            <small>Articles</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container py-5">
+    <!-- Skills Section -->
+    {% if user.skills %}
+    <section class="mb-5">
+        <h2 class="h3 mb-4">
+            <i class="fas fa-code text-primary me-2"></i>Technical Skills
+        </h2>
+        
+        <!-- スキルレベル説明 -->
+        <div class="alert alert-info mb-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>スキルレベルについて</strong>
+            </div>
+            <p class="mb-3 small">
+                各技術の習熟度を自己評価で数値化し、プロジェクトでの実務経験年数とともに表示しています。
+            </p>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="skill-progress me-2" style="width: 30px; height: 6px;">
+                            <div class="skill-progress-bar skill-expert" style="width: 100%;"></div>
+                        </div>
+                        <small class="text-success fw-semibold">Expert (85%+)</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="skill-progress me-2" style="width: 30px; height: 6px;">
+                            <div class="skill-progress-bar skill-proficient" style="width: 100%;"></div>
+                        </div>
+                        <small class="text-warning fw-semibold">Proficient (70-84%)</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="skill-progress me-2" style="width: 30px; height: 6px;">
+                            <div class="skill-progress-bar skill-developing" style="width: 100%;"></div>
+                        </div>
+                        <small class="text-primary fw-semibold">Developing (~69%)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% for category, skills_list in user.skills.items() %}
+            <div class="skills-category mb-5">
+                <h3 class="h5 text-muted mb-3">{{ category }}</h3>
+                <div class="row">
+                    {% for skill in skills_list %}
+                        <div class="col-md-6 mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold">{{ skill.name }}</span>
+                                <div class="text-end">
+                                    {% if skill.level %}
+                                        <span class="text-primary fw-bold small">{{ skill.level }}%</span>
+                                    {% endif %}
+                                    {% if skill.years %}
+                                        <div class="text-muted small">{{ skill.years }} years</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if skill.level %}
+                                <div class="skill-progress">
+                                    <div class="skill-progress-bar 
+                                                {% if skill.level >= 85 %}skill-expert
+                                                {% elif skill.level >= 70 %}skill-proficient
+                                                {% else %}skill-developing{% endif %}"
+                                         data-width="{{ skill.level }}"></div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+    
+    <!-- Career History -->
+    {% if user.career_history %}
+    <section class="mb-5">
+        <h2 class="h3 mb-4">
+            <i class="fas fa-briefcase text-primary me-2"></i>Career History
+        </h2>
+        <div class="timeline">
+            {% for job in user.career_history %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h4 class="h5 card-title">{{ job.position }}</h4>
+                            <h5 class="h6 text-muted mb-3">{{ job.company }} | {{ job.period }}</h5>
+                            {% if job.description %}
+                                <p class="card-text">{{ job.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Featured Projects -->
+    {% if featured_projects %}
+    <section class="mb-5">
+        <h2 class="h3 mb-4">
+            <i class="fas fa-star text-primary me-2"></i>Featured Projects
+        </h2>
+        <div class="row">
+            {% for project in featured_projects[:6] %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card project-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ project.title }}</h5>
+                            <p class="card-text flex-grow-1">{{ project.description[:100] }}...</p>
+                            <div class="mb-3">
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for tech in project.technology_list[:3] %}
+                                        <span class="badge bg-light text-dark">{{ tech }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-auto">
+                                {% if project.github_url %}
+                                    <a href="{{ project.github_url }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-dark" rel="noopener">
+                                        <i class="fab fa-github me-1"></i>Code
+                                    </a>
+                                {% endif %}
+                                {% if project.demo_url_list %}
+                                    <a href="{{ project.demo_url_list[0].url }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-primary" rel="noopener">
+                                        <i class="fas fa-external-link-alt me-1"></i>Demo
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Education & Certifications -->
+    <div class="row">
+        {% if user.education %}
+        <div class="col-md-6 mb-5">
+            <h2 class="h3 mb-4">
+                <i class="fas fa-graduation-cap text-primary me-2"></i>Education
+            </h2>
+            {% for edu in user.education %}
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title h6">{{ edu.degree }} in {{ edu.field }}</h5>
+                        <p class="card-text text-muted mb-0">{{ edu.school }} | {{ edu.year }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% if user.certifications %}
+        <div class="col-md-6 mb-5">
+            <h2 class="h3 mb-4">
+                <i class="fas fa-certificate text-primary me-2"></i>Certifications
+            </h2>
+            {% for cert in user.certifications %}
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title h6">{{ cert.name }}</h5>
+                        <p class="card-text text-muted mb-0">{{ cert.issuer }} | {{ cert.date }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- 100 Days Challenge Section -->
+    {% if challenges %}
+    <section class="mb-5">
+        <h2 class="h3 mb-4">
+            <i class="fas fa-trophy text-primary me-2"></i>100 Days Challenge Progress
+        </h2>
+        <div class="row">
+            {% for challenge in challenges %}
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ challenge.name }}</h5>
+                            <div class="progress mb-3" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ challenge.progress_percentage }}%"
+                                     aria-valuenow="{{ challenge.progress_percentage }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ challenge.progress_percentage }}%
+                                </div>
+                            </div>
+                            <p class="text-muted mb-0">
+                                Day {{ challenge.days_elapsed }} of {{ challenge.target_days }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<!-- Admin Edit Link -->
+{% if current_user.is_authenticated and (current_user.id == user.id or current_user.role == 'admin') %}
+<div class="container text-center py-4">
+    <a href="{{ url_for('admin.edit_portfolio', user_id=user.id) }}" class="btn btn-outline-primary">
+        <i class="fas fa-edit me-2"></i>Edit Portfolio
+    </a>
+</div>
+{% endif %}
+{% endblock %}

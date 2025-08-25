@@ -1,0 +1,780 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ポートフォリオ編集 - {{ user.handle_name or user.name }}{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+<style>
+    .skill-item, .career-item, .education-item, .certification-item {
+        background: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        position: relative;
+    }
+    .remove-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+    .skill-level-input {
+        width: 100%;
+    }
+    .skill-level-display {
+        height: 10px;
+        background: #e9ecef;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    .skill-level-bar {
+        height: 100%;
+        background: #667eea;
+        transition: width 0.3s ease;
+    }
+    .add-section-btn {
+        margin-top: 1rem;
+    }
+    .cropper-container {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    #profilePhotoPreview {
+        max-width: 300px;
+        max-height: 300px;
+        margin: 1rem auto;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">ポートフォリオ編集</h1>
+            
+            <!-- タブナビゲーション -->
+            <ul class="nav nav-tabs mb-4" id="portfolioTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="basic-tab" data-bs-toggle="tab" href="#basic" role="tab">基本情報</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="skills-tab" data-bs-toggle="tab" href="#skills" role="tab">スキル</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="career-tab" data-bs-toggle="tab" href="#career" role="tab">職歴</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="education-tab" data-bs-toggle="tab" href="#education" role="tab">学歴</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="certifications-tab" data-bs-toggle="tab" href="#certifications" role="tab">資格</a>
+                </li>
+            </ul>
+            
+            <!-- タブコンテンツ -->
+            <div class="tab-content" id="portfolioTabContent">
+                <!-- 基本情報タブ -->
+                <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.handle_name.label(class="form-label") }}
+                                    {{ form.handle_name(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.job_title.label(class="form-label") }}
+                                    {{ form.job_title(class="form-control") }}
+                                    <small class="form-text text-muted">例: シニアITエンジニア / プロジェクトマネージャー</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.tagline.label(class="form-label") }}
+                                    {{ form.tagline(class="form-control") }}
+                                    <small class="form-text text-muted">例: 20年以上の経験を持つフルスタックエンジニア</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.portfolio_email.label(class="form-label") }}
+                                    {{ form.portfolio_email(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.linkedin_url.label(class="form-label") }}
+                                    {{ form.linkedin_url(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.github_username.label(class="form-label") }}
+                                    {{ form.github_username(class="form-control") }}
+                                    <small class="form-text text-muted">ユーザー名のみ（@なし）</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.introduction.label(class="form-label") }}
+                            {{ form.introduction(class="form-control", rows=4) }}
+                        </div>
+                        
+                        <!-- プロフィール写真 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">プロフィール写真</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if user.profile_photo %}
+                                <div class="current-image-preview mb-3" id="currentProfilePhoto">
+                                    <img src="{{ url_for('static', filename=user.profile_photo) }}" 
+                                         alt="現在のプロフィール写真" class="image-preview" style="max-width: 150px;">
+                                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">現在の写真</small>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeProfilePhotoBtn">
+                                            <i class="fa fa-trash me-1"></i>削除
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="remove_profile_photo" id="removeProfilePhoto" value="false">
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    {{ form.profile_photo.label(class="form-label") }}
+                                    {{ form.profile_photo(class="form-control", accept="image/*", onchange="previewProfilePhoto(event)") }}
+                                    <div class="form-text">
+                                        推奨サイズ: 300×300px（正方形、JPG/PNG形式）
+                                    </div>
+                                </div>
+                                
+                                <div id="profilePhotoPreviewContainer" class="preview-container" style="display: none;">
+                                    <img id="profilePhotoPreview" class="image-preview" alt="プレビュー" style="max-width: 200px;">
+                                    <div class="mt-2">
+                                        <small class="text-muted">画像プレビュー</small>
+                                    </div>
+                                    
+                                    <!-- クロップボタン -->
+                                    <div class="mt-3">
+                                        <button type="button" class="btn btn-primary btn-sm w-100" onclick="startProfilePhotoCropping()">
+                                            <i class="fa fa-crop"></i> 写真をトリミング
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden fields for cropping -->
+                                {{ form.profile_photo_crop_x() }}
+                                {{ form.profile_photo_crop_y() }}
+                                {{ form.profile_photo_crop_width() }}
+                                {{ form.profile_photo_crop_height() }}
+                            </div>
+                        </div>
+                        
+                        <!-- 履歴書PDF -->
+                        <div class="mb-3">
+                            {{ form.resume_pdf.label(class="form-label") }}
+                            {% if user.resume_pdf %}
+                                <div class="mb-2">
+                                    <a href="{{ url_for('static', filename=user.resume_pdf) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-file-pdf"></i> 現在のPDFを表示
+                                    </a>
+                                </div>
+                            {% endif %}
+                            {{ form.resume_pdf(class="form-control", accept=".pdf") }}
+                        </div>
+                        
+                        <div class="mt-4">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('profile', handle_name=user.handle_name or user.name) }}" class="btn btn-secondary">キャンセル</a>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- スキルタブ -->
+                <div class="tab-pane fade" id="skills" role="tabpanel">
+                    <div id="skillsContainer"></div>
+                    <button type="button" class="btn btn-success add-section-btn" onclick="addSkill()">
+                        <i class="fas fa-plus"></i> スキルを追加
+                    </button>
+                    <button type="button" class="btn btn-primary mt-3" onclick="saveSkills()">
+                        <i class="fas fa-save"></i> スキルを保存
+                    </button>
+                </div>
+                
+                <!-- 職歴タブ -->
+                <div class="tab-pane fade" id="career" role="tabpanel">
+                    <div id="careerContainer"></div>
+                    <button type="button" class="btn btn-success add-section-btn" onclick="addCareer()">
+                        <i class="fas fa-plus"></i> 職歴を追加
+                    </button>
+                    <button type="button" class="btn btn-primary mt-3" onclick="saveCareer()">
+                        <i class="fas fa-save"></i> 職歴を保存
+                    </button>
+                </div>
+                
+                <!-- 学歴タブ -->
+                <div class="tab-pane fade" id="education" role="tabpanel">
+                    <div id="educationContainer"></div>
+                    <button type="button" class="btn btn-success add-section-btn" onclick="addEducation()">
+                        <i class="fas fa-plus"></i> 学歴を追加
+                    </button>
+                    <button type="button" class="btn btn-primary mt-3" onclick="saveEducation()">
+                        <i class="fas fa-save"></i> 学歴を保存
+                    </button>
+                </div>
+                
+                <!-- 資格タブ -->
+                <div class="tab-pane fade" id="certifications" role="tabpanel">
+                    <div id="certificationsContainer"></div>
+                    <button type="button" class="btn btn-success add-section-btn" onclick="addCertification()">
+                        <i class="fas fa-plus"></i> 資格を追加
+                    </button>
+                    <button type="button" class="btn btn-primary mt-3" onclick="saveCertifications()">
+                        <i class="fas fa-save"></i> 資格を保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- プロフィール写真クロップモーダル -->
+<div class="modal fade" id="profilePhotoCropModal" tabindex="-1" aria-labelledby="profilePhotoCropModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 90vw; margin: 1rem auto;">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="flex-shrink: 0;">
+                <h5 class="modal-title" id="profilePhotoCropModalLabel">プロフィール写真トリミング</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="flex: 1; overflow-y: auto; max-height: calc(90vh - 120px);">
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <strong>トリミング方法:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>選択範囲をドラッグして移動できます</li>
+                            <li>角や辺をドラッグしてサイズを調整できます</li>
+                            <li>マウスホイールで拡大・縮小できます</li>
+                            <li>正方形（1:1）でトリミングされます</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="crop-container" style="max-height: 50vh; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+                    <img id="profilePhotoCropImage" style="max-width: 100%; max-height: 50vh; object-fit: contain;">
+                </div>
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="profileCropperZoomIn()">
+                                <i class="fa fa-search-plus"></i> 拡大
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="profileCropperZoomOut()">
+                                <i class="fa fa-search-minus"></i> 縮小
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="profileCropperReset()">
+                                <i class="fa fa-refresh"></i> リセット
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="flex-shrink: 0;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="applyProfilePhotoCrop()">トリミングを適用</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<script>
+// プロフィール写真のプレビューとクロップ
+let profilePhotoCropper = null;
+
+// プロフィール写真プレビュー
+function previewProfilePhoto(event) {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePhotoPreview');
+            preview.src = e.target.result;
+            document.getElementById('profilePhotoPreviewContainer').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// プロフィール写真クロップ開始
+function startProfilePhotoCropping() {
+    const preview = document.getElementById('profilePhotoPreview');
+    if (!preview.src) return;
+    
+    const cropImage = document.getElementById('profilePhotoCropImage');
+    cropImage.src = preview.src;
+    
+    // モーダルを表示
+    const modal = new bootstrap.Modal(document.getElementById('profilePhotoCropModal'));
+    modal.show();
+    
+    // モーダルが表示された後にcropperを初期化
+    document.getElementById('profilePhotoCropModal').addEventListener('shown.bs.modal', function() {
+        if (profilePhotoCropper) {
+            profilePhotoCropper.destroy();
+        }
+        
+        profilePhotoCropper = new Cropper(cropImage, {
+            aspectRatio: 1, // 正方形
+            viewMode: 1,
+            guides: true,
+            center: true,
+            highlight: true,
+            background: false,
+            autoCropArea: 0.8,
+            movable: true,
+            rotatable: false,
+            scalable: true,
+            zoomable: true
+        });
+    }, { once: true });
+}
+
+// プロフィール写真クロップ適用
+function applyProfilePhotoCrop() {
+    if (!profilePhotoCropper) return;
+    
+    const cropData = profilePhotoCropper.getData();
+    
+    // 隠しフィールドに設定
+    document.getElementById('profile_photo_crop_x').value = Math.round(cropData.x);
+    document.getElementById('profile_photo_crop_y').value = Math.round(cropData.y);
+    document.getElementById('profile_photo_crop_width').value = Math.round(cropData.width);
+    document.getElementById('profile_photo_crop_height').value = Math.round(cropData.height);
+    
+    // クロップされた画像をプレビューに反映
+    const canvas = profilePhotoCropper.getCroppedCanvas({
+        width: 300,
+        height: 300,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+    });
+    
+    const preview = document.getElementById('profilePhotoPreview');
+    preview.src = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // モーダルを閉じる
+    const modal = bootstrap.Modal.getInstance(document.getElementById('profilePhotoCropModal'));
+    modal.hide();
+    
+    // 成功メッセージ
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle"></i> トリミングが完了しました。「保存」ボタンを押して変更を保存してください。
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.getElementById('profilePhotoPreviewContainer').appendChild(alertDiv);
+}
+
+// プロフィール写真クロッパー操作
+function profileCropperZoomIn() {
+    if (profilePhotoCropper) {
+        profilePhotoCropper.zoom(0.1);
+    }
+}
+
+function profileCropperZoomOut() {
+    if (profilePhotoCropper) {
+        profilePhotoCropper.zoom(-0.1);
+    }
+}
+
+function profileCropperReset() {
+    if (profilePhotoCropper) {
+        profilePhotoCropper.reset();
+    }
+}
+
+// プロフィール写真削除
+document.addEventListener('DOMContentLoaded', function() {
+    const removeBtn = document.getElementById('removeProfilePhotoBtn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            if (confirm('現在のプロフィール写真を削除しますか？')) {
+                document.getElementById('removeProfilePhoto').value = 'true';
+                document.getElementById('currentProfilePhoto').style.display = 'none';
+            }
+        });
+    }
+});
+
+// データ管理
+let skillsData = {};
+let careerData = [];
+let educationData = [];
+let certificationsData = [];
+
+// 初期データの読み込み
+function loadInitialData() {
+    // スキル
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/skills`)
+        .then(response => response.json())
+        .then(data => {
+            skillsData = data || {};
+            renderSkills();
+        });
+    
+    // 職歴
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/career`)
+        .then(response => response.json())
+        .then(data => {
+            careerData = data || [];
+            renderCareer();
+        });
+    
+    // 学歴
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/education`)
+        .then(response => response.json())
+        .then(data => {
+            educationData = data || [];
+            renderEducation();
+        });
+    
+    // 資格
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/certifications`)
+        .then(response => response.json())
+        .then(data => {
+            certificationsData = data || [];
+            renderCertifications();
+        });
+}
+
+// スキル管理
+function renderSkills() {
+    const container = document.getElementById('skillsContainer');
+    container.innerHTML = '';
+    
+    for (const [category, skills] of Object.entries(skillsData)) {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'mb-4';
+        categoryDiv.innerHTML = `
+            <h5>${category}</h5>
+            <div id="skills-${category}" class="skills-category">
+                ${skills.map((skill, index) => `
+                    <div class="skill-item" data-category="${category}" data-index="${index}">
+                        <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeSkill('${category}', ${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control mb-2" value="${skill.name}" 
+                                       placeholder="スキル名" onchange="updateSkill('${category}', ${index}, 'name', this.value)">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control mb-2" value="${skill.years || ''}" 
+                                       placeholder="経験年数" min="0" max="50" 
+                                       onchange="updateSkill('${category}', ${index}, 'years', this.value)">
+                            </div>
+                            <div class="col-md-4">
+                                <label>熟練度: <span id="level-display-${category}-${index}">${skill.level || 50}%</span></label>
+                                <input type="range" class="form-range skill-level-input" value="${skill.level || 50}" 
+                                       min="0" max="100" step="5"
+                                       onchange="updateSkill('${category}', ${index}, 'level', this.value)"
+                                       oninput="document.getElementById('level-display-${category}-${index}').textContent = this.value + '%'">
+                                <div class="skill-level-display">
+                                    <div class="skill-level-bar" style="width: ${skill.level || 50}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(categoryDiv);
+    }
+}
+
+function addSkill() {
+    const category = prompt('カテゴリ名を入力してください（例: プログラミング言語、フレームワーク、データベース）');
+    if (!category) return;
+    
+    if (!skillsData[category]) {
+        skillsData[category] = [];
+    }
+    
+    skillsData[category].push({
+        name: '',
+        level: 50,
+        years: 0
+    });
+    
+    renderSkills();
+}
+
+function updateSkill(category, index, field, value) {
+    if (field === 'level' || field === 'years') {
+        value = parseInt(value) || 0;
+    }
+    skillsData[category][index][field] = value;
+    
+    if (field === 'level') {
+        // レベルバーを更新
+        const skillItem = document.querySelector(`[data-category="${category}"][data-index="${index}"] .skill-level-bar`);
+        if (skillItem) {
+            skillItem.style.width = value + '%';
+        }
+    }
+}
+
+function removeSkill(category, index) {
+    if (confirm('このスキルを削除しますか？')) {
+        skillsData[category].splice(index, 1);
+        if (skillsData[category].length === 0) {
+            delete skillsData[category];
+        }
+        renderSkills();
+    }
+}
+
+function saveSkills() {
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/skills`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(skillsData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('スキルを保存しました');
+        } else {
+            alert('エラー: ' + data.message);
+        }
+    });
+}
+
+// 職歴管理
+function renderCareer() {
+    const container = document.getElementById('careerContainer');
+    container.innerHTML = careerData.map((job, index) => `
+        <div class="career-item">
+            <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeCareer(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${job.company}" 
+                           placeholder="会社名" onchange="updateCareer(${index}, 'company', this.value)">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${job.position}" 
+                           placeholder="役職" onchange="updateCareer(${index}, 'position', this.value)">
+                </div>
+            </div>
+            <div class="mb-2">
+                <input type="text" class="form-control" value="${job.period}" 
+                       placeholder="期間（例: 2015年1月～2018年6月）" onchange="updateCareer(${index}, 'period', this.value)">
+            </div>
+            <div>
+                <textarea class="form-control" rows="3" placeholder="業務内容" 
+                          onchange="updateCareer(${index}, 'description', this.value)">${job.description || ''}</textarea>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addCareer() {
+    careerData.push({
+        company: '',
+        position: '',
+        period: '',
+        description: ''
+    });
+    renderCareer();
+}
+
+function updateCareer(index, field, value) {
+    careerData[index][field] = value;
+}
+
+function removeCareer(index) {
+    if (confirm('この職歴を削除しますか？')) {
+        careerData.splice(index, 1);
+        renderCareer();
+    }
+}
+
+function saveCareer() {
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/career`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(careerData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('職歴を保存しました');
+        } else {
+            alert('エラー: ' + data.message);
+        }
+    });
+}
+
+// 学歴管理
+function renderEducation() {
+    const container = document.getElementById('educationContainer');
+    container.innerHTML = educationData.map((edu, index) => `
+        <div class="education-item">
+            <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeEducation(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${edu.school}" 
+                           placeholder="学校名" onchange="updateEducation(${index}, 'school', this.value)">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${edu.degree}" 
+                           placeholder="学位・専攻" onchange="updateEducation(${index}, 'degree', this.value)">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${edu.field}" 
+                           placeholder="分野" onchange="updateEducation(${index}, 'field', this.value)">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${edu.year}" 
+                           placeholder="卒業年" onchange="updateEducation(${index}, 'year', this.value)">
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addEducation() {
+    educationData.push({
+        school: '',
+        degree: '',
+        field: '',
+        year: ''
+    });
+    renderEducation();
+}
+
+function updateEducation(index, field, value) {
+    educationData[index][field] = value;
+}
+
+function removeEducation(index) {
+    if (confirm('この学歴を削除しますか？')) {
+        educationData.splice(index, 1);
+        renderEducation();
+    }
+}
+
+function saveEducation() {
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/education`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(educationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('学歴を保存しました');
+        } else {
+            alert('エラー: ' + data.message);
+        }
+    });
+}
+
+// 資格管理
+function renderCertifications() {
+    const container = document.getElementById('certificationsContainer');
+    container.innerHTML = certificationsData.map((cert, index) => `
+        <div class="certification-item">
+            <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeCertification(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${cert.name}" 
+                           placeholder="資格名" onchange="updateCertification(${index}, 'name', this.value)">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" value="${cert.issuer}" 
+                           placeholder="発行機関" onchange="updateCertification(${index}, 'issuer', this.value)">
+                </div>
+            </div>
+            <div>
+                <input type="text" class="form-control" value="${cert.date}" 
+                       placeholder="取得日" onchange="updateCertification(${index}, 'date', this.value)">
+            </div>
+        </div>
+    `).join('');
+}
+
+function addCertification() {
+    certificationsData.push({
+        name: '',
+        issuer: '',
+        date: ''
+    });
+    renderCertifications();
+}
+
+function updateCertification(index, field, value) {
+    certificationsData[index][field] = value;
+}
+
+function removeCertification(index) {
+    if (confirm('この資格を削除しますか？')) {
+        certificationsData.splice(index, 1);
+        renderCertifications();
+    }
+}
+
+function saveCertifications() {
+    fetch(`/management-panel-2024/portfolio/{{ user.id }}/certifications`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(certificationsData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('資格を保存しました');
+        } else {
+            alert('エラー: ' + data.message);
+        }
+    });
+}
+
+// ページ読み込み時に初期データを読み込む
+document.addEventListener('DOMContentLoaded', loadInitialData);
+</script>
+{% endblock %}
