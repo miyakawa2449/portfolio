@@ -71,8 +71,19 @@
                             <div class="mb-3">
                                 <label for="name" class="form-label">👤 名前</label>
                                 <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                                <div class="form-text">本名（日本語表記）</div>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name_romaji" class="form-label">🔤 ローマ字読み</label>
+                                <input type="text" class="form-control" id="name_romaji" name="name_romaji" value="{{ user.name_romaji or '' }}" maxlength="200" placeholder="例: Tsuyoshi Miyakawa">
+                                <div class="form-text">プロフィール・フッター表示用</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="handle_name" class="form-label">🏷️ ハンドルネーム</label>

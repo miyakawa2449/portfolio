@@ -115,6 +115,14 @@
                     </ul>
                 </li>
                 
+                <!-- ポートフォリオ編集 -->
+                <li class="sidebar-list {{ 'active' if 'portfolio' in request.endpoint else '' }}">
+                    <a href="{{ url_for('admin.edit_portfolio', user_id=current_user.id) }}">
+                        <i class="fa fa-user-tie"></i>
+                        <span class="menu-text">ポートフォリオ編集</span>
+                    </a>
+                </li>
+                
                 <!-- ユーザ管理 -->
                 <li class="sidebar-list {{ 'active' if 'user' in request.endpoint else '' }}">
                     <a href="{{ url_for('admin.users') }}">

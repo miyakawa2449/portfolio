@@ -262,7 +262,7 @@
 
     <!-- アクション -->
     <div class="actions-section">
-        <a href="{{ url_for('admin.edit_article', id=article.id) }}" class="btn btn-primary">
+        <a href="{{ url_for('admin.edit_article', article_id=article.id) }}" class="btn btn-primary">
             <i class="fas fa-edit"></i> 記事を編集
         </a>
         <button type="button" class="btn btn-success" onclick="generateAISuggestions()">

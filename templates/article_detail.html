@@ -1,9 +1,8 @@
 {% extends "layout.html" %}
-{# Block Editor機能削除により、block_macros.html参照を削除 #}
 
-{% block title %}{{ article.meta_title or article.title }} - ミニブログ{% endblock %}
+{% block title %}{{ article.meta_title or article.title }} - {{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}{% endblock %}
 {% block description %}{{ article.meta_description or (article.summary | truncate(160, True) if article.summary else '') or (article.body | markdown | striptags | truncate(160, True) if article.body else '') or 'プログラミング、テック、ライフスタイルに関する最新記事をお届けします。' }}{% endblock %}
-{% block keywords %}{{ article.meta_keywords if article.meta_keywords else 'ブログ,記事' }}{% endblock %}
+{% block keywords %}{{ article.meta_keywords if article.meta_keywords else 'ブログ,記事,Python,プログラミング' }}{% endblock %}
 
 {% block og_title %}{{ article.meta_title or article.title }}{% endblock %}
 {% block og_description %}{{ article.meta_description or (article.summary | truncate(160, True) if article.summary else '') or (article.body | markdown | striptags | truncate(160, True) if article.body else '') or 'プログラミング、テック、ライフスタイルに関する最新記事をお届けします。' }}{% endblock %}
@@ -13,374 +12,364 @@
 {% block canonical %}{{ url_for('article_detail', slug=article.slug, _external=True) }}{% endblock %}
 
 {% block content %}
-<div class="article-detail">
-    <div class="container">
+<!-- ヒーローセクション -->
+<section class="hero-section py-5">
+    <div class="container text-center">
         <!-- パンくずナビ -->
-        <nav class="breadcrumb-nav">
-            <a href="{{ url_for('blog') }}" class="breadcrumb-link">
-                <i class="bi bi-book"></i> ブログ
-            </a>
-            {% if article.categories %}
-                {% for category in article.categories %}
-                    <span class="breadcrumb-separator">/</span>
-                    <a href="{{ url_for('category_page', slug=category.slug) }}" class="breadcrumb-link">
-                        {{ category.name }}
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb justify-content-center">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('blog') }}" class="text-white text-decoration-none">
+                        <i class="fas fa-book me-1"></i> ブログ
                     </a>
-                {% endfor %}
-            {% endif %}
-            <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">{{ article.title }}</span>
-        </nav>
-
-        <!-- 記事メイン -->
-        <article class="article-main">
-            <!-- 記事ヘッダー -->
-            <header class="article-header">
+                </li>
                 {% if article.categories %}
-                    <div class="article-categories">
-                        {% for category in article.categories %}
-                            <a href="{{ url_for('category_page', slug=category.slug) }}" class="category-link">
+                    {% for category in article.categories %}
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('category_page', slug=category.slug) }}" class="text-white text-decoration-none">
                                 {{ category.name }}
                             </a>
-                        {% endfor %}
-                    </div>
+                        </li>
+                    {% endfor %}
                 {% endif %}
-                
-                <h1 class="article-title">{{ article.title }}</h1>
-                
-                <!-- アイキャッチ画像 -->
-                {% if article.featured_image %}
-                    <div class="article-featured-image">
-                        <img src="{{ url_for('static', filename=article.featured_image) }}" 
-                             alt="{{ article.title }}" 
-                             class="featured-image">
-                    </div>
-                {% endif %}
-                
-                <div class="article-meta">
-                    <div class="meta-item">
-                        <i class="bi bi-calendar3"></i>
-                        <span>{{ article.created_at.strftime('%Y年%m月%d日') }}</span>
-                    </div>
-                    
-                    {% if article.author %}
-                        <div class="meta-item">
-                            <i class="bi bi-person"></i>
-                            <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="author-link">
-                                {{ article.author.handle_name or article.author.name }}
-                            </a>
-                        </div>
-                    {% endif %}
-                    
-                    {% if article.updated_at and article.updated_at != article.created_at %}
-                        <div class="meta-item">
-                            <i class="bi bi-arrow-clockwise"></i>
-                            <span>更新: {{ article.updated_at.strftime('%Y年%m月%d日') }}</span>
-                        </div>
-                    {% endif %}
-                    
-                    <div class="meta-item">
-                        {% if article.is_published %}
-                            <span class="status-badge status-published">
-                                <i class="bi bi-eye"></i> 公開
-                            </span>
-                        {% else %}
-                            <span class="status-badge status-draft">
-                                <i class="bi bi-file-earmark"></i> 下書き
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <!-- アイキャッチ画像（重複削除） -->
-            </header>
+                <li class="breadcrumb-item active text-white opacity-75" aria-current="page">
+                    {{ article.title[:50] }}...
+                </li>
+            </ol>
+        </nav>
 
+        <!-- カテゴリバッジ -->
+        {% if article.categories %}
+        <div class="mb-3">
+            {% for category in article.categories %}
+            <a href="{{ url_for('category_page', slug=category.slug) }}" class="category-badge text-decoration-none me-2">
+                {{ category.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- タイトル -->
+        <h1 class="hero-title display-4 fw-bold mb-4">{{ article.title }}</h1>
+
+        <!-- メタ情報 -->
+        <div class="d-flex justify-content-center flex-wrap gap-3 mb-4 text-white opacity-75">
+            <span>
+                <i class="fas fa-calendar-alt me-1"></i>
+                {{ article.published_at.strftime('%Y年%m月%d日') if article.published_at else article.created_at.strftime('%Y年%m月%d日') }}
+            </span>
+            {% if article.author %}
+            <span>
+                <i class="fas fa-user me-1"></i> {{ article.author.handle_name or article.author.name }}
+            </span>
+            {% endif %}
+            {% if article.challenge %}
+            <span>
+                <i class="fas fa-trophy me-1"></i> {{ article.challenge.name }}
+                {% if article.challenge_day %} - Day {{ article.challenge_day }}{% endif %}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- 記事コンテンツ -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
             <!-- 記事本文 -->
-            <div class="article-body">
-                <!-- Markdownエディタ記事 -->
-                {{ article.body | sns_embed | markdown | safe }}
-            </div>
+            <article class="card shadow-sm border-0 mb-5">
+                {% if article.featured_image %}
+                <img src="{{ url_for('static', filename=article.featured_image) }}" 
+                     class="card-img-top" 
+                     alt="{{ article.featured_image_alt or article.title }}"
+                     style="height: 400px; object-fit: cover;">
+                {% endif %}
+                
+                <div class="card-body p-4 p-lg-5">
+                    {% if article.summary %}
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading mb-3">
+                            <i class="fas fa-info-circle me-2"></i>この記事の概要
+                        </h5>
+                        <p class="mb-0">{{ article.summary }}</p>
+                    </div>
+                    {% endif %}
 
-            <!-- 記事フッター -->
-            <footer class="article-footer">
-                <div class="article-actions">
-                    {% if current_user.is_authenticated and (current_user == article.author or current_user.role == 'admin') %}
-                        <a href="{{ url_for('admin.edit_article', article_id=article.id) }}" class="btn btn-outline">
-                            <i class="bi bi-pencil"></i>
-                            記事を編集
-                        </a>
+                    <div class="article-content">
+                        {{ article.body | markdown | safe }}
+                    </div>
+
+                    <!-- 関連プロジェクト -->
+                    {% if article.related_projects %}
+                    <div class="section-divider"></div>
+                    <section class="related-projects mb-4">
+                        <h3 class="h4 mb-3">
+                            <i class="fas fa-folder-open text-primary me-2"></i>関連プロジェクト
+                        </h3>
+                        <div class="row g-3">
+                            {% for project in article.related_projects %}
+                            <div class="col-md-6">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ project.title }}</h5>
+                                        {% if project.description %}
+                                        <p class="card-text small">{{ project.description[:100] }}...</p>
+                                        {% endif %}
+                                        <div class="d-flex gap-2 mt-3">
+                                            {% if project.github_url %}
+                                            <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
+                                                <i class="fab fa-github me-1"></i> Code
+                                            </a>
+                                            {% endif %}
+                                            {% if project.demo_url_list %}
+                                            <a href="{{ project.demo_url_list[0].url }}" target="_blank" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-external-link-alt me-1"></i> Demo
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
+
+                    <!-- タグ -->
+                    {% if article.tags %}
+                    <div class="tags mb-4">
+                        <h5 class="mb-3">
+                            <i class="fas fa-tags text-primary me-2"></i>タグ
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tag in article.tags %}
+                            <span class="badge bg-light text-dark border">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
-                
-                {% if article.author %}
-                    <div class="author-info">
-                        <div class="author-avatar">
-                            <div class="avatar-circle">
+            </article>
+
+            <!-- 著者情報 -->
+            {% if article.author %}
+            <div class="card shadow-sm border-0 mb-5">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="bg-gradient-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
                                 {{ (article.author.handle_name or article.author.name)[0].upper() }}
                             </div>
                         </div>
-                        <div class="author-details">
-                            <h4 class="author-name">
-                                <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="author-link">
-                                    {{ article.author.handle_name or article.author.name }}
-                                </a>
-                            </h4>
-                            <p class="author-role">著者</p>
-                            {% if article.author.introduction %}
-                                {% set intro_text = article.author.introduction[:100] %}
-                                <p class="author-bio">{{ intro_text }}{% if article.author.introduction|length > 100 %}...{% endif %}</p>
-                            {% endif %}
-                            <a href="{{ url_for('profile', handle_name=article.author.handle_name or article.author.name) }}" class="btn btn-sm btn-outline">
-                                プロフィールを見る
-                            </a>
+                        <div>
+                            <h4 class="mb-1">{{ article.author.handle_name or article.author.name }}</h4>
+                            <p class="text-muted mb-0">{{ article.author.bio or 'プログラマー・データサイエンティスト' }}</p>
                         </div>
                     </div>
-                {% endif %}
-            </footer>
-        </article>
-
-        <!-- コメント部分 -->
-        {% if article.allow_comments %}
-        <section class="comments-section">
-            <div class="comments-container">
-                <h3 class="comments-title">
-                    <i class="bi bi-chat-left-text"></i>
-                    コメント
-                </h3>
-                
-                <!-- 既存のコメント表示 -->
-                {% if approved_comments %}
-                    <div class="comments-list">
-                        {% for comment in approved_comments %}
-                            <div class="comment-item">
-                                <div class="comment-header">
-                                    <h5 class="comment-author">{{ comment.author_name }}</h5>
-                                    <span class="comment-date">{{ comment.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
-                                </div>
-                                <div class="comment-content">
-                                    {{ comment.content | nl2br | safe }}
-                                </div>
-                                
-                                <!-- 返信表示 -->
-                                {% if comment.approved_replies %}
-                                    <div class="comment-replies">
-                                        {% for reply in comment.approved_replies %}
-                                            <div class="comment-reply">
-                                                <div class="comment-header">
-                                                    <h6 class="comment-author">{{ reply.author_name }}</h6>
-                                                    <span class="comment-date">{{ reply.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
-                                                </div>
-                                                <div class="comment-content">
-                                                    {{ reply.content | nl2br | safe }}
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="no-comments">まだコメントはありません。最初のコメントを投稿してみましょう！</p>
-                {% endif %}
-                
-                <!-- コメント投稿フォーム -->
-                <div class="comment-form-container">
-                    <h4 class="comment-form-title">コメントを投稿</h4>
-                    <form method="POST" action="{{ url_for('add_comment', article_id=article.id) }}" class="comment-form">
-                        {{ csrf_token() }}
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="author_name">お名前 <span class="required">*</span></label>
-                                <input type="text" id="author_name" name="author_name" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="author_email">メールアドレス <span class="required">*</span></label>
-                                <input type="email" id="author_email" name="author_email" class="form-control" required>
-                                <small class="form-text">メールアドレスは公開されません</small>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="author_website">ウェブサイト（任意）</label>
-                            <input type="url" id="author_website" name="author_website" class="form-control" placeholder="https://">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="content">コメント <span class="required">*</span></label>
-                            <textarea id="content" name="content" class="form-control" rows="4" required placeholder="コメントを入力してください..."></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send"></i>
-                                コメントを投稿
-                            </button>
-                        </div>
-                        
-                        <div class="comment-notice">
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle"></i>
-                                コメントは承認後に表示されます。不適切な内容は削除される場合があります。
-                            </small>
-                        </div>
-                    </form>
                 </div>
             </div>
-        </section>
-        {% endif %}
+            {% endif %}
 
-        <!-- 関連プロジェクト -->
-        {% if article.related_projects %}
-        <section class="related-projects-section my-5">
-            <h3 class="section-title mb-4">
-                <i class="fas fa-code"></i> 関連プロジェクト
-            </h3>
-            <div class="row g-4">
-                {% for project in article.related_projects[:3] %}
-                <div class="col-lg-4 col-md-6">
-                    <div class="card h-100 shadow-sm project-card">
-                        {% if project.featured_image %}
-                        <img src="{{ url_for('static', filename=project.featured_image) }}" 
-                             class="card-img-top" 
-                             alt="{{ project.title }}"
-                             style="height: 200px; object-fit: cover;">
-                        {% else %}
-                        <div class="card-img-top bg-gradient text-white d-flex align-items-center justify-content-center" 
-                             style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <i class="fas fa-code fa-3x"></i>
+            <!-- ナビゲーション -->
+            <div class="card shadow-sm border-0 mb-5">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('blog') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>記事一覧に戻る
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" onclick="window.print()">
+                                <i class="fas fa-print me-2"></i>印刷
+                            </button>
+                            <button class="btn btn-outline-info" onclick="copyUrl()">
+                                <i class="fas fa-share me-2"></i>シェア
+                            </button>
                         </div>
-                        {% endif %}
-                        
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{ project.title }}</h5>
-                            {% if project.description %}
-                            <p class="card-text text-muted">{{ project.description[:100] }}...</p>
-                            {% endif %}
-                            
-                            <!-- 技術スタック -->
-                            {% if project.technology_list %}
-                            <div class="mb-3">
-                                <div class="d-flex flex-wrap gap-1">
-                                    {% for tech in project.technology_list[:3] %}
-                                    <span class="badge bg-secondary">{{ tech }}</span>
-                                    {% endfor %}
-                                    {% if project.technology_list|length > 3 %}
-                                    <span class="badge bg-light text-dark">+{{ project.technology_list|length - 3 }}</span>
-                                    {% endif %}
-                                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- コメントセクション -->
+{% if comments %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h3 class="mb-4">
+                    <i class="fas fa-comments text-primary me-2"></i>コメント ({{ comments|length }})
+                </h3>
+                
+                {% for comment in comments %}
+                <div class="card mb-3 shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1">{{ comment.name }}</h5>
+                                <small class="text-muted">{{ comment.created_at.strftime('%Y年%m月%d日 %H:%M') }}</small>
                             </div>
+                            {% if comment.email %}
+                            <small class="text-muted">{{ comment.email }}</small>
                             {% endif %}
-                            
-                            <!-- アクションボタン -->
-                            <div class="mt-auto">
-                                <div class="btn-group w-100" role="group">
-                                    {% if project.github_url %}
-                                    <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
-                                        <i class="fab fa-github"></i> Code
-                                    </a>
-                                    {% endif %}
-                                    {% if project.demo_url %}
-                                    <a href="{{ project.demo_url }}" target="_blank" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-external-link-alt"></i> Demo
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
                         </div>
+                        <p class="mb-0">{{ comment.content }}</p>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            
-            {% if article.related_projects|length > 3 %}
-            <div class="text-center mt-4">
-                <a href="{{ url_for('projects') }}" class="btn btn-outline-primary">
-                    すべてのプロジェクトを見る
-                </a>
-            </div>
-            {% endif %}
-        </section>
-        {% endif %}
-
-        <!-- ナビゲーション -->
-        <nav class="article-navigation">
-            <div class="nav-buttons">
-                <a href="{{ url_for('blog') }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i>
-                    記事一覧に戻る
-                </a>
-                {% if article.categories %}
-                    {% for category in article.categories %}
-                        <a href="{{ url_for('category_page', slug=category.slug) }}" class="btn btn-outline">
-                            <i class="bi bi-tags"></i>
-                            {{ category.name }}の記事
-                        </a>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        </nav>
+        </div>
     </div>
-</div>
+</section>
+{% endif %}
 
-<style>
-/* 関連プロジェクトセクション */
-.related-projects-section {
-    border-top: 1px solid #dee2e6;
-    padding-top: 3rem;
+<!-- コメント投稿フォーム -->
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-comment-dots me-2"></i>コメントを投稿
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" action="{{ url_for('add_comment', article_id=article.id) }}">
+                            {{ comment_form.hidden_tag() }}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ comment_form.name.label(class="form-label") }}
+                                        {{ comment_form.name(class="form-control") }}
+                                        {% for error in comment_form.name.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ comment_form.email.label(class="form-label") }}
+                                        {{ comment_form.email(class="form-control") }}
+                                        {% for error in comment_form.email.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                {{ comment_form.content.label(class="form-label") }}
+                                {{ comment_form.content(class="form-control", rows="4", placeholder="あなたのコメントをここに入力してください...") }}
+                                {% for error in comment_form.content.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="text-end">
+                                {{ comment_form.submit(class="btn btn-primary btn-lg") }}
+                            </div>
+                        </form>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                コメントは承認制です。不適切な内容は掲載されません。
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// URLコピー機能
+function copyUrl() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        // Bootstrap toastを表示
+        showToast('URLをクリップボードにコピーしました！');
+    });
 }
 
-.project-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: none;
+// トースト表示機能
+function showToast(message) {
+    // 動的にtoast要素を作成
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <strong class="me-auto">
+                    <i class="fas fa-check-circle me-2"></i>成功
+                </strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    // Toast container作成（存在しない場合）
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '1060';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Toast要素を追加
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Toast表示
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 3000
+    });
+    toast.show();
+    
+    // Toast削除（アニメーション後）
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
 }
 
-.project-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
-
-.project-card .badge {
-    font-size: 0.75em;
-    font-weight: normal;
-}
-
-.project-card .btn-group {
-    gap: 0.25rem;
-}
-
-/* プロジェクトボタンの視認性向上 */
-.related-projects-section .btn-outline-dark,
-.related-projects-section .btn-outline-info {
-    border-width: 2px;
-    font-weight: 600;
-    background-color: rgba(255, 255, 255, 0.95);
-    transition: all 0.3s ease;
-}
-
-.related-projects-section .btn-outline-dark {
-    color: #212529;
-    border-color: #6c757d;
-}
-
-.related-projects-section .btn-outline-dark:hover {
-    background-color: #212529;
-    border-color: #212529;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.related-projects-section .btn-primary {
-    border-width: 2px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.related-projects-section .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
-}
-</style>
+// スムーススクロール
+document.addEventListener('DOMContentLoaded', function() {
+    // 記事内のリンクにスムーススクロールを適用
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+    
+    // 読み取り時間の計算（目安）
+    const articleContent = document.querySelector('.article-content');
+    if (articleContent) {
+        const wordCount = articleContent.textContent.split(/\s+/).length;
+        const readingTime = Math.ceil(wordCount / 200); // 200語/分として計算
+        
+        // 読み取り時間の表示（メタ情報に追加）
+        const metaInfo = document.querySelector('.hero-section .d-flex');
+        if (metaInfo) {
+            const readingTimeSpan = document.createElement('span');
+            readingTimeSpan.innerHTML = '<i class="fas fa-clock me-1"></i>約' + readingTime + '分で読めます';
+            metaInfo.appendChild(readingTimeSpan);
+        }
+    }
+});
+</script>
 {% endblock %}
