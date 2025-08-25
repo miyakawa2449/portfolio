@@ -46,10 +46,10 @@
             {% endif %}
             {% else %}
             <h2 class="h5 mb-2">
-                <strong>Tsuyoshi Miyakawa</strong> のPython学習ポートフォリオ
+                <strong>{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</strong> のPython学習ポートフォリオ
             </h2>
             <p class="opacity-75">
-                データサイエンス・機械学習エンジニアを目指す100日間の挑戦記録
+                {{ admin_user.bio or 'データサイエンス・機械学習エンジニアを目指す100日間の挑戦記録' }}
             </p>
             {% endif %}
         </div>
@@ -61,7 +61,7 @@
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
@@ -94,14 +94,10 @@
             <h2 class="h5 mb-2">
                 <strong>{{ admin_user.name }}</strong>{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %} のPython学習ポートフォリオ
             </h2>
-            {% if admin_user.bio %}
-            <p class="opacity-75">{{ admin_user.bio }}</p>
-            {% else %}
-            <p class="opacity-75">データサイエンス・機械学習エンジニアを目指す学習記録</p>
-            {% endif %}
+            <p class="opacity-75">{{ admin_user.job_title or 'データサイエンス・機械学習エンジニアを目指す学習記録' }}</p>
             {% else %}
             <h2 class="h5 mb-2">
-                <strong>Tsuyoshi Miyakawa</strong> のPython学習ポートフォリオ
+                <strong>{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</strong> のPython学習ポートフォリオ
             </h2>
             <p class="opacity-75">
                 データサイエンス・機械学習エンジニアを目指す学習記録
@@ -115,7 +111,7 @@
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
@@ -277,8 +273,8 @@
                 <h3 class="mb-1">{{ admin_user.name_romaji or admin_user.name }}{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %}</h3>
                 <p class="text-light mb-3">{{ admin_user.job_title or 'Python Developer / Data Enthusiast' }}</p>
                 {% else %}
-                <h3 class="mb-1">Tsuyoshi Miyakawa</h3>
-                <p class="text-light mb-3">Python Developer / Data Enthusiast</p>
+                <h3 class="mb-1">{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</h3>
+                <p class="text-light mb-3">{{ admin_user.job_title or 'Python Developer / Data Enthusiast' }}</p>
                 {% endif %}
                 
                 <!-- ソーシャルリンク -->
@@ -333,7 +329,7 @@
                             <i class="fas fa-user me-2"></i> 詳しいプロフィール
                         </a>
                         {% else %}
-                        <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg">
+                        <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
                             <i class="fas fa-user me-2"></i> 詳しいプロフィール
                         </a>
                         {% endif %}
