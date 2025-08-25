@@ -726,6 +726,7 @@ def edit_user(user_id):
             
             # 基本データ更新
             user.name = request.form.get('name', user.name)
+            user.name_romaji = request.form.get('name_romaji', user.name_romaji or '')
             user.handle_name = request.form.get('handle_name', user.handle_name or '')
             # 権限更新（自分自身の場合はhiddenフィールドで'admin'が送信される）
             user.role = request.form.get('role', user.role)
@@ -3304,4 +3305,198 @@ def delete_project(project_id):
         flash(f"プロジェクトの削除に失敗しました: {str(e)}", "error")
     
     return redirect(url_for("admin.projects"))
+
+@admin_bp.route('/portfolio/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_portfolio(user_id):
+    """ポートフォリオプロフィール編集"""
+    from forms import PortfolioProfileForm
+    import json
+    from werkzeug.utils import secure_filename
+    import os
+    
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック（本人または管理者のみ）
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    form = PortfolioProfileForm()
+    
+    if form.validate_on_submit():
+        try:
+            # 基本情報の更新
+            user.handle_name = form.handle_name.data
+            user.job_title = form.job_title.data
+            user.tagline = form.tagline.data
+            user.introduction = form.introduction.data
+            
+            # 連絡先情報の更新
+            user.portfolio_email = form.portfolio_email.data
+            user.linkedin_url = form.linkedin_url.data
+            user.github_username = form.github_username.data
+            
+            # プロフィール写真の処理
+            if form.profile_photo.data:
+                # 古い写真を削除
+                if user.profile_photo:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], user.profile_photo)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                # 新しい写真を保存
+                filename = secure_filename(form.profile_photo.data.filename)
+                filename = f"profile_{user.id}_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], 'profiles', filename)
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                
+                # クロップ処理がある場合
+                if form.profile_photo_crop_x.data:
+                    from PIL import Image
+                    img = Image.open(form.profile_photo.data)
+                    
+                    # クロップ情報の取得
+                    crop_x = int(float(form.profile_photo_crop_x.data))
+                    crop_y = int(float(form.profile_photo_crop_y.data))
+                    crop_width = int(float(form.profile_photo_crop_width.data))
+                    crop_height = int(float(form.profile_photo_crop_height.data))
+                    
+                    # クロップ実行
+                    img = img.crop((crop_x, crop_y, crop_x + crop_width, crop_y + crop_height))
+                    
+                    # 正方形にリサイズ（プロフィール写真用）
+                    img = img.resize((300, 300), Image.Resampling.LANCZOS)
+                    img.save(filepath, quality=90)
+                else:
+                    form.profile_photo.data.save(filepath)
+                
+                user.profile_photo = f"uploads/profiles/{filename}"
+            
+            # 履歴書PDFの処理
+            if form.resume_pdf.data:
+                # 古いPDFを削除
+                if user.resume_pdf:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], user.resume_pdf)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                # 新しいPDFを保存
+                filename = secure_filename(form.resume_pdf.data.filename)
+                filename = f"resume_{user.id}_{int(time.time())}_{filename}"
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], 'resumes', filename)
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                form.resume_pdf.data.save(filepath)
+                user.resume_pdf = f"uploads/resumes/{filename}"
+            
+            db.session.commit()
+            flash('ポートフォリオ情報を正常に更新できました', 'success')
+            return redirect(url_for('admin.edit_portfolio', user_id=user.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'エラーが発生しました: {str(e)}', 'error')
+    
+    # フォームに現在の値を設定
+    if request.method == 'GET':
+        form.handle_name.data = user.handle_name
+        form.job_title.data = user.job_title
+        form.tagline.data = user.tagline
+        form.introduction.data = user.introduction
+        form.portfolio_email.data = user.portfolio_email
+        form.linkedin_url.data = user.linkedin_url
+        form.github_username.data = user.github_username
+    
+    return render_template('admin/portfolio_edit.html', form=form, user=user)
+
+@admin_bp.route('/portfolio/<int:user_id>/skills', methods=['GET', 'POST'])
+@admin_required
+def edit_portfolio_skills(user_id):
+    """スキル編集（AJAX対応）"""
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    if request.method == 'POST':
+        try:
+            skills_data = request.get_json()
+            user.skills = skills_data
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'スキルを更新しました'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 400
+    
+    # GET: 現在のスキルを返す
+    return jsonify(user.skills or {})
+
+@admin_bp.route('/portfolio/<int:user_id>/career', methods=['GET', 'POST'])
+@admin_required
+def edit_portfolio_career(user_id):
+    """職歴編集（AJAX対応）"""
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    if request.method == 'POST':
+        try:
+            career_data = request.get_json()
+            user.career_history = career_data
+            db.session.commit()
+            return jsonify({'success': True, 'message': '職歴を更新しました'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 400
+    
+    # GET: 現在の職歴を返す
+    return jsonify(user.career_history or [])
+
+@admin_bp.route('/portfolio/<int:user_id>/education', methods=['GET', 'POST'])
+@admin_required
+def edit_portfolio_education(user_id):
+    """学歴編集（AJAX対応）"""
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    if request.method == 'POST':
+        try:
+            education_data = request.get_json()
+            user.education = education_data
+            db.session.commit()
+            return jsonify({'success': True, 'message': '学歴を更新しました'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 400
+    
+    # GET: 現在の学歴を返す
+    return jsonify(user.education or [])
+
+@admin_bp.route('/portfolio/<int:user_id>/certifications', methods=['GET', 'POST'])
+@admin_required
+def edit_portfolio_certifications(user_id):
+    """資格編集（AJAX対応）"""
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    if request.method == 'POST':
+        try:
+            certifications_data = request.get_json()
+            user.certifications = certifications_data
+            db.session.commit()
+            return jsonify({'success': True, 'message': '資格を更新しました'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 400
+    
+    # GET: 現在の資格を返す
+    return jsonify(user.certifications or [])
 

@@ -204,3 +204,68 @@ class ProjectForm(FlaskForm):
     ])
     
     submit = SubmitField('保存')
+
+class PortfolioProfileForm(FlaskForm):
+    """ポートフォリオプロフィール編集フォーム"""
+    # 基本情報
+    handle_name = StringField('表示名', validators=[Optional(), Length(max=100)])
+    name_romaji = StringField('ローマ字読み', validators=[Optional(), Length(max=200)], 
+                             render_kw={'placeholder': '例: Tsuyoshi Miyakawa'})
+    job_title = StringField('職種・肩書き', validators=[Optional(), Length(max=255)])
+    tagline = StringField('キャッチコピー', validators=[Optional(), Length(max=255)])
+    introduction = TextAreaField('自己紹介', validators=[Optional(), Length(max=500)])
+    
+    # プロフィール写真
+    profile_photo = FileField('プロフィール写真', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png'], '画像ファイル（JPG, PNG）のみアップロード可能です。')
+    ])
+    profile_photo_crop_x = HiddenField('Profile Photo Crop X')
+    profile_photo_crop_y = HiddenField('Profile Photo Crop Y')
+    profile_photo_crop_width = HiddenField('Profile Photo Crop Width')
+    profile_photo_crop_height = HiddenField('Profile Photo Crop Height')
+    
+    # 連絡先情報
+    portfolio_email = StringField('公開用メールアドレス', validators=[Optional(), Email(), Length(max=255)])
+    linkedin_url = StringField('LinkedIn URL', validators=[Optional(), URL(), Length(max=255)])
+    github_username = StringField('GitHubユーザー名', validators=[Optional(), Length(max=255)])
+    
+    # 履歴書PDF
+    resume_pdf = FileField('履歴書PDF', validators=[
+        FileAllowed(['pdf'], 'PDFファイルのみアップロード可能です。')
+    ])
+    
+    submit = SubmitField('保存')
+
+class SkillForm(FlaskForm):
+    """スキル編集フォーム（JavaScript用）"""
+    name = StringField('スキル名', validators=[DataRequired(), Length(max=100)])
+    category = StringField('カテゴリ', validators=[DataRequired(), Length(max=50)])
+    level = IntegerField('熟練度', validators=[Optional(), NumberRange(min=0, max=100)])
+    years = IntegerField('経験年数', validators=[Optional(), NumberRange(min=0, max=50)])
+
+class CareerForm(FlaskForm):
+    """職歴編集フォーム（JavaScript用）"""
+    company = StringField('会社名', validators=[DataRequired(), Length(max=255)])
+    position = StringField('役職', validators=[DataRequired(), Length(max=255)])
+    period = StringField('期間', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('業務内容', validators=[Optional(), Length(max=500)])
+
+class EducationForm(FlaskForm):
+    """学歴編集フォーム（JavaScript用）"""
+    school = StringField('学校名', validators=[DataRequired(), Length(max=255)])
+    degree = StringField('学位・専攻', validators=[DataRequired(), Length(max=255)])
+    field = StringField('分野', validators=[DataRequired(), Length(max=255)])
+    year = StringField('卒業年', validators=[DataRequired(), Length(max=20)])
+
+class CertificationForm(FlaskForm):
+    """資格編集フォーム（JavaScript用）"""
+    name = StringField('資格名', validators=[DataRequired(), Length(max=255)])
+    issuer = StringField('発行機関', validators=[DataRequired(), Length(max=255)])
+    date = StringField('取得日', validators=[DataRequired(), Length(max=50)])
+
+class CommentForm(FlaskForm):
+    """コメント投稿フォーム"""
+    name = StringField('お名前', validators=[DataRequired(), Length(max=100)])
+    email = StringField('メールアドレス', validators=[DataRequired(), Email(), Length(max=255)])
+    content = TextAreaField('コメント', validators=[DataRequired(), Length(max=1000)])
+    submit = SubmitField('コメントを投稿')

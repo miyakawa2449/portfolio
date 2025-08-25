@@ -46,7 +46,7 @@ def clear_ogp_cache():
 # models.py から db インスタンスとモデルクラスをインポートします
 from models import db, User, Article, Category, Comment, EmailChangeRequest, article_categories, Challenge, Project
 # forms.py からフォームクラスをインポート
-from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm, PasswordResetRequestForm, PasswordResetForm
+from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm, PasswordResetRequestForm, PasswordResetForm, CommentForm
 
 app = Flask(__name__)
 
@@ -1033,9 +1033,28 @@ def inject_site_settings():
             current_app.logger.error(f"Error getting setting {key}: {e}")
             return default
     
+    def get_admin_user():
+        """管理者ユーザー情報を取得"""
+        try:
+            from sqlalchemy import select
+            from models import User
+            admin_user = db.session.execute(
+                select(User).where(User.role == 'admin').limit(1)
+            ).scalar_one_or_none()
+            if admin_user:
+                print(f"DEBUG: Found admin user: {admin_user.name}, handle: {admin_user.handle_name}")
+            else:
+                print("DEBUG: No admin user found")
+            return admin_user
+        except Exception as e:
+            current_app.logger.error(f"Error loading admin user: {e}")
+            print(f"DEBUG: Error loading admin user: {e}")
+            return None
+    
     return dict(
         site_settings=get_site_settings(),
-        get_setting=get_setting
+        get_setting=get_setting,
+        admin_user=get_admin_user()
     )
 
 # カスタムフィルター
@@ -1160,7 +1179,15 @@ def blog(page=1, challenge_id=None):
     from models import SiteSetting, Challenge
     
     # 1ページあたりの記事数をサイト設定から取得
-    per_page = int(SiteSetting.get_setting('posts_per_page', '5'))
+    def get_int_setting(key, default_value):
+        """サイト設定から整数値を安全に取得"""
+        setting_value = SiteSetting.get_setting(key, str(default_value))
+        try:
+            return int(setting_value) if setting_value and setting_value.strip() else default_value
+        except (ValueError, TypeError):
+            return default_value
+    
+    per_page = get_int_setting('posts_per_page', 5)
     
     # 基本クエリ：公開済み記事
     articles_query = select(Article).where(Article.is_published.is_(True))
@@ -1620,7 +1647,10 @@ def article_detail(slug):
                 if reply.is_approved
             ]
     
-    return render_template('article_detail.html', article=article, approved_comments=approved_comments)
+    # コメントフォームを作成
+    comment_form = CommentForm()
+    
+    return render_template('article_detail.html', article=article, approved_comments=approved_comments, comment_form=comment_form)
 
 @app.route('/add_comment/<int:article_id>', methods=['POST'])
 def add_comment(article_id):
@@ -1678,7 +1708,7 @@ def add_comment(article_id):
 
 @app.route('/profile/<handle_name>/')
 def profile(handle_name):
-    """ユーザープロフィールページ"""
+    """ユーザープロフィールページ（ポートフォリオ版）"""
     user = db.session.execute(select(User).where(User.handle_name == handle_name)).scalar_one_or_none()
     if not user:
         # ハンドルネームが見つからない場合、nameで検索
@@ -1696,7 +1726,152 @@ def profile(handle_name):
         )
     ).scalars().all()
     
-    return render_template('profile.html', user=user, articles=articles)
+    # プロジェクトを取得（作成者でフィルタ可能な場合）
+    projects = db.session.execute(
+        select(Project).order_by(Project.created_at.desc())
+    ).scalars().all()
+    
+    # 注目プロジェクトを取得
+    featured_projects = [p for p in projects if p.is_featured]
+    
+    # チャレンジ情報を取得
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order, Challenge.id)
+    ).scalars().all()
+    
+    return render_template('profile_portfolio.html', 
+                           user=user, 
+                           articles=articles,
+                           projects=projects,
+                           featured_projects=featured_projects,
+                           challenges=challenges)
+
+@app.route('/download/resume/<int:user_id>')
+@login_required
+def download_resume(user_id):
+    """履歴書PDFダウンロード（動的日付生成）"""
+    from io import BytesIO
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from flask import make_response
+    
+    # 日本語フォント設定
+    pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+    
+    # ユーザー情報取得
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック（本人または管理者のみ）
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    # PDFバッファー作成
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    
+    # スタイル設定
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=30,
+        alignment=TA_CENTER,
+        fontName='HeiseiKakuGo-W5'
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#667eea'),
+        spaceAfter=12,
+        fontName='HeiseiKakuGo-W5'
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        fontName='HeiseiKakuGo-W5'
+    )
+    
+    # ドキュメント要素
+    elements = []
+    
+    # タイトル
+    elements.append(Paragraph("履歴書", title_style))
+    elements.append(Spacer(1, 12))
+    
+    # 日付（動的生成）
+    today = datetime.now().strftime('%Y年%m月%d日')
+    elements.append(Paragraph(f"{today} 現在", normal_style))
+    elements.append(Spacer(1, 20))
+    
+    # 基本情報テーブル
+    basic_info = [
+        ['氏名', user.handle_name or user.name],
+        ['メールアドレス', user.portfolio_email or user.email],
+        ['職種', user.job_title or '未設定']
+    ]
+    
+    if user.birthplace:
+        basic_info.append(['出身地', user.birthplace])
+    
+    basic_table = Table(basic_info, colWidths=[4*cm, 10*cm])
+    basic_table.setStyle(TableStyle([
+        ('FONT', (0, 0), (-1, -1), 'HeiseiKakuGo-W5'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f0f0f0')),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#333333')),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 0), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    
+    elements.append(basic_table)
+    elements.append(Spacer(1, 30))
+    
+    # スキル情報
+    if user.skills:
+        elements.append(Paragraph("スキル・技術", heading_style))
+        for category, skills_list in user.skills.items():
+            skill_names = [f"{skill['name']} ({skill.get('years', 'N/A')}年)" for skill in skills_list]
+            elements.append(Paragraph(f"<b>{category}:</b> {', '.join(skill_names)}", normal_style))
+            elements.append(Spacer(1, 6))
+        elements.append(Spacer(1, 20))
+    
+    # 職歴
+    if user.career_history:
+        elements.append(Paragraph("職歴", heading_style))
+        for i, job in enumerate(user.career_history):
+            elements.append(Paragraph(f"<b>{job['company']}</b> - {job['position']}", normal_style))
+            elements.append(Paragraph(f"期間: {job['period']}", normal_style))
+            if job.get('description'):
+                elements.append(Paragraph(job['description'], normal_style))
+            if i < len(user.career_history) - 1:
+                elements.append(Spacer(1, 12))
+    
+    # PDF生成
+    doc.build(elements)
+    
+    # レスポンス作成
+    buffer.seek(0)
+    response = make_response(buffer.read())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=resume_{user.id}_{datetime.now().strftime("%Y%m%d")}.pdf'
+    
+    return response
 
 # 開発用テスト関数
 @app.route('/test_ogp')
