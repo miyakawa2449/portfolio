@@ -242,6 +242,7 @@ class User(db.Model, UserMixin): # UserMixin を継承
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    name_romaji = db.Column(db.String(200), nullable=True)  # ローマ字読み
     handle_name = db.Column(db.String(100))
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='author') # 'admin', 'author'
@@ -273,6 +274,23 @@ class User(db.Model, UserMixin): # UserMixin を継承
     sns_instagram = db.Column(db.String(100), nullable=True)  # Instagram
     sns_threads = db.Column(db.String(100), nullable=True)  # Threads
     sns_youtube = db.Column(db.String(100), nullable=True)  # YouTube
+    
+    # ポートフォリオ向けプロフェッショナル情報
+    job_title = db.Column(db.String(255), nullable=True)  # 職種・肩書き
+    tagline = db.Column(db.String(255), nullable=True)  # キャッチコピー
+    profile_photo = db.Column(db.String(255), nullable=True)  # プロフィール写真URL
+    resume_pdf = db.Column(db.String(255), nullable=True)  # 履歴書PDFのURL
+    
+    # スキル・経歴情報（JSON形式）
+    skills = db.Column(db.JSON, nullable=True)  # {category: [{name, level, years}]}
+    career_history = db.Column(db.JSON, nullable=True)  # [{company, position, period, description}]
+    education = db.Column(db.JSON, nullable=True)  # [{school, degree, field, year}]
+    certifications = db.Column(db.JSON, nullable=True)  # [{name, issuer, date}]
+    
+    # プロフェッショナル連絡先
+    linkedin_url = db.Column(db.String(255), nullable=True)
+    github_username = db.Column(db.String(255), nullable=True)
+    portfolio_email = db.Column(db.String(255), nullable=True)  # 公開用メール
     
     ext_json = db.Column(db.Text, nullable=True)  # 拡張用JSON
     
