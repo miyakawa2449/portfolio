@@ -1,0 +1,557 @@
+{% extends "layout.html" %}
+
+{% block title %}Python 100 Days Challenge Portfolio{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<section class="hero-section py-5 bg-primary text-white">
+    <div class="container text-center">
+        {% if active_challenge %}
+        <h1 class="h2 h1-md fw-bold mb-4">{{ active_challenge.name }}</h1>
+        <p class="lead mb-5">{{ active_challenge.description or '100日間のPython学習の旅を記録するポートフォリオサイト' }}</p>
+        
+        <!-- 進捗表示 -->
+        <div class="progress-container mb-5 mx-auto" style="max-width: 600px;">
+            <h3 class="h4 mb-3">チャレンジ進捗: Day {{ active_challenge.days_elapsed }}/{{ active_challenge.target_days }}</h3>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                     role="progressbar" 
+                     style="width: {{ active_challenge.progress_percentage }}%"
+                     aria-valuenow="{{ active_challenge.days_elapsed }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="{{ active_challenge.target_days }}">
+                    {{ "%.1f"|format(active_challenge.progress_percentage) }}%
+                </div>
+            </div>
+            <p class="mt-3 text-light">
+                開始日: {{ active_challenge.start_date.strftime('%Y年%m月%d日') }}
+                {% if active_challenge.status == 'completed' %}
+                <br>完了日: {{ active_challenge.end_date.strftime('%Y年%m月%d日') }}
+                {% endif %}
+            </p>
+        </div>
+        
+        <!-- 個人情報ハイライト -->
+        <div class="hero-profile mb-4">
+            <p class="h5 mb-2">
+                <strong>Tsuyoshi Miyakawa</strong> のPython学習ポートフォリオ
+            </p>
+            <p class="text-light opacity-75">
+                データサイエンス・機械学習エンジニアを目指す100日間の挑戦記録
+            </p>
+        </div>
+        
+        <!-- CTAボタン -->
+        <div class="hero-cta d-flex flex-wrap justify-content-center align-items-center">
+            <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg me-3 mb-2">
+                <i class="fas fa-user"></i> プロフィール
+            </a>
+            <a href="{{ url_for('blog') }}" class="btn btn-light btn-lg me-3 mb-2" style="color: #333;">
+                <i class="fas fa-book-open"></i> 学習記録
+            </a>
+            {% if active_challenge.github_repositories %}
+            <div class="btn-group mb-2" role="group">
+                <button type="button" class="btn btn-light btn-lg dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="color: #333;">
+                    <i class="fab fa-github"></i> GitHubリポジトリ
+                </button>
+                <ul class="dropdown-menu">
+                    {% for repo in active_challenge.github_repositories %}
+                    <li><a class="dropdown-item" href="{{ repo.url }}" target="_blank">
+                        {{ repo.name }}
+                        {% if repo.description %}<br><small class="text-muted">{{ repo.description }}</small>{% endif %}
+                    </a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <h1 class="display-3 fw-bold mb-4">Python 100 Days Challenge</h1>
+        <p class="lead mb-4">100日間のPython学習の旅を記録するポートフォリオサイト</p>
+        
+        <!-- 個人情報ハイライト -->
+        <div class="hero-profile mb-4">
+            <p class="h5 mb-2">
+                <strong>Tsuyoshi Miyakawa</strong> のPython学習ポートフォリオ
+            </p>
+            <p class="text-light opacity-75">
+                データサイエンス・機械学習エンジニアを目指す学習記録
+            </p>
+        </div>
+        
+        <div class="hero-cta d-flex flex-wrap justify-content-center align-items-center">
+            <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg me-3 mb-2">
+                <i class="fas fa-user"></i> プロフィール
+            </a>
+            <a href="{{ url_for('blog') }}" class="btn btn-light btn-lg me-3 mb-2" style="color: #333;">
+                <i class="fas fa-book-open"></i> 学習記録
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- スキルセクション -->
+<section class="skills-section py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">学習中のスキル</h2>
+        <div class="row g-4">
+            {% for category in skill_categories %}
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-code fa-3x mb-3 text-primary"></i>
+                        <h4 class="card-title">{{ category.name }}</h4>
+                        {% if category.description %}
+                        <p class="card-text">{{ category.description }}</p>
+                        {% endif %}
+                        <a href="{{ url_for('category_page', slug=category.slug) }}" class="btn btn-sm btn-outline-primary">
+                            記事を見る
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- 注目プロジェクトセクション -->
+{% if featured_projects %}
+<section class="featured-projects-section py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">注目プロジェクト</h2>
+        <div class="row g-4">
+            {% for project in featured_projects %}
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm project-card">
+                    {% if project.featured_image %}
+                    <img src="{{ url_for('static', filename=project.featured_image) }}" 
+                         class="card-img-top" 
+                         alt="{{ project.title }}"
+                         style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-primary text-white d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <i class="fas fa-code fa-3x"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ project.title }}</h5>
+                        {% if project.description %}
+                        <p class="card-text text-muted">{{ project.description }}</p>
+                        {% endif %}
+                        
+                        <!-- 技術スタック -->
+                        {% if project.technology_list %}
+                        <div class="mb-3">
+                            {% for tech in project.technology_list[:3] %}
+                            <span class="badge bg-secondary me-1">{{ tech }}</span>
+                            {% endfor %}
+                            {% if project.technology_list|length > 3 %}
+                            <span class="badge bg-light text-dark">+{{ project.technology_list|length - 3 }}</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- チャレンジ情報 -->
+                        {% if project.challenge %}
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-trophy"></i> {{ project.challenge.name }}
+                                {% if project.challenge_day %} - Day {{ project.challenge_day }}{% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- アクションボタン -->
+                        <div class="mt-auto">
+                            <div class="btn-group w-100" role="group">
+                                {% if project.github_url %}
+                                <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
+                                    <i class="fab fa-github"></i> Code
+                                </a>
+                                {% endif %}
+                                
+                                {% set demo_urls = project.demo_url_list %}
+                                {% if demo_urls %}
+                                    {% if demo_urls|length == 1 %}
+                                        <!-- 単一デモURL -->
+                                        <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            {% if demo_urls[0].type == 'live' %}
+                                                <i class="fas fa-globe"></i> Live
+                                            {% elif demo_urls[0].type == 'video' %}
+                                                <i class="fas fa-video"></i> Video
+                                            {% elif demo_urls[0].type == 'docs' %}
+                                                <i class="fas fa-book"></i> Docs
+                                            {% else %}
+                                                <i class="fas fa-external-link-alt"></i> Demo
+                                            {% endif %}
+                                        </a>
+                                    {% else %}
+                                        <!-- 複数デモURL - メインボタン -->
+                                        <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            {% if demo_urls[0].type == 'live' %}
+                                                <i class="fas fa-globe"></i>
+                                            {% elif demo_urls[0].type == 'video' %}
+                                                <i class="fas fa-video"></i>
+                                            {% elif demo_urls[0].type == 'docs' %}
+                                                <i class="fas fa-book"></i>
+                                            {% else %}
+                                                <i class="fas fa-external-link-alt"></i>
+                                            {% endif %}
+                                            {{ demo_urls[0].name }}
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% set has_links = project.github_url or demo_urls %}
+                                {% if not has_links %}
+                                <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="fas fa-info-circle"></i> 詳細
+                                </a>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 関連記事リンク -->
+                            {% if project.related_articles %}
+                            <div class="mt-2">
+                                <a href="{{ url_for('article_detail', slug=project.related_articles[0].slug) }}" 
+                                   class="btn btn-outline-info btn-sm w-100">
+                                    <i class="fas fa-book-open"></i> 
+                                    記事を読む
+                                    {% if project.related_articles|length > 1 %}
+                                    (他{{ project.related_articles|length - 1 }}件)
+                                    {% endif %}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{{ url_for('projects') }}" class="btn btn-outline-primary btn-lg">
+                すべてのプロジェクトを見る
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- プロフィールセクション -->
+<section class="profile-section py-5 bg-dark text-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-4 text-center mb-4 mb-lg-0">
+                <div class="profile-avatar mx-auto mb-3" style="width: 150px; height: 150px;">
+                    <div class="avatar-lg bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 100%; height: 100%; font-size: 64px; font-weight: bold;">
+                        T
+                    </div>
+                </div>
+                <h3 class="mb-1">Tsuyoshi Miyakawa</h3>
+                <p class="text-light mb-3">Python Developer / Data Enthusiast</p>
+                
+                <!-- ソーシャルリンク -->
+                <div class="social-links">
+                    {% if site_settings.social_media_links %}
+                        {% for platform, url in site_settings.social_media_links.items() if url %}
+                        <a href="{{ url }}" target="_blank" class="btn btn-outline-light btn-sm me-2 mb-2">
+                            {% if platform == 'twitter' %}
+                                <i class="bi bi-twitter"></i>
+                            {% elif platform == 'github' %}
+                                <i class="bi bi-github"></i>
+                            {% elif platform == 'linkedin' %}
+                                <i class="bi bi-linkedin"></i>
+                            {% else %}
+                                <i class="bi bi-link-45deg"></i>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="profile-content">
+                    <h2 class="mb-4">
+                        <i class="fas fa-rocket"></i> Python 100日チャレンジに挑戦中！
+                    </h2>
+                    <p class="lead mb-4">
+                        プログラミングスキルの向上を目指し、100日間の集中学習に取り組んでいます。
+                        毎日の学習内容、作成したプロジェクト、学んだ技術を詳細に記録し、
+                        成長の軌跡を公開しています。
+                    </p>
+                    
+                    <!-- 統計情報 -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="stat-item text-center">
+                                <div class="h2 mb-1 text-warning">{{ total_articles }}</div>
+                                <div class="small" style="color: #1e2125;">学習記録</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item text-center">
+                                <div class="h2 mb-1 text-info">{{ total_projects }}</div>
+                                <div class="small" style="color: #1e2125;">作成プロジェクト</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item text-center">
+                                <div class="h2 mb-1 text-success">{{ current_day }}</div>
+                                <div class="small" style="color: #1e2125;">学習日数</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-cta">
+                        <a href="{{ url_for('profile', handle_name='Tsuyoshi') }}" class="btn btn-light btn-lg me-3">
+                            <i class="fas fa-user"></i> 詳しいプロフィール
+                        </a>
+                        <a href="{{ url_for('blog') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-book-open"></i> 学習の軌跡を見る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 最新記事セクション -->
+<section class="latest-articles-section py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">最新の学習記録</h2>
+        <div class="row g-4">
+            {% for article in latest_articles[:3] %}
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    {% if article.featured_image %}
+                    <img src="{{ url_for('static', filename=article.featured_image) }}" 
+                         class="card-img-top" 
+                         alt="{{ article.featured_image_alt or article.title }}"
+                         style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <i class="fas fa-image fa-3x"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ article.title }}</h5>
+                        {% if article.summary %}
+                        <p class="card-text">{{ article.summary[:100] }}...</p>
+                        {% else %}
+                        <p class="card-text">{{ article.body[:100] | striptags }}...</p>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('article_detail', slug=article.slug) }}" class="btn btn-primary btn-sm">
+                                続きを読む
+                            </a>
+                            <small class="text-muted">
+                                {{ article.published_at.strftime('%Y/%m/%d') if article.published_at else article.created_at.strftime('%Y/%m/%d') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if latest_articles|length > 3 %}
+        <div class="text-center mt-5">
+            <a href="{{ url_for('blog') }}" class="btn btn-outline-primary btn-lg">
+                すべての記事を見る ({{ total_articles }}件)
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- チャレンジ履歴セクション -->
+{% if all_challenges|length > 1 %}
+<section class="challenges-section py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">チャレンジ履歴</h2>
+        <div class="row g-4">
+            {% for challenge in all_challenges %}
+            <div class="col-md-6">
+                <div class="card h-100 {% if challenge.is_active %}border-primary{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title">{{ challenge.name }}</h5>
+                            {% if challenge.status == 'completed' %}
+                                <span class="badge bg-success">完了</span>
+                            {% elif challenge.status == 'active' %}
+                                <span class="badge bg-primary">進行中</span>
+                            {% else %}
+                                <span class="badge bg-secondary">停止中</span>
+                            {% endif %}
+                        </div>
+                        <p class="card-text">{{ challenge.description }}</p>
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar 
+                                {% if challenge.status == 'completed' %}bg-success
+                                {% elif challenge.status == 'active' %}bg-primary
+                                {% else %}bg-secondary{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ challenge.progress_percentage }}%">
+                                {{ challenge.days_elapsed }}/{{ challenge.target_days }}
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ challenge.start_date.strftime('%Y年%m月%d日') }} ～ 
+                            {% if challenge.end_date %}
+                                {{ challenge.end_date.strftime('%Y年%m月%d日') }}
+                            {% else %}
+                                進行中
+                            {% endif %}
+                        </small>
+                        {% if challenge.github_repositories %}
+                        <div class="mt-3">
+                            {% if challenge.github_repositories|length == 1 %}
+                                <a href="{{ challenge.github_repositories[0].url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="fab fa-github"></i> {{ challenge.github_repositories[0].name }}
+                                </a>
+                            {% else %}
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fab fa-github"></i> リポジトリ ({{ challenge.github_repositories|length }})
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        {% for repo in challenge.github_repositories %}
+                                        <li><a class="dropdown-item" href="{{ repo.url }}" target="_blank">
+                                            {{ repo.name }}
+                                            {% if repo.description %}<br><small class="text-muted">{{ repo.description }}</small>{% endif %}
+                                        </a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- GitHubセクション -->
+<section class="github-section py-5 bg-dark text-white">
+    <div class="container text-center">
+        <h2 class="mb-4">
+            <i class="fab fa-github"></i> GitHub Activity
+        </h2>
+        <p class="lead mb-4">
+            100日間のチャレンジで作成したコードやプロジェクトはGitHubで公開しています
+        </p>
+        {% if active_challenge and active_challenge.github_repositories %}
+        <div class="github-stats mb-4">
+            {% if active_challenge.github_repositories|length == 1 %}
+                <a href="{{ active_challenge.github_repositories[0].url }}" class="btn btn-light btn-lg" target="_blank">
+                    <i class="fab fa-github"></i> {{ active_challenge.github_repositories[0].name }}
+                </a>
+            {% else %}
+                <h5 class="mb-3">現在のチャレンジのリポジトリ</h5>
+                <div class="row justify-content-center">
+                    {% for repo in active_challenge.github_repositories %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-secondary text-white">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ repo.name }}</h6>
+                                {% if repo.description %}
+                                <p class="card-text small">{{ repo.description }}</p>
+                                {% endif %}
+                                <a href="{{ repo.url }}" class="btn btn-light btn-sm" target="_blank">
+                                    <i class="fab fa-github"></i> 見る
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- カスタムCSS -->
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.progress {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.skills-section .card {
+    border: none;
+}
+
+.github-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+/* プロジェクトボタンの視認性向上 */
+.featured-projects-section .btn-outline-dark,
+.featured-projects-section .btn-outline-info {
+    border-width: 2px;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.95);
+    transition: all 0.3s ease;
+}
+
+.featured-projects-section .btn-outline-dark {
+    color: #212529;
+    border-color: #6c757d;
+}
+
+.featured-projects-section .btn-outline-dark:hover {
+    background-color: #212529;
+    border-color: #212529;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.featured-projects-section .btn-outline-info {
+    color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.featured-projects-section .btn-outline-info:hover {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 202, 240, 0.3);
+}
+
+.featured-projects-section .btn-primary {
+    border-width: 2px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.featured-projects-section .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+</style>
+{% endblock %}
