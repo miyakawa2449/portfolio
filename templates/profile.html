@@ -1,13 +1,13 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ user.handle_name or user.name }}のプロフィール{% endblock %}
+{% block title %}{{ user.name }}のプロフィール{% endblock %}
 
 {% block head_extra %}
-<meta name="description" content="{{ user.introduction[:150] if user.introduction else (user.handle_name or user.name) + 'のプロフィールページです。' }}">
-<meta property="og:title" content="{{ user.handle_name or user.name }}のプロフィール">
-<meta property="og:description" content="{{ user.introduction[:150] if user.introduction else (user.handle_name or user.name) + 'のプロフィールページです。' }}">
+<meta name="description" content="{{ user.introduction[:150] if user.introduction else user.name + 'のプロフィールページです。' }}">
+<meta property="og:title" content="{{ user.name }}のプロフィール">
+<meta property="og:description" content="{{ user.introduction[:150] if user.introduction else user.name + 'のプロフィールページです。' }}">
 <meta property="og:type" content="profile">
-<meta property="profile:username" content="{{ user.handle_name or user.name }}">
+<meta property="profile:username" content="{{ user.name }}">
 {% endblock %}
 
 {% block content %}
@@ -19,13 +19,13 @@
                 <div class="card-body text-center">
                     <!-- プロフィール画像（アバター） -->
                     <div class="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 120px; height: 120px; font-size: 48px;">
-                        {{ (user.handle_name or user.name)[0].upper() }}
+                        {{ user.name[0].upper() if user.name else 'T' }}
                     </div>
                     
                     <!-- 名前・ハンドルネーム -->
-                    <h2 class="h4 mb-1">{{ user.handle_name or user.name }}</h2>
-                    {% if user.handle_name and user.handle_name != user.name %}
-                        <p class="text-muted mb-2">{{ user.name }}</p>
+                    <h2 class="h4 mb-1">{{ user.name }}</h2>
+                    {% if user.handle_name %}
+                        <p class="text-muted mb-2">ハンドルネーム: {{ user.handle_name }}</p>
                     {% endif %}
                     
                     <!-- 基本情報 -->
