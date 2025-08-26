@@ -32,7 +32,23 @@
                             <h2 class="h4 mb-3 opacity-90">{{ user.job_title }}</h2>
                         {% endif %}
                         {% if user.tagline %}
-                            <p class="lead mb-0">{{ user.tagline }}</p>
+                            <p class="lead mb-3">{{ user.tagline }}</p>
+                        {% endif %}
+                        
+                        <!-- 基本情報 -->
+                        {% if user.birthplace or user.birthday %}
+                        <div class="mb-3">
+                            {% if user.birthplace %}
+                            <span class="me-4">
+                                <i class="fas fa-map-marker-alt me-2"></i>{{ user.birthplace }}
+                            </span>
+                            {% endif %}
+                            {% if user.birthday %}
+                            <span>
+                                <i class="fas fa-birthday-cake me-2"></i>{{ user.birthday.strftime('%Y年%m月') }}生まれ
+                            </span>
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
                 </div>

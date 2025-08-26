@@ -272,6 +272,9 @@
                 {% if admin_user %}
                 <h3 class="mb-1">{{ admin_user.name_romaji or admin_user.name }}{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %}</h3>
                 <p class="text-light mb-3">{{ admin_user.job_title or 'Python Developer / Data Enthusiast' }}</p>
+                {% if admin_user.introduction %}
+                    <p class="text-light opacity-75 mb-3">{{ admin_user.introduction[:200] }}{% if admin_user.introduction|length > 200 %}...{% endif %}</p>
+                {% endif %}
                 {% else %}
                 <h3 class="mb-1">{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</h3>
                 <p class="text-light mb-3">{{ admin_user.job_title or 'Python Developer / Data Enthusiast' }}</p>
