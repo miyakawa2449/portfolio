@@ -163,6 +163,19 @@ db.init_app(app)
 migrate.init_app(app, db)
 csrf.init_app(app)  # CSRF保護を有効化
 
+# JSONフィルターを追加
+import json
+
+@app.template_filter('from_json')
+def from_json_filter(text):
+    """JSON文字列をPythonオブジェクトに変換するフィルター"""
+    if not text:
+        return {}
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
 # Markdownフィルターを追加
 @app.template_filter('markdown')
 def markdown_filter(text):
