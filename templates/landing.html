@@ -414,16 +414,17 @@
                             {% endif %}
                         </div>
                         <p class="card-text">{{ challenge.description }}</p>
-                        <div class="progress mb-3" style="height: 20px;">
+                        <div class="progress mb-2" style="height: 20px;">
                             <div class="progress-bar 
                                 {% if challenge.status == 'completed' %}bg-success
                                 {% elif challenge.status == 'active' %}bg-primary
                                 {% else %}bg-secondary{% endif %}" 
                                  role="progressbar" 
-                                 style="width: {{ challenge.progress_percentage }}%">
-                                {{ challenge.days_elapsed }}/{{ challenge.target_days }}
+                                 style="width: {{ '%.1f'|format(challenge.progress_percentage) }}%">
+                                {{ '%.1f'|format(challenge.progress_percentage) }}%
                             </div>
                         </div>
+                        <p class="text-muted mb-3 small">Day {{ challenge.days_elapsed }} of {{ challenge.target_days }}</p>
                         <small class="text-muted">
                             {{ challenge.start_date.strftime('%Y年%m月%d日') }} ～ 
                             {% if challenge.end_date %}
