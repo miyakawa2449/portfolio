@@ -120,6 +120,7 @@
                     <h5 class="mb-3">ソーシャルメディア</h5>
                     {% if admin_user %}
                         <div class="d-flex gap-3 flex-wrap">
+                            <!-- 重要なSNS -->
                             {% if admin_user.github_username %}
                                 <a href="https://github.com/{{ admin_user.github_username }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="GitHub">
                                     <i class="fab fa-github"></i>
@@ -130,15 +131,36 @@
                                     <i class="fab fa-linkedin"></i>
                                 </a>
                             {% endif %}
-                            {% if admin_user.twitter_url %}
-                                <a href="{{ admin_user.twitter_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="Twitter">
-                                    <i class="fab fa-twitter"></i>
-                                </a>
-                            {% endif %}
                             {% if admin_user.portfolio_email %}
                                 <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted fs-4" title="Email">
                                     <i class="fas fa-envelope"></i>
                                 </a>
+                            {% endif %}
+                            
+                            <!-- その他のSNS（ext_jsonから取得） -->
+                            {% set sns_urls = admin_user.ext_json|from_json %}
+                            {% if sns_urls and sns_urls.sns_urls %}
+                                {% set sns_data = sns_urls.sns_urls %}
+                                {% if sns_data.x_url %}
+                                    <a href="{{ sns_data.x_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="X (Twitter)">
+                                        <i class="fab fa-x-twitter"></i>
+                                    </a>
+                                {% endif %}
+                                {% if sns_data.facebook_url %}
+                                    <a href="{{ sns_data.facebook_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="Facebook">
+                                        <i class="fab fa-facebook"></i>
+                                    </a>
+                                {% endif %}
+                                {% if sns_data.instagram_url %}
+                                    <a href="{{ sns_data.instagram_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="Instagram">
+                                        <i class="fab fa-instagram"></i>
+                                    </a>
+                                {% endif %}
+                                {% if sns_data.youtube_url %}
+                                    <a href="{{ sns_data.youtube_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="YouTube">
+                                        <i class="fab fa-youtube"></i>
+                                    </a>
+                                {% endif %}
                             {% endif %}
                         </div>
                     {% elif site_settings.social_media_links %}

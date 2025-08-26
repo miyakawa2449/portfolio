@@ -743,12 +743,23 @@ def edit_user(user_id):
             else:
                 user.birthday = None
             
-            # SNSアカウント更新
-            user.sns_x = request.form.get('sns_x', user.sns_x or '')
-            user.sns_facebook = request.form.get('sns_facebook', user.sns_facebook or '')
-            user.sns_instagram = request.form.get('sns_instagram', user.sns_instagram or '')
-            user.sns_threads = request.form.get('sns_threads', user.sns_threads or '')
-            user.sns_youtube = request.form.get('sns_youtube', user.sns_youtube or '')
+            # SNS・連絡先情報更新
+            user.github_username = request.form.get('github_username', user.github_username or '')
+            user.linkedin_url = request.form.get('linkedin_url', user.linkedin_url or '')
+            user.portfolio_email = request.form.get('portfolio_email', user.portfolio_email or '')
+            
+            # 新しいURL形式のSNSフィールド（既存フィールドがあれば利用、なければext_jsonに保存）
+            sns_data = {}
+            sns_data['x_url'] = request.form.get('sns_x_url', '')
+            sns_data['facebook_url'] = request.form.get('sns_facebook_url', '')
+            sns_data['instagram_url'] = request.form.get('sns_instagram_url', '')
+            sns_data['youtube_url'] = request.form.get('sns_youtube_url', '')
+            
+            # ext_jsonに保存
+            import json
+            existing_ext = json.loads(user.ext_json or '{}')
+            existing_ext['sns_urls'] = sns_data
+            user.ext_json = json.dumps(existing_ext)
             
             # パスワード変更
             if new_password:

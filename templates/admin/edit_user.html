@@ -125,23 +125,75 @@
                 </div>
             </div>
 
-            <!-- SNSアカウント -->
+            <!-- SNS・コンタクト情報 -->
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">🔗 SNSアカウント</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🔗 SNS・コンタクト情報</h5>
+                    <small class="text-muted">フッターに表示される重要な情報</small>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <!-- 重要な連絡先（フッターで使用） -->
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>重要:</strong> 以下の情報はサイトのフッターに表示されます
+                    </div>
+                    
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="sns_x" class="form-label">𝕏 X (旧Twitter)</label>
-                                <input type="text" class="form-control" id="sns_x" name="sns_x" value="{{ user.sns_x or '' }}" placeholder="@username">
+                                <label for="github_username" class="form-label">
+                                    <i class="fab fa-github me-1"></i> GitHub ユーザー名 
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="github_username" name="github_username" 
+                                       value="{{ user.github_username or '' }}" placeholder="miyakawa2449">
+                                <div class="form-text">ユーザー名のみ入力（URLは自動生成）</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="sns_facebook" class="form-label">📘 Facebook</label>
-                                <input type="text" class="form-control" id="sns_facebook" name="sns_facebook" value="{{ user.sns_facebook or '' }}" placeholder="username">
+                                <label for="portfolio_email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i> 連絡用メール 
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="email" class="form-control" id="portfolio_email" name="portfolio_email" 
+                                       value="{{ user.portfolio_email or '' }}" placeholder="your@email.com">
+                                <div class="form-text">お問い合わせ用のメールアドレス</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="linkedin_url" class="form-label">
+                            <i class="fab fa-linkedin me-1"></i> LinkedIn URL
+                        </label>
+                        <input type="url" class="form-control" id="linkedin_url" name="linkedin_url" 
+                               value="{{ user.linkedin_url or '' }}" placeholder="https://linkedin.com/in/tsuyoshi-miyakawa">
+                        <div class="form-text">LinkedIn プロフィールの完全なURL</div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- その他のSNS -->
+                    <h6 class="mb-3">その他のSNSアカウント</h6>
+                    {% set ext_data = user.ext_json|from_json %}
+                    {% set sns_urls = ext_data.sns_urls if ext_data else {} %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_x_url" class="form-label">𝕏 X (旧Twitter)</label>
+                                <input type="url" class="form-control" id="sns_x_url" name="sns_x_url" 
+                                       value="{{ sns_urls.x_url or '' }}" placeholder="https://twitter.com/username">
+                                <div class="form-text">完全なURLを入力してください</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sns_facebook_url" class="form-label">📘 Facebook</label>
+                                <input type="url" class="form-control" id="sns_facebook_url" name="sns_facebook_url" 
+                                       value="{{ sns_urls.facebook_url or '' }}" placeholder="https://facebook.com/username">
+                                <div class="form-text">完全なURLを入力してください</div>
                             </div>
                         </div>
                     </div>
@@ -149,23 +201,18 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="sns_instagram" class="form-label">📷 Instagram</label>
-                                <input type="text" class="form-control" id="sns_instagram" name="sns_instagram" value="{{ user.sns_instagram or '' }}" placeholder="@username">
+                                <label for="sns_instagram_url" class="form-label">📷 Instagram</label>
+                                <input type="url" class="form-control" id="sns_instagram_url" name="sns_instagram_url" 
+                                       value="{{ sns_urls.instagram_url or '' }}" placeholder="https://instagram.com/username">
+                                <div class="form-text">完全なURLを入力してください</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="sns_threads" class="form-label">🧵 Threads</label>
-                                <input type="text" class="form-control" id="sns_threads" name="sns_threads" value="{{ user.sns_threads or '' }}" placeholder="@username">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="sns_youtube" class="form-label">📺 YouTube</label>
-                                <input type="text" class="form-control" id="sns_youtube" name="sns_youtube" value="{{ user.sns_youtube or '' }}" placeholder="channel-name">
+                                <label for="sns_youtube_url" class="form-label">📺 YouTube</label>
+                                <input type="url" class="form-control" id="sns_youtube_url" name="sns_youtube_url" 
+                                       value="{{ sns_urls.youtube_url or '' }}" placeholder="https://youtube.com/@username">
+                                <div class="form-text">完全なURLを入力してください</div>
                             </div>
                         </div>
                     </div>
