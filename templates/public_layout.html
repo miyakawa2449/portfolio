@@ -59,34 +59,128 @@
     <footer class="bg-dark text-white py-5 mt-5">
         <div class="container">
             <div class="row">
-                <div class="col-md-4 mb-4">
-                    <h5 class="mb-3">{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</h5>
-                    <p class="text-muted">
-                        Python開発者<br>
-                        100日チャレンジ実践中
-                    </p>
+                <div class="col-lg-4 mb-4">
+                    <h5 class="mb-3">{{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}</h5>
+                    <p class="text-muted">{{ site_settings.site_description or 'データサイエンス・機械学習エンジニアを目指すプログラマーの学習記録' }}</p>
+                    
+                    {% if admin_user %}
+                        <div class="mb-3">
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-user me-2"></i>
+                                <strong>{{ admin_user.name_romaji or admin_user.name }}</strong>
+                            </p>
+                            {% if admin_user.job_title %}
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-briefcase me-2"></i>{{ admin_user.job_title }}
+                            </p>
+                            {% endif %}
+                            {% if admin_user.tagline %}
+                            <p class="text-muted mb-1 small">
+                                <i class="fas fa-quote-left me-2"></i>{{ admin_user.tagline }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if admin_user and admin_user.portfolio_email %}
+                        <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted text-decoration-none">{{ admin_user.portfolio_email }}</a></p>
+                    {% elif site_settings.contact_email %}
+                        <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ site_settings.contact_email }}" class="text-muted text-decoration-none">{{ site_settings.contact_email }}</a></p>
+                    {% endif %}
                 </div>
-                <div class="col-md-4 mb-4">
+                
+                <div class="col-lg-4 mb-4">
                     <h5 class="mb-3">クイックリンク</h5>
                     <ul class="list-unstyled">
-                        <li><a href="{{ url_for('landing') }}" class="text-muted">ホーム</a></li>
-                        <li><a href="{{ url_for('blog') }}" class="text-muted">ブログ記事</a></li>
-                        <li><a href="{{ url_for('projects') }}" class="text-muted">プロジェクト</a></li>
-                        <li><a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="text-muted">プロフィール</a></li>
+                        <li class="mb-2">
+                            {% if admin_user and admin_user.handle_name %}
+                            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-user me-2"></i> プロフィール
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-user me-2"></i> プロフィール
+                            </a>
+                            {% endif %}
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('projects') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-folder-open me-2"></i> プロジェクト
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('blog') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-book me-2"></i> 学習記録
+                            </a>
+                        </li>
                     </ul>
                 </div>
-                <div class="col-md-4 mb-4">
-                    <h5 class="mb-3">ソーシャル</h5>
-                    <div class="d-flex gap-3">
-                        <a href="https://github.com/miyakawa2449" class="text-muted fs-4"><i class="fab fa-github"></i></a>
-                        <a href="#" class="text-muted fs-4"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-muted fs-4"><i class="fab fa-linkedin"></i></a>
-                    </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <h5 class="mb-3">ソーシャルメディア</h5>
+                    {% if admin_user %}
+                        <div class="d-flex gap-3 flex-wrap">
+                            {% if admin_user.github_username %}
+                                <a href="https://github.com/{{ admin_user.github_username }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="GitHub">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                            {% endif %}
+                            {% if admin_user.linkedin_url %}
+                                <a href="{{ admin_user.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="LinkedIn">
+                                    <i class="fab fa-linkedin"></i>
+                                </a>
+                            {% endif %}
+                            {% if admin_user.twitter_url %}
+                                <a href="{{ admin_user.twitter_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="Twitter">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                            {% endif %}
+                            {% if admin_user.portfolio_email %}
+                                <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted fs-4" title="Email">
+                                    <i class="fas fa-envelope"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% elif site_settings.social_media_links %}
+                        <div class="d-flex gap-3 flex-wrap">
+                            {% for platform, url in site_settings.social_media_links.items() if url %}
+                                <a href="{{ url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4">
+                                    {% if platform == 'twitter' %}
+                                        <i class="fab fa-twitter"></i>
+                                    {% elif platform == 'facebook' %}
+                                        <i class="fab fa-facebook"></i>
+                                    {% elif platform == 'instagram' %}
+                                        <i class="fab fa-instagram"></i>
+                                    {% elif platform == 'youtube' %}
+                                        <i class="fab fa-youtube"></i>
+                                    {% elif platform == 'github' %}
+                                        <i class="fab fa-github"></i>
+                                    {% elif platform == 'linkedin' %}
+                                        <i class="fab fa-linkedin"></i>
+                                    {% elif platform == 'tiktok' %}
+                                        <i class="fab fa-tiktok"></i>
+                                    {% else %}
+                                        <i class="fas fa-link"></i>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-            <hr class="my-4">
+            
+            <hr class="my-4 border-secondary">
+            
             <div class="text-center">
-                <p class="mb-0 text-muted">&copy; 2025 {{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}. All rights reserved.</p>
+                <p class="mb-0 text-muted">
+                    {% if admin_user and admin_user.name_romaji %}
+                        © 2025 {{ admin_user.name_romaji }} - Python 100 Days Challenge Portfolio. All rights reserved.
+                    {% elif admin_user and admin_user.name %}
+                        © 2025 {{ admin_user.name }} - Python 100 Days Challenge Portfolio. All rights reserved.
+                    {% else %}
+                        © 2025 Tsuyoshi Miyakawa - Python 100 Days Challenge Portfolio. All rights reserved.
+                    {% endif %}
+                </p>
             </div>
         </div>
     </footer>
