@@ -241,6 +241,33 @@
                                     <i class="fas fa-envelope"></i>
                                 </a>
                             {% endif %}
+                            
+                            <!-- ext_jsonからのSNS URL -->
+                            {% if admin_user.ext_json %}
+                                {% set ext_data = admin_user.ext_json|from_json %}
+                                {% if ext_data.sns_urls %}
+                                    {% if ext_data.sns_urls.x_url %}
+                                        <a href="{{ ext_data.sns_urls.x_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="X (Twitter)">
+                                            <i class="fab fa-x-twitter"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if ext_data.sns_urls.facebook_url %}
+                                        <a href="{{ ext_data.sns_urls.facebook_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="Facebook">
+                                            <i class="fab fa-facebook"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if ext_data.sns_urls.instagram_url %}
+                                        <a href="{{ ext_data.sns_urls.instagram_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="Instagram">
+                                            <i class="fab fa-instagram"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if ext_data.sns_urls.youtube_url %}
+                                        <a href="{{ ext_data.sns_urls.youtube_url }}" target="_blank" rel="noopener noreferrer" class="text-muted fs-4" title="YouTube">
+                                            <i class="fab fa-youtube"></i>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
                         </div>
                     {% elif site_settings.social_media_links %}
                         <div class="d-flex gap-3 flex-wrap">

@@ -1055,9 +1055,9 @@ def inject_site_settings():
                 select(User).where(User.role == 'admin').limit(1)
             ).scalar_one_or_none()
             if admin_user:
-                print(f"DEBUG: Found admin user: {admin_user.name}, handle: {admin_user.handle_name}")
+                pass
             else:
-                print("DEBUG: No admin user found")
+                current_app.logger.warning("No admin user found")
             return admin_user
         except Exception as e:
             current_app.logger.error(f"Error loading admin user: {e}")
