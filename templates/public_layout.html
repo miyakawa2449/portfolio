@@ -9,139 +9,93 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Modern CSS -->
+    <link href="{{ url_for('static', filename='css/modern.css') }}?v={{ config.VERSION | default('1') }}" rel="stylesheet">
+    <!-- Profile Specific CSS -->
+    <link href="{{ url_for('static', filename='css/profile.css') }}?v={{ config.VERSION | default('1') }}" rel="stylesheet">
     
     {% block head_extra %}{% endblock %}
-    
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --purple-color: #6f42c1;
-        }
-        
-        .skill-progress {
-            height: 10px;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 0.5rem;
-        }
-        
-        .skill-progress-bar {
-            height: 100%;
-            border-radius: 5px;
-            transition: width 0.8s ease-in-out;
-        }
-        
-        .skill-expert { background: linear-gradient(90deg, var(--success-color), #20c997); }
-        .skill-proficient { background: linear-gradient(90deg, var(--warning-color), #fd7e14); }
-        .skill-developing { background: linear-gradient(90deg, var(--purple-color), #e83e8c); }
-        
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 4rem 0;
-        }
-        
-        .profile-photo {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .contact-btn {
-            background: white;
-            color: var(--primary-color);
-            padding: 0.75rem 1.5rem;
-            border-radius: 25px;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0.25rem;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-        
-        .contact-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            color: var(--secondary-color);
-        }
-        
-        .timeline-item {
-            position: relative;
-            padding-left: 2rem;
-            padding-bottom: 1.5rem;
-            border-left: 2px solid #e9ecef;
-        }
-        
-        .timeline-item:last-child {
-            border-left: none;
-        }
-        
-        .timeline-dot {
-            position: absolute;
-            left: -6px;
-            top: 0.25rem;
-            width: 10px;
-            height: 10px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 0 2px #e9ecef;
-        }
-        
-        .project-card {
-            transition: transform 0.2s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .project-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-    </style>
 </head>
 <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('landing') }}">
+                <i class="fas fa-code"></i> {{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('landing') }}">
+                            <i class="fas fa-home"></i> ホーム
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('blog') }}">
+                            <i class="fas fa-blog"></i> ブログ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('projects') }}">
+                            <i class="fas fa-project-diagram"></i> プロジェクト
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}">
+                            <i class="fas fa-user"></i> プロフィール
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     {% block content %}{% endblock %}
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3">{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</h5>
+                    <p class="text-muted">
+                        Python開発者<br>
+                        100日チャレンジ実践中
+                    </p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3">クイックリンク</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('landing') }}" class="text-muted">ホーム</a></li>
+                        <li><a href="{{ url_for('blog') }}" class="text-muted">ブログ記事</a></li>
+                        <li><a href="{{ url_for('projects') }}" class="text-muted">プロジェクト</a></li>
+                        <li><a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="text-muted">プロフィール</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3">ソーシャル</h5>
+                    <div class="d-flex gap-3">
+                        <a href="https://github.com/miyakawa2449" class="text-muted fs-4"><i class="fab fa-github"></i></a>
+                        <a href="#" class="text-muted fs-4"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-muted fs-4"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p class="mb-0 text-muted">&copy; 2025 {{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
     
     <!-- Bootstrap 5.3 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
-        // Skill bars animation on scroll
-        const observeSkillBars = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const bars = entry.target.querySelectorAll('.skill-progress-bar');
-                    bars.forEach((bar, index) => {
-                        setTimeout(() => {
-                            const width = bar.dataset.width;
-                            bar.style.width = width + '%';
-                        }, index * 100);
-                    });
-                    observeSkillBars.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.1 });
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize skill bars
-            document.querySelectorAll('.skill-progress-bar').forEach(bar => {
-                bar.style.width = '0%';
-            });
-            
-            // Observe skill sections
-            document.querySelectorAll('.skills-category').forEach(section => {
-                observeSkillBars.observe(section);
-            });
-        });
-    </script>
+    <!-- Profile Animation Script -->
+    <script src="{{ url_for('static', filename='js/profile-animations.js') }}?v={{ config.VERSION | default('1') }}"></script>
     
     {% block scripts_extra %}{% endblock %}
 </body>

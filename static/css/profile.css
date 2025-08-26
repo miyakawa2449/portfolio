@@ -1,0 +1,318 @@
+/* ===== Portfolio Profile Page Specific Styles ===== */
+/* Bootstrap 5.3 と modern.css を補完する専用スタイル */
+
+/* ===== CSS変数定義 ===== */
+:root {
+    /* プロフィール専用カラー */
+    --profile-primary: #667eea;
+    --profile-secondary: #764ba2;
+    --profile-success: #28a745;
+    --profile-warning: #ffc107;
+    --profile-purple: #6f42c1;
+    
+    /* グラデーション */
+    --profile-gradient: linear-gradient(135deg, var(--profile-primary) 0%, var(--profile-secondary) 100%);
+    --skill-expert-gradient: linear-gradient(90deg, var(--profile-success), #20c997);
+    --skill-proficient-gradient: linear-gradient(90deg, var(--profile-warning), #fd7e14);
+    --skill-developing-gradient: linear-gradient(90deg, var(--profile-purple), #e83e8c);
+    
+    /* シャドウ */
+    --profile-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --profile-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== ヒーローセクション ===== */
+.profile-hero-section {
+    background: var(--profile-gradient);
+    color: white;
+    padding: 4rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+/* ===== プロフィール写真 ===== */
+.profile-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: var(--profile-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-photo:hover {
+    transform: scale(1.05);
+    box-shadow: var(--profile-shadow-hover);
+}
+
+/* ===== コンタクトボタン ===== */
+.profile-contact-btn {
+    background: white;
+    color: var(--profile-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    text-decoration: none;
+    display: inline-block;
+    margin: 0.25rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    font-weight: 500;
+}
+
+.profile-contact-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--profile-shadow-hover);
+    color: var(--profile-secondary);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.profile-contact-btn i {
+    margin-right: 0.5rem;
+}
+
+/* ===== スキルプログレスバー ===== */
+.profile-skill-progress {
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+    position: relative;
+}
+
+.profile-skill-progress-bar {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.8s ease-in-out;
+    width: 0%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* スキルレベル別カラー */
+.profile-skill-progress-bar.skill-expert {
+    background: var(--skill-expert-gradient);
+}
+
+.profile-skill-progress-bar.skill-proficient {
+    background: var(--skill-proficient-gradient);
+}
+
+.profile-skill-progress-bar.skill-developing {
+    background: var(--skill-developing-gradient);
+}
+
+/* アニメーション効果 */
+.profile-skill-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-100%);
+    animation: shine 2s ease-in-out infinite;
+    animation-delay: 0.8s;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* ===== スキルカテゴリ ===== */
+.profile-skills-category {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-skills-category:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--profile-shadow);
+}
+
+.profile-skills-category h5 {
+    color: var(--profile-primary);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.profile-skills-category h5 i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* ===== タイムライン ===== */
+.profile-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.profile-timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+    border-left: 2px solid #e9ecef;
+}
+
+.profile-timeline-item:last-child {
+    border-left: none;
+}
+
+.profile-timeline-dot {
+    position: absolute;
+    left: -6px;
+    top: 0.25rem;
+    width: 10px;
+    height: 10px;
+    background: var(--profile-primary);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.profile-timeline-item:hover .profile-timeline-dot {
+    background: var(--profile-secondary);
+    transform: scale(1.2);
+}
+
+/* ===== プロジェクトカード ===== */
+.profile-project-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: none;
+    box-shadow: var(--profile-shadow);
+    height: 100%;
+    overflow: hidden;
+}
+
+.profile-project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--profile-shadow-hover);
+}
+
+.profile-project-card .card-img-top {
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.profile-project-card:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.profile-project-card .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin: 0.1rem;
+}
+
+/* ===== レスポンシブ調整 ===== */
+@media (max-width: 768px) {
+    .profile-hero-section {
+        padding: 3rem 0;
+    }
+    
+    .profile-photo {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .profile-contact-btn {
+        width: 100%;
+        justify-content: center;
+        margin: 0.5rem 0;
+    }
+    
+    .profile-skills-category {
+        padding: 1rem;
+    }
+    
+    .profile-timeline {
+        padding-left: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-hero-section {
+        padding: 2rem 0;
+    }
+    
+    .profile-photo {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .profile-contact-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .profile-project-card .card-img-top {
+        height: 150px;
+    }
+}
+
+/* ===== アニメーション用クラス ===== */
+.profile-fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.profile-fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ===== PDFダウンロードボタン ===== */
+.profile-pdf-download {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--profile-gradient);
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--profile-shadow-hover);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.profile-pdf-download:hover {
+    transform: scale(1.1);
+    color: white;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-pdf-download i {
+    font-size: 1.5rem;
+}
