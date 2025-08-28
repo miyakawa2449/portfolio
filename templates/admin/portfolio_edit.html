@@ -197,8 +197,8 @@
                 <!-- スキルタブ -->
                 <div class="tab-pane fade" id="skills" role="tabpanel">
                     <div id="skillsContainer"></div>
-                    <button type="button" class="btn btn-success add-section-btn" onclick="addSkill()">
-                        <i class="fas fa-plus"></i> スキルを追加
+                    <button type="button" class="btn btn-outline-primary add-section-btn" onclick="addNewCategory()">
+                        <i class="fas fa-folder-plus"></i> 新しいカテゴリを追加
                     </button>
                     <button type="button" class="btn btn-primary mt-3" onclick="saveSkills()">
                         <i class="fas fa-save"></i> スキルを保存
@@ -207,6 +207,9 @@
                 
                 <!-- 職歴タブ -->
                 <div class="tab-pane fade" id="career" role="tabpanel">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> 職歴は期間により自動的に新しい順に並び替えられます。現在の職場が最上位に表示されます。
+                    </div>
                     <div id="careerContainer"></div>
                     <button type="button" class="btn btn-success add-section-btn" onclick="addCareer()">
                         <i class="fas fa-plus"></i> 職歴を追加
@@ -229,6 +232,9 @@
                 
                 <!-- 資格タブ -->
                 <div class="tab-pane fade" id="certifications" role="tabpanel">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> 資格は取得日により自動的に新しい順に並び替えられます。
+                    </div>
                     <div id="certificationsContainer"></div>
                     <button type="button" class="btn btn-success add-section-btn" onclick="addCertification()">
                         <i class="fas fa-plus"></i> 資格を追加
@@ -470,7 +476,22 @@ function renderSkills() {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'mb-4';
         categoryDiv.innerHTML = `
-            <h5>${category}</h5>
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">${category}</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-success me-2" onclick="addSkillToCategory('${category}')">
+                            <i class="fas fa-plus"></i> スキル追加
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning me-2" onclick="renameCategory('${category}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteCategory('${category}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
             <div id="skills-${category}" class="skills-category">
                 ${skills.map((skill, index) => `
                     <div class="skill-item" data-category="${category}" data-index="${index}">
@@ -500,27 +521,64 @@ function renderSkills() {
                         </div>
                     </div>
                 `).join('')}
+                    </div>
+                </div>
             </div>
         `;
         container.appendChild(categoryDiv);
     }
 }
 
-function addSkill() {
-    const category = prompt('カテゴリ名を入力してください（例: プログラミング言語、フレームワーク、データベース）');
+function addNewCategory() {
+    const category = prompt('新しいカテゴリ名を入力してください（例: プログラミング言語、フレームワーク、データベース）');
     if (!category) return;
     
-    if (!skillsData[category]) {
-        skillsData[category] = [];
+    if (skillsData[category]) {
+        alert('このカテゴリは既に存在します。');
+        return;
     }
     
+    skillsData[category] = [];
+    renderSkills();
+}
+
+function addSkillToCategory(category) {
+    const skillName = prompt(`${category}に追加するスキル名を入力してください`);
+    if (!skillName) return;
+    
     skillsData[category].push({
-        name: '',
+        name: skillName,
         level: 50,
         years: 0
     });
     
     renderSkills();
+}
+
+function renameCategory(oldCategory) {
+    const newCategory = prompt('新しいカテゴリ名を入力してください', oldCategory);
+    if (!newCategory || newCategory === oldCategory) return;
+    
+    if (skillsData[newCategory]) {
+        alert('このカテゴリ名は既に使用されています。');
+        return;
+    }
+    
+    skillsData[newCategory] = skillsData[oldCategory];
+    delete skillsData[oldCategory];
+    renderSkills();
+}
+
+function deleteCategory(category) {
+    const skillCount = skillsData[category].length;
+    const message = skillCount > 0 
+        ? `カテゴリ「${category}」には${skillCount}個のスキルが含まれています。本当に削除しますか？`
+        : `カテゴリ「${category}」を削除しますか？`;
+    
+    if (confirm(message)) {
+        delete skillsData[category];
+        renderSkills();
+    }
 }
 
 function updateSkill(category, index, field, value) {
@@ -567,10 +625,51 @@ function saveSkills() {
     });
 }
 
+// 期間解析ユーティリティ
+function parseWorkPeriod(periodStr) {
+    if (!periodStr) return { start: null, end: null, current: false };
+    
+    // 「現在」「在職中」「～現在」のチェック
+    const current = periodStr.includes('現在') || periodStr.includes('在職中');
+    
+    // 年月の抽出パターン
+    const yearMonthPattern = /(\d{4})年(\d{1,2})月/g;
+    const matches = [...periodStr.matchAll(yearMonthPattern)];
+    
+    if (matches.length === 0) return { start: null, end: null, current };
+    
+    const start = matches[0] ? new Date(parseInt(matches[0][1]), parseInt(matches[0][2]) - 1) : null;
+    const end = matches[1] ? new Date(parseInt(matches[1][1]), parseInt(matches[1][2]) - 1) : null;
+    
+    return { start, end, current };
+}
+
+// 職歴を期間でソート
+function sortCareerByPeriod(careerData) {
+    return [...careerData].sort((a, b) => {
+        const periodA = parseWorkPeriod(a.period);
+        const periodB = parseWorkPeriod(b.period);
+        
+        // 現在の職場を最上位に
+        if (periodA.current && !periodB.current) return -1;
+        if (!periodA.current && periodB.current) return 1;
+        
+        // 終了日または開始日で降順ソート（新しい順）
+        const dateA = periodA.end || periodA.start || new Date(0);
+        const dateB = periodB.end || periodB.start || new Date(0);
+        
+        return dateB.getTime() - dateA.getTime();
+    });
+}
+
 // 職歴管理
 function renderCareer() {
     const container = document.getElementById('careerContainer');
-    container.innerHTML = careerData.map((job, index) => `
+    const sortedCareer = sortCareerByPeriod(careerData);
+    container.innerHTML = sortedCareer.map((job, originalIndex) => {
+        // 元のインデックスを見つける
+        const index = careerData.indexOf(job);
+        return `
         <div class="career-item">
             <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeCareer(${index})">
                 <i class="fas fa-times"></i>
@@ -594,7 +693,7 @@ function renderCareer() {
                           onchange="updateCareer(${index}, 'description', this.value)">${job.description || ''}</textarea>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function addCareer() {
@@ -709,10 +808,53 @@ function saveEducation() {
     });
 }
 
+// 日付解析ユーティリティ（資格用）
+function parseCertificationDate(dateStr) {
+    if (!dateStr) return new Date(0);
+    
+    // 様々な日付形式に対応
+    // "2023年3月", "2023-03", "2023/03", "March 2023"など
+    
+    // 年月のパターン
+    const yearMonthPattern = /(\d{4})[年\-\/](\d{1,2})/;
+    const match = dateStr.match(yearMonthPattern);
+    
+    if (match) {
+        return new Date(parseInt(match[1]), parseInt(match[2]) - 1);
+    }
+    
+    // 年のみのパターン
+    const yearOnlyPattern = /(\d{4})年?/;
+    const yearMatch = dateStr.match(yearOnlyPattern);
+    
+    if (yearMatch) {
+        return new Date(parseInt(yearMatch[1]), 0);
+    }
+    
+    // その他の形式は Date.parse を試す
+    const parsed = Date.parse(dateStr);
+    return isNaN(parsed) ? new Date(0) : new Date(parsed);
+}
+
+// 資格を取得日でソート
+function sortCertificationsByDate(certData) {
+    return [...certData].sort((a, b) => {
+        const dateA = parseCertificationDate(a.date);
+        const dateB = parseCertificationDate(b.date);
+        
+        // 新しい順（降順）でソート
+        return dateB.getTime() - dateA.getTime();
+    });
+}
+
 // 資格管理
 function renderCertifications() {
     const container = document.getElementById('certificationsContainer');
-    container.innerHTML = certificationsData.map((cert, index) => `
+    const sortedCerts = sortCertificationsByDate(certificationsData);
+    container.innerHTML = sortedCerts.map((cert, originalIndex) => {
+        // 元のインデックスを見つける
+        const index = certificationsData.indexOf(cert);
+        return `
         <div class="certification-item">
             <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeCertification(${index})">
                 <i class="fas fa-times"></i>
@@ -732,7 +874,7 @@ function renderCertifications() {
                        placeholder="取得日" onchange="updateCertification(${index}, 'date', this.value)">
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function addCertification() {
