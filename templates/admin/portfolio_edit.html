@@ -35,6 +35,39 @@
     .add-section-btn {
         margin-top: 1rem;
     }
+    
+    /* ドラッグ&ドロップ用スタイル */
+    .skill-category-card {
+        cursor: move;
+        transition: all 0.3s ease;
+    }
+    .skill-category-card.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+    .skill-category-card.drag-over {
+        background-color: #e9ecef;
+        border: 2px dashed #667eea;
+    }
+    
+    /* スキル項目のドラッグスタイル */
+    .skill-item {
+        cursor: move;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    .skill-item.dragging {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+    .skill-item.drag-over {
+        background-color: #fff3cd;
+        border: 2px dashed #ffc107;
+    }
+    .sort-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
     .cropper-container {
         max-width: 100%;
         margin: 0 auto;
@@ -72,6 +105,14 @@
                     <a class="nav-link" id="certifications-tab" data-bs-toggle="tab" href="#certifications" role="tab">資格</a>
                 </li>
             </ul>
+            
+            <!-- メッセージ表示エリア -->
+            <div id="messageArea" style="display: none;">
+                <div class="alert alert-dismissible fade show" role="alert" id="messageAlert">
+                    <span id="messageText"></span>
+                    <button type="button" class="btn-close" aria-label="Close" onclick="hideMessage()"></button>
+                </div>
+            </div>
             
             <!-- タブコンテンツ -->
             <div class="tab-content" id="portfolioTabContent">
@@ -438,7 +479,15 @@ function loadInitialData() {
     fetch(`/management-panel-2024/portfolio/{{ user.id }}/skills`)
         .then(response => response.json())
         .then(data => {
-            skillsData = data || {};
+            // 配列形式からオブジェクト形式に変換
+            if (Array.isArray(data)) {
+                skillsData = {};
+                data.forEach(item => {
+                    skillsData[item.category] = item.skills;
+                });
+            } else {
+                skillsData = data || {};
+            }
             renderSkills();
         });
     
@@ -467,6 +516,27 @@ function loadInitialData() {
         });
 }
 
+// カテゴリの上下ボタンを生成
+function getCategorySortButtons(category) {
+    const categories = Object.keys(skillsData);
+    const index = categories.indexOf(category);
+    let buttons = '';
+    
+    if (index > 0) {
+        buttons += `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="moveCategoryUp('${category}')">
+            <i class="fas fa-arrow-up"></i>
+        </button>`;
+    }
+    
+    if (index < categories.length - 1) {
+        buttons += `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="moveCategoryDown('${category}')">
+            <i class="fas fa-arrow-down"></i>
+        </button>`;
+    }
+    
+    return buttons;
+}
+
 // スキル管理
 function renderSkills() {
     const container = document.getElementById('skillsContainer');
@@ -474,12 +544,20 @@ function renderSkills() {
     
     for (const [category, skills] of Object.entries(skillsData)) {
         const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'mb-4';
+        categoryDiv.className = 'mb-4 skill-category-card';
+        categoryDiv.setAttribute('draggable', 'true');
+        categoryDiv.setAttribute('data-category', category);
         categoryDiv.innerHTML = `
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">${category}</h5>
-                    <div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-grip-vertical me-2 text-muted"></i>
+                        <h5 class="mb-0">${category}</h5>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="sort-buttons me-2">
+                            ${getCategorySortButtons(category)}
+                        </div>
                         <button type="button" class="btn btn-sm btn-success me-2" onclick="addSkillToCategory('${category}')">
                             <i class="fas fa-plus"></i> スキル追加
                         </button>
@@ -494,7 +572,7 @@ function renderSkills() {
                 <div class="card-body">
             <div id="skills-${category}" class="skills-category">
                 ${skills.map((skill, index) => `
-                    <div class="skill-item" data-category="${category}" data-index="${index}">
+                    <div class="skill-item" draggable="true" data-category="${category}" data-index="${index}">
                         <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeSkill('${category}', ${index})">
                             <i class="fas fa-times"></i>
                         </button>
@@ -607,20 +685,26 @@ function removeSkill(category, index) {
 }
 
 function saveSkills() {
+    // 順序保持のため配列形式に変換
+    const skillsArray = Object.keys(skillsData).map(category => ({
+        category: category,
+        skills: skillsData[category]
+    }));
+    
     fetch(`/management-panel-2024/portfolio/{{ user.id }}/skills`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
         },
-        body: JSON.stringify(skillsData)
+        body: JSON.stringify(skillsArray)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('スキルを保存しました');
+            showMessage('スキルを保存しました');
         } else {
-            alert('エラー: ' + data.message);
+            showMessage('エラー: ' + data.message, 'danger');
         }
     });
 }
@@ -729,9 +813,9 @@ function saveCareer() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('職歴を保存しました');
+            showMessage('職歴を保存しました');
         } else {
-            alert('エラー: ' + data.message);
+            showMessage('エラー: ' + data.message, 'danger');
         }
     });
 }
@@ -801,9 +885,9 @@ function saveEducation() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('学歴を保存しました');
+            showMessage('学歴を保存しました');
         } else {
-            alert('エラー: ' + data.message);
+            showMessage('エラー: ' + data.message, 'danger');
         }
     });
 }
@@ -909,11 +993,287 @@ function saveCertifications() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('資格を保存しました');
+            showMessage('資格を保存しました');
         } else {
-            alert('エラー: ' + data.message);
+            showMessage('エラー: ' + data.message, 'danger');
         }
     });
+}
+
+// カテゴリを上に移動
+function moveCategoryUp(category) {
+    alert('moveCategoryUp呼び出し: ' + category);
+    console.log('moveCategoryUp呼び出し:', category);
+    
+    const categories = Object.keys(skillsData);
+    const index = categories.indexOf(category);
+    
+    console.log('移動前のカテゴリ順序:', categories);
+    
+    if (index > 0) {
+        // カテゴリの順番を入れ替え
+        const newData = {};
+        categories.forEach((cat, i) => {
+            if (i === index - 1) {
+                newData[categories[index]] = skillsData[categories[index]];
+            } else if (i === index) {
+                newData[categories[index - 1]] = skillsData[categories[index - 1]];
+            } else {
+                newData[cat] = skillsData[cat];
+            }
+        });
+        skillsData = newData;
+        console.log('移動後のカテゴリ順序:', Object.keys(skillsData));
+        console.log('skillsData更新後:', skillsData);
+        renderSkills();
+    }
+}
+
+// カテゴリを下に移動
+function moveCategoryDown(category) {
+    const categories = Object.keys(skillsData);
+    const index = categories.indexOf(category);
+    
+    if (index < categories.length - 1) {
+        // カテゴリの順番を入れ替え
+        const newData = {};
+        categories.forEach((cat, i) => {
+            if (i === index) {
+                newData[categories[index + 1]] = skillsData[categories[index + 1]];
+            } else if (i === index + 1) {
+                newData[categories[index]] = skillsData[categories[index]];
+            } else {
+                newData[cat] = skillsData[cat];
+            }
+        });
+        skillsData = newData;
+        renderSkills();
+    }
+}
+
+// ドラッグ&ドロップイベントハンドラー
+let draggedElement = null;
+let draggedType = null;
+
+function setupDragAndDrop() {
+    // カテゴリのドラッグ&ドロップ
+    document.querySelectorAll('.skill-category-card').forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+            draggedElement = card;
+            draggedType = 'category';
+            card.classList.add('dragging');
+        });
+        
+        card.addEventListener('dragend', (e) => {
+            card.classList.remove('dragging');
+        });
+        
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (draggedType === 'category' && card !== draggedElement) {
+                card.classList.add('drag-over');
+            }
+        });
+        
+        card.addEventListener('dragleave', (e) => {
+            card.classList.remove('drag-over');
+        });
+        
+        card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            
+            if (draggedType === 'category' && card !== draggedElement) {
+                const draggedCategory = draggedElement.getAttribute('data-category');
+                const targetCategory = card.getAttribute('data-category');
+                
+                // カテゴリの順番を入れ替え
+                const categories = Object.keys(skillsData);
+                const draggedIndex = categories.indexOf(draggedCategory);
+                const targetIndex = categories.indexOf(targetCategory);
+                
+                const newData = {};
+                categories.forEach((cat, i) => {
+                    if (i === draggedIndex) {
+                        newData[categories[targetIndex]] = skillsData[categories[targetIndex]];
+                    } else if (i === targetIndex) {
+                        newData[categories[draggedIndex]] = skillsData[categories[draggedIndex]];
+                    } else {
+                        newData[cat] = skillsData[cat];
+                    }
+                });
+                
+                skillsData = newData;
+                renderSkills();
+            }
+        });
+    });
+    
+    // スキル項目のドラッグ&ドロップ
+    const skillItems = document.querySelectorAll('.skill-item');
+    
+    skillItems.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            e.stopPropagation(); // イベントの伝播を止める
+            draggedElement = item;
+            draggedType = 'skill';
+            item.classList.add('dragging');
+        });
+        
+        item.addEventListener('dragend', (e) => {
+            e.stopPropagation();
+            item.classList.remove('dragging');
+        });
+        
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (draggedType === 'skill') {
+                const targetCategory = item.getAttribute('data-category');
+                const draggedCategory = draggedElement.getAttribute('data-category');
+                
+                if (targetCategory === draggedCategory) {
+                    item.classList.add('drag-over');
+                }
+            }
+        });
+        
+        item.addEventListener('dragleave', (e) => {
+            e.stopPropagation();
+            item.classList.remove('drag-over');
+        });
+        
+        item.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            item.classList.remove('drag-over');
+            
+            if (draggedType === 'skill' && item !== draggedElement) {
+                const category = item.getAttribute('data-category');
+                const draggedCategory = draggedElement.getAttribute('data-category');
+                
+                if (category === draggedCategory) {
+                    const draggedIndex = parseInt(draggedElement.getAttribute('data-index'));
+                    const targetIndex = parseInt(item.getAttribute('data-index'));
+                    
+                    // 同じカテゴリ内でのスキルの順番を入れ替え
+                    const skills = skillsData[category];
+                    const draggedSkill = skills[draggedIndex];
+                    
+                    skills.splice(draggedIndex, 1);
+                    skills.splice(targetIndex, 0, draggedSkill);
+                    
+                    renderSkills();
+                }
+            }
+        });
+    });
+}
+
+// renderSkills関数を再定義（ドラッグ&ドロップを含む）
+function renderSkillsWithDragDrop() {
+    
+    // 元のrenderSkills関数の内容
+    const container = document.getElementById('skillsContainer');
+    container.innerHTML = '';
+    
+    for (const [category, skills] of Object.entries(skillsData)) {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'mb-4 skill-category-card';
+        categoryDiv.setAttribute('draggable', 'true');
+        categoryDiv.setAttribute('data-category', category);
+        
+        categoryDiv.innerHTML = `
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-grip-vertical me-2 text-muted"></i>
+                        <h5 class="mb-0">${category}</h5>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="sort-buttons me-2">
+                            ${getCategorySortButtons(category)}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-success me-2" onclick="addSkillToCategory('${category}')">
+                            <i class="fas fa-plus"></i> スキル追加
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning me-2" onclick="renameCategory('${category}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteCategory('${category}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="skills-${category}" class="skills-category" data-category="${category}">
+                        ${skills.map((skill, index) => `
+                            <div class="skill-item" draggable="true" data-category="${category}" data-index="${index}">
+                                <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeSkill('${category}', ${index})">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control mb-2" value="${skill.name}" 
+                                               placeholder="スキル名" onchange="updateSkill('${category}', ${index}, 'name', this.value)">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control mb-2" value="${skill.years || ''}" 
+                                               placeholder="経験年数" min="0" max="50" 
+                                               onchange="updateSkill('${category}', ${index}, 'years', this.value)">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label>熟練度: <span id="level-display-${category}-${index}">${skill.level || 50}%</span></label>
+                                        <input type="range" class="form-range skill-level-input" value="${skill.level || 50}" 
+                                               min="0" max="100" step="5"
+                                               onchange="updateSkill('${category}', ${index}, 'level', this.value)"
+                                               oninput="document.getElementById('level-display-${category}-${index}').textContent = this.value + '%'">
+                                        <div class="skill-level-display">
+                                            <div class="skill-level-bar" style="width: ${skill.level || 50}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(categoryDiv);
+    }
+    
+    // ドラッグ&ドロップを設定
+    setTimeout(setupDragAndDrop, 100);
+}
+
+// renderSkills関数を置き換え
+window.renderSkills = renderSkills = renderSkillsWithDragDrop;
+
+// メッセージ表示関数
+function showMessage(message, type = 'success') {
+    const messageArea = document.getElementById('messageArea');
+    const messageAlert = document.getElementById('messageAlert');
+    const messageText = document.getElementById('messageText');
+    
+    // メッセージタイプに応じてスタイルを設定
+    messageAlert.className = `alert alert-${type} alert-dismissible fade show`;
+    messageText.textContent = message;
+    
+    // メッセージを表示
+    messageArea.style.display = 'block';
+    
+    // スクロールしてメッセージが見えるように
+    messageArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // 5秒後に自動で非表示
+    setTimeout(() => {
+        hideMessage();
+    }, 5000);
+}
+
+function hideMessage() {
+    const messageArea = document.getElementById('messageArea');
+    messageArea.style.display = 'none';
 }
 
 // ページ読み込み時に初期データを読み込む
