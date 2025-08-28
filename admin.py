@@ -3432,7 +3432,13 @@ def edit_portfolio_skills(user_id):
     if request.method == 'POST':
         try:
             skills_data = request.get_json()
-            user.skills = skills_data
+            
+            # 配列形式の場合は配列のまま保存して順序を保持
+            if isinstance(skills_data, list):
+                user.skills = skills_data
+            else:
+                user.skills = skills_data
+            
             db.session.commit()
             return jsonify({'success': True, 'message': 'スキルを更新しました'})
         except Exception as e:
@@ -3440,7 +3446,13 @@ def edit_portfolio_skills(user_id):
             return jsonify({'success': False, 'message': str(e)}), 400
     
     # GET: 現在のスキルを返す
-    return jsonify(user.skills or {})
+    current_skills = user.skills or {}
+    
+    # 配列形式の場合はそのまま返す（順序保持のため）
+    if isinstance(current_skills, list):
+        return jsonify(current_skills)
+    else:
+        return jsonify(current_skills)
 
 @admin_bp.route('/portfolio/<int:user_id>/career', methods=['GET', 'POST'])
 @admin_required
