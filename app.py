@@ -1132,9 +1132,9 @@ def landing():
                          total_projects=total_projects,
                          featured_projects=featured_projects)
 
-@app.route('/challenge')
-def challenge():
-    """100日チャレンジページ"""
+@app.route('/portfolio')
+def portfolio():
+    """ポートフォリオページ（100日チャレンジ）"""
     from models import SiteSetting, Challenge
     
     # アクティブなチャレンジを取得
@@ -1198,7 +1198,7 @@ def challenge():
     if active_challenge:
         current_day = active_challenge.days_elapsed
     
-    return render_template('challenge.html',
+    return render_template('portfolio.html',
                          active_challenge=active_challenge,
                          latest_articles=latest_articles,
                          total_articles=total_articles,

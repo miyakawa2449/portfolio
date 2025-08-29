@@ -56,7 +56,7 @@
                 <!-- Contact Buttons -->
                 <div class="d-flex flex-wrap">
                     {% if user.portfolio_email %}
-                        <a href="mailto:{{ user.portfolio_email }}" class="profile-contact-btn">
+                        <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="profile-contact-btn">
                             <i class="fas fa-envelope"></i>Contact
                         </a>
                     {% endif %}

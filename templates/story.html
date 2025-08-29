@@ -231,7 +231,7 @@
                                 </p>
                                 
                                 <div class="d-flex gap-3">
-                                    <a href="{{ url_for('challenge') }}" class="btn btn-outline-primary">
+                                    <a href="{{ url_for('portfolio') }}" class="btn btn-outline-primary">
                                         <i class="fas fa-trophy me-2"></i> チャレンジを見る
                                     </a>
                                     <a href="{{ url_for('blog') }}" class="btn btn-outline-secondary">
@@ -354,7 +354,7 @@
             <a href="{{ url_for('services') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-briefcase me-2"></i> サービス詳細
             </a>
-            <a href="mailto:t.miyakawa244@gmail.com" class="btn btn-outline-light btn-lg">
+            <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="btn btn-outline-light btn-lg">
                 <i class="fas fa-envelope me-2"></i> 相談する
             </a>
         </div>

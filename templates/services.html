@@ -357,10 +357,10 @@
             </div>
             <div class="col-lg-4 text-center">
                 <div class="d-grid gap-3">
-                    <a href="mailto:t.miyakawa244@gmail.com" class="btn btn-light btn-lg">
+                    <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="btn btn-light btn-lg">
                         <i class="fas fa-envelope me-2"></i> メールで相談
                     </a>
-                    <a href="{{ url_for('challenge') }}" class="btn btn-outline-light btn-lg">
+                    <a href="{{ url_for('portfolio') }}" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-trophy me-2"></i> 技術力を詳しく見る
                     </a>
                 </div>

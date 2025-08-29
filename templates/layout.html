@@ -73,42 +73,32 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'landing' else '' }}" href="{{ url_for('landing') }}">
-                            <i class="fas fa-home me-1"></i> ホーム
+                            <i class="fas fa-home me-1"></i> Home
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'services' else '' }}" href="{{ url_for('services') }}">
-                            <i class="fas fa-briefcase me-1"></i> サービス
+                            <i class="fas fa-briefcase me-1"></i> Services
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint in ['blog', 'article_detail', 'category_page'] else '' }}" href="{{ url_for('blog') }}">
-                            <i class="fas fa-book me-1"></i> ブログ
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'projects' else '' }}" href="{{ url_for('projects') }}">
-                            <i class="fas fa-folder-open me-1"></i> プロジェクト
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'challenge' else '' }}" href="{{ url_for('challenge') }}">
-                            <i class="fas fa-trophy me-1"></i> チャレンジ
+                        <a class="nav-link {{ 'active' if request.endpoint == 'portfolio' else '' }}" href="{{ url_for('portfolio') }}">
+                            <i class="fas fa-code me-1"></i> Portfolio
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'story' else '' }}" href="{{ url_for('story') }}">
-                            <i class="fas fa-book-reader me-1"></i> My Story
+                            <i class="fas fa-book-reader me-1"></i> Story
                         </a>
                     </li>
                     <li class="nav-item">
                         {% if admin_user and admin_user.handle_name %}
                         <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile', handle_name=admin_user.handle_name) }}">
-                            <i class="fas fa-user me-1"></i> プロフィール
+                            <i class="fas fa-user me-1"></i> About
                         </a>
                         {% else %}
                         <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}">
-                            <i class="fas fa-user me-1"></i> プロフィール
+                            <i class="fas fa-user me-1"></i> About
                         </a>
                         {% endif %}
                     </li>
@@ -122,12 +112,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('logout') }}">
                                 <i class="fas fa-sign-out-alt me-1"></i> ログアウト
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">
-                                <i class="fas fa-sign-in-alt me-1"></i> ログイン
                             </a>
                         </li>
                     {% endif %}
@@ -171,6 +155,35 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- 100日チャレンジ紹介バナー -->
+    {% if request.endpoint not in ['portfolio'] %}
+    <section class="py-4" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center">
+                        <div class="me-4">
+                            <i class="fas fa-trophy fa-3x text-warning"></i>
+                        </div>
+                        <div class="text-white">
+                            <h4 class="mb-1 text-white">Python 100日チャレンジ進行中！</h4>
+                            <p class="mb-0 text-white opacity-75">
+                                継続的なスキル向上への取り組みと、最新技術への対応力を公開中
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center text-lg-end">
+                    <a href="{{ url_for('portfolio') }}" class="btn btn-warning btn-lg fw-bold">
+                        <i class="fas fa-chart-line me-2"></i>
+                        進捗を見る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- フッター -->
     <footer class="bg-dark text-white py-5 mt-5">
         <div class="container">
@@ -199,7 +212,7 @@
                     {% endif %}
                     
                     {% if admin_user and admin_user.portfolio_email %}
-                        <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted text-decoration-none">{{ admin_user.portfolio_email }}</a></p>
+                        <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="text-muted text-decoration-none">{{ site_settings.contact_email or 'contact@miyakawa.codes' }}</a></p>
                     {% elif site_settings.contact_email %}
                         <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ site_settings.contact_email }}" class="text-muted text-decoration-none">{{ site_settings.contact_email }}</a></p>
                     {% endif %}
@@ -252,7 +265,7 @@
                                 </a>
                             {% endif %}
                             {% if admin_user.portfolio_email %}
-                                <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted fs-4" title="Email">
+                                <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="text-muted fs-4" title="Email">
                                     <i class="fas fa-envelope"></i>
                                 </a>
                             {% endif %}

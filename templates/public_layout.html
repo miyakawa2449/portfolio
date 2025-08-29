@@ -83,7 +83,7 @@
                     {% endif %}
                     
                     {% if admin_user and admin_user.portfolio_email %}
-                        <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted text-decoration-none">{{ admin_user.portfolio_email }}</a></p>
+                        <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="text-muted text-decoration-none">{{ site_settings.contact_email or 'contact@miyakawa.codes' }}</a></p>
                     {% elif site_settings.contact_email %}
                         <p><i class="fas fa-envelope me-2"></i> <a href="mailto:{{ site_settings.contact_email }}" class="text-muted text-decoration-none">{{ site_settings.contact_email }}</a></p>
                     {% endif %}
@@ -132,7 +132,7 @@
                                 </a>
                             {% endif %}
                             {% if admin_user.portfolio_email %}
-                                <a href="mailto:{{ admin_user.portfolio_email }}" class="text-muted fs-4" title="Email">
+                                <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="text-muted fs-4" title="Email">
                                     <i class="fas fa-envelope"></i>
                                 </a>
                             {% endif %}
