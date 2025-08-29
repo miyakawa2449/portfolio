@@ -1772,7 +1772,7 @@ def add_comment(article_id):
     
     return redirect(url_for('article_detail', slug=article.slug))
 
-@app.route('/profile/')
+@app.route('/about/')
 def profile():
     """ユーザープロフィールページ（ポートフォリオ版）"""
     # 管理者ユーザーを取得（一人管理前提）

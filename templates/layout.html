@@ -93,11 +93,11 @@
                     </li>
                     <li class="nav-item">
                         {% if admin_user and admin_user.handle_name %}
-                        <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile', handle_name=admin_user.handle_name) }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}">
                             <i class="fas fa-user me-1"></i> About
                         </a>
                         {% else %}
-                        <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}">
                             <i class="fas fa-user me-1"></i> About
                         </a>
                         {% endif %}
@@ -106,12 +106,12 @@
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
-                                <i class="fas fa-cog me-1"></i> 管理
+                                <i class="fas fa-cog me-1"></i> Admin
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt me-1"></i> ログアウト
+                                <i class="fas fa-sign-out-alt me-1"></i> Logout
                             </a>
                         </li>
                     {% endif %}
@@ -223,11 +223,11 @@
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             {% if admin_user and admin_user.handle_name %}
-                            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('profile') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-user me-2"></i> プロフィール
                             </a>
                             {% else %}
-                            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('profile') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-user me-2"></i> プロフィール
                             </a>
                             {% endif %}

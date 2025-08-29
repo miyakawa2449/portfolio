@@ -17,7 +17,7 @@
                 <div class="progress mb-3" style="height: 30px;">
                     <div class="progress-bar progress-bar-striped progress-bar-animated" 
                          role="progressbar" 
-                         style="width: {{ active_challenge.progress_percentage }}%"
+                         style="width: {{ active_challenge.progress_percentage }}%; background: linear-gradient(45deg, #ffc107 0%, #fd7e14 100%);"
                          aria-valuenow="{{ active_challenge.days_elapsed }}" 
                          aria-valuemin="0" 
                          aria-valuemax="{{ active_challenge.target_days }}">
@@ -57,11 +57,11 @@
         <!-- CTAボタン -->
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
             {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
@@ -107,11 +107,11 @@
         
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
             {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
@@ -328,11 +328,11 @@
                     
                     <div class="d-flex flex-wrap gap-3">
                         {% if admin_user and admin_user.handle_name %}
-                        <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-light btn-lg">
+                        <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
                             <i class="fas fa-user me-2"></i> 詳しいプロフィール
                         </a>
                         {% else %}
-                        <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
+                        <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
                             <i class="fas fa-user me-2"></i> 詳しいプロフィール
                         </a>
                         {% endif %}

@@ -41,11 +41,11 @@
                 <i class="fas fa-code me-2"></i> 実績を見る
             </a>
             {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-outline-light btn-lg">
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-outline-light btn-lg">
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
