@@ -1,177 +1,200 @@
 {% extends "layout.html" %}
 
-{% block title %}Python 100 Days Challenge Portfolio{% endblock %}
+{% block title %}ビジネス課題から実装まで一人で解決するエンジニア - {{ admin_user.name if admin_user else 'Tsuyoshi Miyakawa' }}{% endblock %}
 
 {% block content %}
 <!-- ヒーローセクション -->
 <section class="hero-section py-5">
     <div class="container text-center py-4">
-        {% if active_challenge %}
-        <h1 class="hero-title display-4 fw-bold mb-4">{{ active_challenge.name }}</h1>
-        <p class="hero-subtitle lead mb-5">{{ active_challenge.description or '100日間のPython学習の旅を記録するポートフォリオサイト' }}</p>
-        
-        <!-- 進捗表示 -->
-        <div class="row justify-content-center mb-5">
-            <div class="col-lg-8">
-                <h3 class="h4 mb-3">チャレンジ進捗: Day {{ active_challenge.days_elapsed }}/{{ active_challenge.target_days }}</h3>
-                <div class="progress mb-3" style="height: 30px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         role="progressbar" 
-                         style="width: {{ active_challenge.progress_percentage }}%"
-                         aria-valuenow="{{ active_challenge.days_elapsed }}" 
-                         aria-valuemin="0" 
-                         aria-valuemax="{{ active_challenge.target_days }}">
-                        {{ "%.1f"|format(active_challenge.progress_percentage) }}%
-                    </div>
-                </div>
-                <p class="mt-3 opacity-75">
-                    開始日: {{ active_challenge.start_date.strftime('%Y年%m月%d日') }}
-                    {% if active_challenge.status == 'completed' %}
-                    <br>完了日: {{ active_challenge.end_date.strftime('%Y年%m月%d日') }}
-                    {% endif %}
-                </p>
-            </div>
-        </div>
+        <h1 class="hero-title display-4 fw-bold mb-4">
+            ビジネス課題から実装まで<br class="d-md-none">一人で解決するエンジニア
+        </h1>
+        <p class="hero-subtitle lead mb-5">
+            要件定義・設計・実装を一貫対応<br>
+            SE/PM経験 × プログラミング実装力 × AI活用による効率的開発
+        </p>
         
         <!-- 個人情報ハイライト -->
         <div class="mb-4">
             {% if admin_user %}
             <h2 class="h5 mb-2">
-                <strong>{{ admin_user.name }}</strong>{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %} のPython学習ポートフォリオ
+                <strong>{{ admin_user.name }}</strong>{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %}
             </h2>
-            {% if admin_user.bio %}
-            <p class="opacity-75">{{ admin_user.bio }}</p>
-            {% else %}
-            <p class="opacity-75">データサイエンス・機械学習エンジニアを目指す100日間の挑戦記録</p>
+            <p class="opacity-75">{{ admin_user.job_title or 'Business-Understanding Engineer' }}</p>
+            {% if admin_user.introduction %}
+                <p class="opacity-75">{{ admin_user.introduction[:150] }}{% if admin_user.introduction|length > 150 %}...{% endif %}</p>
             {% endif %}
             {% else %}
             <h2 class="h5 mb-2">
-                <strong>{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</strong> のPython学習ポートフォリオ
+                <strong>{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</strong>
             </h2>
-            <p class="opacity-75">
-                {{ admin_user.bio or 'データサイエンス・機械学習エンジニアを目指す100日間の挑戦記録' }}
-            </p>
+            <p class="opacity-75">Business-Understanding Engineer</p>
             {% endif %}
         </div>
         
         <!-- CTAボタン -->
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
+            <a href="#services" class="btn btn-primary btn-lg">
+                <i class="fas fa-briefcase me-2"></i> サービス詳細
+            </a>
+            <a href="#portfolio" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-code me-2"></i> 実績を見る
+            </a>
             {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-outline-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-outline-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
-            <a href="{{ url_for('blog') }}" class="btn btn-outline-light btn-lg">
-                <i class="fas fa-book-open me-2"></i> 学習記録
-            </a>
-            {% if active_challenge.github_repositories %}
-            <div class="dropdown">
-                <button class="btn btn-outline-light btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fab fa-github me-2"></i> GitHubリポジトリ
-                </button>
-                <ul class="dropdown-menu">
-                    {% for repo in active_challenge.github_repositories %}
-                    <li><a class="dropdown-item" href="{{ repo.url }}" target="_blank">
-                        {{ repo.name }}
-                        {% if repo.description %}<br><small class="text-muted">{{ repo.description }}</small>{% endif %}
-                    </a></li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
         </div>
-        {% else %}
-        <h1 class="hero-title display-3 fw-bold mb-4">Python 100 Days Challenge</h1>
-        <p class="hero-subtitle lead mb-4">100日間のPython学習の旅を記録するポートフォリオサイト</p>
-        
-        <!-- 個人情報ハイライト -->
-        <div class="mb-4">
-            {% if admin_user %}
-            <h2 class="h5 mb-2">
-                <strong>{{ admin_user.name }}</strong>{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %} のPython学習ポートフォリオ
-            </h2>
-            <p class="opacity-75">{{ admin_user.job_title or 'データサイエンス・機械学習エンジニアを目指す学習記録' }}</p>
-            {% else %}
-            <h2 class="h5 mb-2">
-                <strong>{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</strong> のPython学習ポートフォリオ
-            </h2>
-            <p class="opacity-75">
-                データサイエンス・機械学習エンジニアを目指す学習記録
-            </p>
-            {% endif %}
-        </div>
-        
-        <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
-            {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-light btn-lg">
-                <i class="fas fa-user me-2"></i> プロフィール
-            </a>
-            {% else %}
-            <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
-                <i class="fas fa-user me-2"></i> プロフィール
-            </a>
-            {% endif %}
-            <a href="{{ url_for('blog') }}" class="btn btn-outline-light btn-lg">
-                <i class="fas fa-book-open me-2"></i> 学習記録
-            </a>
-        </div>
-        {% endif %}
     </div>
 </section>
 
-<!-- スキルセクション -->
-<section class="py-5 bg-light">
+<!-- 差別化要素セクション -->
+<section class="py-5 bg-light" id="value-proposition">
     <div class="container">
-        <h2 class="text-center mb-5">学習中のスキル</h2>
+        <h2 class="text-center mb-5">他のエンジニアとの違い</h2>
         <div class="row g-4">
-            {% for category in skill_categories %}
-            <div class="col-lg-4 col-md-6">
-                <div class="card h-100 shadow-sm animate-fade-in-up">
-                    <div class="card-body text-center">
-                        <i class="fas fa-code fa-3x mb-3 text-primary"></i>
-                        <h4 class="card-title">{{ category.name }}</h4>
-                        {% if category.description %}
-                        <p class="card-text">{{ category.description }}</p>
-                        {% endif %}
-                        <a href="{{ url_for('category_page', slug=category.slug) }}" class="btn btn-outline-primary">
-                            記事を見る
-                        </a>
+            <div class="col-lg-4">
+                <div class="card h-100 shadow-sm text-center animate-fade-in-up">
+                    <div class="card-body">
+                        <i class="fas fa-lightbulb fa-3x mb-3 text-warning"></i>
+                        <h4 class="card-title">要件定義からできる</h4>
+                        <p class="card-text">
+                            SE経験により、曖昧な課題から具体的な要件を整理。
+                            仕様書をもらって作るのではなく、課題解決のための仕様を作成できます。
+                        </p>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+            <div class="col-lg-4">
+                <div class="card h-100 shadow-sm text-center animate-fade-in-up">
+                    <div class="card-body">
+                        <i class="fas fa-cogs fa-3x mb-3 text-primary"></i>
+                        <h4 class="card-title">設計・実装まで一貫対応</h4>
+                        <p class="card-text">
+                            PM経験 × プログラミング実装力により、
+                            技術仕様書の作成からコーディング・テスト・デプロイまで一人で完結。
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100 shadow-sm text-center animate-fade-in-up">
+                    <div class="card-body">
+                        <i class="fas fa-robot fa-3x mb-3 text-success"></i>
+                        <h4 class="card-title">AI活用による高速開発</h4>
+                        <p class="card-text">
+                            AIを「優秀な部下」として活用する独自手法により、
+                            従来の3-5倍の速度で高品質なシステムを開発。
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- 注目プロジェクトセクション -->
-{% if featured_projects %}
-<section class="py-5">
+<!-- サービスメニューセクション -->
+<section class="py-5" id="services">
     <div class="container">
-        <h2 class="text-center mb-5">注目プロジェクト</h2>
+        <h2 class="text-center mb-5">提供サービス</h2>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card h-100 shadow-sm animate-fade-in-up">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-project-diagram fa-2x text-primary me-3"></i>
+                            <div>
+                                <h5 class="card-title mb-1">ビジネス課題解決パッケージ</h5>
+                                <div class="text-muted">30-50万円/月</div>
+                            </div>
+                        </div>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>要件ヒアリング・整理</li>
+                            <li><i class="fas fa-check text-success me-2"></i>システム設計・技術仕様書作成</li>
+                            <li><i class="fas fa-check text-success me-2"></i>実装・テスト・デプロイ</li>
+                            <li><i class="fas fa-check text-success me-2"></i>AI活用による開発効率化</li>
+                        </ul>
+                        <div class="mt-auto">
+                            <a href="#contact" class="btn btn-primary w-100">相談する</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100 shadow-sm animate-fade-in-up">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-chart-line fa-2x text-info me-3"></i>
+                            <div>
+                                <h5 class="card-title mb-1">既存システム改善コンサル</h5>
+                                <div class="text-muted">10-20万円/案件</div>
+                            </div>
+                        </div>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>現状システムの課題分析</li>
+                            <li><i class="fas fa-check text-success me-2"></i>改善提案・ROI算出</li>
+                            <li><i class="fas fa-check text-success me-2"></i>段階的実装計画の策定</li>
+                        </ul>
+                        <div class="mt-auto">
+                            <a href="#contact" class="btn btn-outline-primary w-100">相談する</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100 shadow-sm animate-fade-in-up">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-rocket fa-2x text-warning me-3"></i>
+                            <div>
+                                <h5 class="card-title mb-1">要件定義＋プロトタイプ開発</h5>
+                                <div class="text-muted">15-25万円/案件</div>
+                            </div>
+                        </div>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>ビジネス要件の技術要件への翻訳</li>
+                            <li><i class="fas fa-check text-success me-2"></i>動作するプロトタイプの素早い実装</li>
+                            <li><i class="fas fa-check text-success me-2"></i>ステークホルダー向けデモ・説明資料</li>
+                        </ul>
+                        <div class="mt-auto">
+                            <a href="#contact" class="btn btn-outline-primary w-100">相談する</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 実績セクション -->
+{% if featured_projects %}
+<section class="py-5 bg-dark text-white" id="portfolio">
+    <div class="container">
+        <h2 class="text-center mb-5">最新実績</h2>
         <div class="row g-4">
             {% for project in featured_projects %}
-            <div class="col-lg-4 col-md-6">
-                <div class="card project-card h-100 shadow-sm animate-fade-in-up">
+            <div class="col-lg-4">
+                <div class="card bg-secondary text-white h-100 shadow-sm animate-fade-in-up">
                     {% if project.featured_image %}
                     <img src="{{ url_for('static', filename=project.featured_image) }}" 
                          class="card-img-top" 
                          alt="{{ project.title }}"
                          style="height: 200px; object-fit: cover;">
                     {% else %}
-                    <div class="card-img-top bg-gradient-primary text-white d-flex align-items-center justify-content-center" 
+                    <div class="card-img-top bg-primary text-white d-flex align-items-center justify-content-center" 
                          style="height: 200px;">
                         <i class="fas fa-code fa-3x"></i>
                     </div>
                     {% endif %}
-                    <div class="card-body d-flex flex-column">
+                    <div class="card-body">
                         <h5 class="card-title">{{ project.title }}</h5>
                         {% if project.description %}
-                        <p class="card-text text-muted">{{ project.description }}</p>
+                        <p class="card-text">{{ project.description[:100] }}...</p>
                         {% endif %}
                         
                         <!-- 技術スタック -->
@@ -179,61 +202,27 @@
                         <div class="mb-3">
                             <div class="d-flex flex-wrap gap-2">
                                 {% for tech in project.technology_list[:3] %}
-                                <span class="badge bg-secondary">{{ tech }}</span>
+                                <span class="badge bg-light text-dark">{{ tech }}</span>
                                 {% endfor %}
                                 {% if project.technology_list|length > 3 %}
-                                <span class="badge bg-light text-dark">+{{ project.technology_list|length - 3 }}</span>
+                                <span class="badge bg-warning text-dark">+{{ project.technology_list|length - 3 }}</span>
                                 {% endif %}
                             </div>
                         </div>
                         {% endif %}
                         
-                        <!-- チャレンジ情報 -->
-                        {% if project.challenge %}
-                        <div class="mb-3">
-                            <small class="text-muted">
-                                <i class="fas fa-trophy me-1"></i> {{ project.challenge.name }}
-                                {% if project.challenge_day %} - Day {{ project.challenge_day }}{% endif %}
-                            </small>
-                        </div>
-                        {% endif %}
-                        
-                        <!-- アクションボタン -->
-                        <div class="mt-auto">
-                            <div class="d-flex gap-2 mb-2">
-                                {% if project.github_url %}
-                                <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm flex-fill">
-                                    <i class="fab fa-github me-1"></i> Code
-                                </a>
-                                {% endif %}
-                                
-                                {% set demo_urls = project.demo_url_list %}
-                                {% if demo_urls %}
-                                    <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-primary btn-sm flex-fill">
-                                        {% if demo_urls[0].type == 'live' %}
-                                            <i class="fas fa-globe me-1"></i>
-                                        {% elif demo_urls[0].type == 'video' %}
-                                            <i class="fas fa-video me-1"></i>
-                                        {% elif demo_urls[0].type == 'docs' %}
-                                            <i class="fas fa-book me-1"></i>
-                                        {% else %}
-                                            <i class="fas fa-external-link-alt me-1"></i>
-                                        {% endif %}
-                                        Demo
-                                    </a>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- 関連記事リンク -->
-                            {% if project.related_articles %}
-                            <a href="{{ url_for('article_detail', slug=project.related_articles[0].slug) }}" 
-                               class="btn btn-outline-info btn-sm w-100">
-                                <i class="fas fa-book-open me-1"></i> 
-                                記事を読む
-                                {% if project.related_articles|length > 1 %}
-                                (他{{ project.related_articles|length - 1 }}件)
-                                {% endif %}
+                        <div class="d-flex gap-2">
+                            {% if project.github_url %}
+                            <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-light btn-sm">
+                                <i class="fab fa-github me-1"></i> Code
                             </a>
+                            {% endif %}
+                            
+                            {% set demo_urls = project.demo_url_list %}
+                            {% if demo_urls %}
+                                <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-light btn-sm">
+                                    <i class="fas fa-external-link-alt me-1"></i> Demo
+                                </a>
                             {% endif %}
                         </div>
                     </div>
@@ -243,275 +232,122 @@
         </div>
         
         <div class="text-center mt-5">
-            <a href="{{ url_for('projects') }}" class="btn btn-outline-primary btn-lg">
-                すべてのプロジェクトを見る
+            <a href="{{ url_for('projects') }}" class="btn btn-light btn-lg">
+                すべての実績を見る ({{ total_projects }}件)
             </a>
         </div>
     </div>
 </section>
 {% endif %}
 
-<!-- プロフィールセクション -->
-<section class="py-5 bg-dark text-white">
+<!-- 技術力の根拠セクション -->
+<section class="py-5">
     <div class="container">
+        <h2 class="text-center mb-5">技術力の根拠</h2>
         <div class="row align-items-center">
-            <div class="col-lg-4 text-center mb-4 mb-lg-0">
-                <div class="mb-3">
-                    {% if admin_user %}
-                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center" 
-                         style="width: 150px; height: 150px; font-size: 64px; font-weight: bold;">
-                        {{ admin_user.name[0].upper() if admin_user.name else 'T' }}
-                    </div>
-                    {% else %}
-                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center" 
-                         style="width: 150px; height: 150px; font-size: 64px; font-weight: bold;">
-                        T
-                    </div>
-                    {% endif %}
-                </div>
-                {% if admin_user %}
-                <h3 class="mb-1">{{ admin_user.name_romaji or admin_user.name }}{% if admin_user.handle_name %} ({{ admin_user.handle_name }}){% endif %}</h3>
-                <p class="text-light mb-3">{{ admin_user.job_title or 'Python Developer / Data Enthusiast' }}</p>
-                {% if admin_user.introduction %}
-                    <p class="text-light opacity-75 mb-3">{{ admin_user.introduction[:200] }}{% if admin_user.introduction|length > 200 %}...{% endif %}</p>
-                {% endif %}
-                {% else %}
-                <h3 class="mb-1">{{ admin_user.name_romaji or admin_user.name or 'Tsuyoshi Miyakawa' }}</h3>
-                <p class="text-light mb-3">{{ admin_user.job_title or 'Python Developer / Data Enthusiast' }}</p>
-                {% endif %}
-                
-                <!-- ソーシャルリンク -->
-                {% if site_settings.social_media_links %}
-                <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    {% for platform, url in site_settings.social_media_links.items() if url %}
-                    <a href="{{ url }}" target="_blank" class="btn btn-outline-light btn-sm">
-                        {% if platform == 'twitter' %}
-                            <i class="fab fa-twitter"></i>
-                        {% elif platform == 'github' %}
-                            <i class="fab fa-github"></i>
-                        {% elif platform == 'linkedin' %}
-                            <i class="fab fa-linkedin"></i>
-                        {% else %}
-                            <i class="fas fa-link"></i>
-                        {% endif %}
-                    </a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
-            <div class="col-lg-8">
-                <div class="animate-fade-in-right">
-                    <h2 class="mb-4">
-                        <i class="fas fa-rocket me-2"></i> Python 100日チャレンジに挑戦中！
-                    </h2>
+            <div class="col-lg-6">
+                <div class="animate-fade-in-left">
+                    <h3 class="mb-4">
+                        <i class="fas fa-chart-line me-2 text-primary"></i> 
+                        継続的なスキル向上
+                    </h3>
                     <p class="lead mb-4">
-                        プログラミングスキルの向上を目指し、100日間の集中学習に取り組んでいます。
-                        毎日の学習内容、作成したプロジェクト、学んだ技術を詳細に記録し、
-                        成長の軌跡を公開しています。
+                        100日間のPython集中学習チャレンジを通じて、
+                        最新技術への対応力と継続的な学習能力を証明しています。
                     </p>
                     
                     <!-- 統計情報 -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-4 text-center">
-                            <div class="h2 mb-1 text-warning">{{ total_articles }}</div>
-                            <div class="small text-light">学習記録</div>
+                            <div class="h2 mb-1 text-primary">{{ total_articles }}</div>
+                            <div class="small text-muted">学習記録</div>
                         </div>
                         <div class="col-md-4 text-center">
-                            <div class="h2 mb-1 text-info">{{ total_projects }}</div>
-                            <div class="small text-light">作成プロジェクト</div>
+                            <div class="h2 mb-1 text-success">{{ total_projects }}</div>
+                            <div class="small text-muted">実装プロジェクト</div>
                         </div>
                         <div class="col-md-4 text-center">
-                            <div class="h2 mb-1 text-success">{{ current_day }}</div>
-                            <div class="small text-light">学習日数</div>
+                            <div class="h2 mb-1 text-warning">100</div>
+                            <div class="small text-muted">日間チャレンジ</div>
                         </div>
                     </div>
                     
                     <div class="d-flex flex-wrap gap-3">
-                        {% if admin_user and admin_user.handle_name %}
-                        <a href="{{ url_for('profile', handle_name=admin_user.handle_name) }}" class="btn btn-light btn-lg">
-                            <i class="fas fa-user me-2"></i> 詳しいプロフィール
+                        <a href="{{ url_for('challenge') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-trophy me-2"></i> チャレンジの詳細
                         </a>
-                        {% else %}
-                        <a href="{{ url_for('profile', handle_name=admin_user.handle_name or 'Tsuyoshi') }}" class="btn btn-light btn-lg">
-                            <i class="fas fa-user me-2"></i> 詳しいプロフィール
-                        </a>
-                        {% endif %}
-                        <a href="{{ url_for('blog') }}" class="btn btn-outline-light btn-lg">
-                            <i class="fas fa-book-open me-2"></i> 学習の軌跡を見る
+                        <a href="{{ url_for('blog') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-book-open me-2"></i> 学習記録
                         </a>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
-
-<!-- 最新記事セクション -->
-<section class="py-5">
-    <div class="container">
-        <h2 class="text-center mb-5">最新の学習記録</h2>
-        <div class="row g-4">
-            {% for article in latest_articles[:3] %}
-            <div class="col-lg-4 col-md-6">
-                <div class="card article-card h-100 shadow-sm animate-fade-in-up">
-                    {% if article.featured_image %}
-                    <img src="{{ url_for('static', filename=article.featured_image) }}" 
-                         class="card-img-top" 
-                         alt="{{ article.featured_image_alt or article.title }}"
-                         style="height: 200px; object-fit: cover;">
-                    {% else %}
-                    <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" 
-                         style="height: 200px;">
-                        <i class="fas fa-image fa-3x"></i>
-                    </div>
-                    {% endif %}
-                    <div class="card-body">
-                        <h5 class="card-title">{{ article.title }}</h5>
-                        {% if article.summary %}
-                        <p class="card-text">{{ article.summary[:100] }}...</p>
-                        {% else %}
-                        <p class="card-text">{{ article.body[:100] | striptags }}...</p>
-                        {% endif %}
-                        <div class="d-flex justify-content-between align-items-center">
-                            <a href="{{ url_for('article_detail', slug=article.slug) }}" class="btn btn-primary btn-sm">
-                                続きを読む
-                            </a>
-                            <small class="text-muted">
-                                {{ article.published_at.strftime('%Y/%m/%d') if article.published_at else article.created_at.strftime('%Y/%m/%d') }}
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        
-        {% if latest_articles|length > 3 %}
-        <div class="text-center mt-5">
-            <a href="{{ url_for('blog') }}" class="btn btn-outline-primary btn-lg">
-                すべての記事を見る ({{ total_articles }}件)
-            </a>
-        </div>
-        {% endif %}
-    </div>
-</section>
-
-<!-- チャレンジ履歴セクション -->
-{% if all_challenges|length > 1 %}
-<section class="py-5 bg-light challenge-history">
-    <div class="container">
-        <h2 class="text-center mb-5">チャレンジ履歴</h2>
-        <div class="row g-4">
-            {% for challenge in all_challenges %}
             <div class="col-lg-6">
-                <div class="card h-100 {% if challenge.is_active %}border-primary{% endif %} animate-fade-in-up">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title">{{ challenge.name }}</h5>
-                            {% if challenge.status == 'completed' %}
-                                <span class="badge bg-success">完了</span>
-                            {% elif challenge.status == 'active' %}
-                                <span class="badge bg-primary">進行中</span>
-                            {% else %}
-                                <span class="badge bg-secondary">停止中</span>
-                            {% endif %}
-                        </div>
-                        <p class="card-text">{{ challenge.description }}</p>
-                        <div class="progress mb-2" style="height: 20px;">
-                            <div class="progress-bar 
-                                {% if challenge.status == 'completed' %}bg-success
-                                {% elif challenge.status == 'active' %}bg-primary
-                                {% else %}bg-secondary{% endif %}" 
-                                 role="progressbar" 
-                                 style="width: {{ '%.1f'|format(challenge.progress_percentage) }}%">
-                                {{ '%.1f'|format(challenge.progress_percentage) }}%
+                <div class="card shadow animate-fade-in-right">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-code fa-4x mb-3 text-primary"></i>
+                        <h4 class="mb-3">実装力 × ビジネス理解</h4>
+                        <p class="mb-4">
+                            一般的なエンジニアは仕様書通りに実装するだけ。<br>
+                            私はビジネス課題を理解して、最適な技術解決策を提案・実装します。
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded">
+                                    <div class="h6 mb-1">SE経験</div>
+                                    <div class="small text-muted">要件定義・分析</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded">
+                                    <div class="h6 mb-1">PM経験</div>
+                                    <div class="small text-muted">設計・管理</div>
+                                </div>
                             </div>
                         </div>
-                        <p class="text-muted mb-3 small">Day {{ challenge.days_elapsed }} of {{ challenge.target_days }}</p>
-                        <small class="text-muted">
-                            {{ challenge.start_date.strftime('%Y年%m月%d日') }} ～ 
-                            {% if challenge.end_date %}
-                                {{ challenge.end_date.strftime('%Y年%m月%d日') }}
-                            {% else %}
-                                進行中
-                            {% endif %}
-                        </small>
-                        {% if challenge.github_repositories %}
-                        <div class="mt-3">
-                            {% if challenge.github_repositories|length == 1 %}
-                                <a href="{{ challenge.github_repositories[0].url }}" class="btn btn-outline-secondary btn-sm" target="_blank">
-                                    <i class="fab fa-github me-1"></i> {{ challenge.github_repositories[0].name }}
-                                </a>
-                            {% else %}
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fab fa-github me-1"></i> リポジトリ ({{ challenge.github_repositories|length }})
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        {% for repo in challenge.github_repositories %}
-                                        <li><a class="dropdown-item" href="{{ repo.url }}" target="_blank">
-                                            {{ repo.name }}
-                                            {% if repo.description %}<br><small class="text-muted">{{ repo.description }}</small>{% endif %}
-                                        </a></li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
 </section>
-{% endif %}
 
-<!-- GitHubセクション -->
-<section class="py-5 bg-dark text-white">
+<!-- お問い合わせセクション -->
+<section class="py-5 bg-primary text-white" id="contact">
     <div class="container text-center">
         <h2 class="mb-4">
-            <i class="fab fa-github me-2"></i> GitHub Activity
+            <i class="fas fa-envelope me-2"></i> まずはお気軽にご相談ください
         </h2>
         <p class="lead mb-4">
-            100日間のチャレンジで作成したコードやプロジェクトはGitHubで公開しています
+            システム開発・業務効率化・DX推進でお困りではありませんか？<br>
+            要件整理から実装まで、一貫してサポートします。
         </p>
-        {% if active_challenge and active_challenge.github_repositories %}
-        <div class="mb-4">
-            {% if active_challenge.github_repositories|length == 1 %}
-                <a href="{{ active_challenge.github_repositories[0].url }}" class="btn btn-light btn-lg" target="_blank">
-                    <i class="fab fa-github me-2"></i> {{ active_challenge.github_repositories[0].name }}
-                </a>
-            {% else %}
-                <h5 class="mb-3">現在のチャレンジのリポジトリ</h5>
-                <div class="row justify-content-center">
-                    {% for repo in active_challenge.github_repositories %}
-                    <div class="col-lg-4 col-md-6 mb-3">
-                        <div class="card bg-secondary text-white">
-                            <div class="card-body">
-                                <h6 class="card-title">{{ repo.name }}</h6>
-                                {% if repo.description %}
-                                <p class="card-text small">{{ repo.description }}</p>
-                                {% endif %}
-                                <a href="{{ repo.url }}" class="btn btn-light btn-sm" target="_blank">
-                                    <i class="fab fa-github me-1"></i> 見る
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a href="mailto:t.miyakawa244@gmail.com" class="btn btn-light btn-lg">
+                        <i class="fas fa-envelope me-2"></i> メールで相談
+                    </a>
+                    <a href="{{ url_for('challenge') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-trophy me-2"></i> スキルを詳しく見る
+                    </a>
                 </div>
-            {% endif %}
+                
+                <div class="mt-4">
+                    <small class="opacity-75">
+                        初回相談は無料です。お気軽にお問い合わせください。
+                    </small>
+                </div>
+            </div>
         </div>
-        {% endif %}
     </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// スキルプログレスバーのアニメーション
+// アニメーション設定
 document.addEventListener('DOMContentLoaded', function() {
     // Intersection Observer for fade-in animations
     const observer = new IntersectionObserver((entries) => {
@@ -527,6 +363,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 全てのアニメーション要素を監視
     document.querySelectorAll('.animate-fade-in-up, .animate-fade-in-left, .animate-fade-in-right').forEach(el => {
         observer.observe(el);
+    });
+    
+    // スムーズスクロール
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
     });
 });
 </script>

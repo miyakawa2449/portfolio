@@ -1,0 +1,390 @@
+{% extends "layout.html" %}
+
+{% block title %}My Story - なぜ要件定義から実装まで一人でできるのか | {{ admin_user.name if admin_user else 'Tsuyoshi Miyakawa' }}{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<section class="hero-section py-5">
+    <div class="container text-center py-4">
+        <h1 class="hero-title display-4 fw-bold mb-4">My Story</h1>
+        <p class="hero-subtitle lead mb-4">
+            なぜ要件定義から実装まで一人でできるのか
+        </p>
+        <p class="text-white opacity-75">SE/PM → プログラマーへの転向と、独自の価値創造の軌跡</p>
+    </div>
+</section>
+
+<!-- ストーリータイムライン -->
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- フェーズ1: SE/PM時代 -->
+                <div class="card shadow-sm mb-5 animate-fade-in-up">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 text-center mb-4 mb-lg-0">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 80px; height: 80px;">
+                                    <i class="fas fa-user-tie fa-2x"></i>
+                                </div>
+                                <h4 class="h5 text-primary">SE/PM時代</h4>
+                                <small class="text-muted">システム設計・管理の基盤</small>
+                            </div>
+                            <div class="col-lg-9">
+                                <h3 class="mb-3">要件定義書・設計書作成のプロフェッショナル</h3>
+                                <p class="mb-4">
+                                    システムエンジニア・プロジェクトマネージャーとして、数多くの案件で
+                                    <strong>要件定義書・設計書の作成</strong>を担当。
+                                    曖昧な業務要求から具体的なシステム仕様を導き出し、
+                                    開発チームが実装しやすい形に落とし込む経験を積みました。
+                                </p>
+                                
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="border-start border-primary border-3 ps-3">
+                                            <strong>培ったスキル</strong>
+                                            <ul class="list-unstyled mt-2">
+                                                <li>• 業務分析・課題整理</li>
+                                                <li>• ステークホルダー調整</li>
+                                                <li>• 技術要件への翻訳</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="border-start border-info border-3 ps-3">
+                                            <strong>気づいた課題</strong>
+                                            <ul class="list-unstyled mt-2">
+                                                <li>• 実装の現実を知らない設計</li>
+                                                <li>• 開発チームとのコミュニケーションギャップ</li>
+                                                <li>• 理想と実装のズレ</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- フェーズ2: プログラミング転向 -->
+                <div class="card shadow-sm mb-5 animate-fade-in-up">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 text-center mb-4 mb-lg-0">
+                                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 80px; height: 80px;">
+                                    <i class="fas fa-code fa-2x"></i>
+                                </div>
+                                <h4 class="h5 text-success">プログラミング転向</h4>
+                                <small class="text-muted">実装力の獲得</small>
+                            </div>
+                            <div class="col-lg-9">
+                                <h3 class="mb-3">「設計できて実装もできる」エンジニアへ</h3>
+                                <p class="mb-4">
+                                    <strong>「実装の現実を知らない設計はダメだ」</strong>という課題意識から、
+                                    プログラミング学習を開始。SE/PMの経験があるからこそ、
+                                    <strong>何を学ぶべきか、どう学ぶべきかが明確</strong>でした。
+                                </p>
+                                
+                                <blockquote class="blockquote border-start border-success border-3 ps-3 mb-4">
+                                    <p class="mb-0 fst-italic">
+                                        「要件定義書を書いているときに、これって本当に実装できるの？
+                                        実装するとしたらどのくらい大変なの？ということが分からないのは致命的だと感じていました。」
+                                    </p>
+                                </blockquote>
+                                
+                                <p>
+                                    既存の経験を活かしながら体系的に学習を進め、
+                                    設計と実装の両方を理解するエンジニアとしての基盤を構築しました。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- フェーズ3: AI活用手法確立 -->
+                <div class="card shadow-sm mb-5 animate-fade-in-up">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 text-center mb-4 mb-lg-0">
+                                <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 80px; height: 80px;">
+                                    <i class="fas fa-robot fa-2x"></i>
+                                </div>
+                                <h4 class="h5 text-warning">AI活用手法確立</h4>
+                                <small class="text-muted">独自開発プロセス</small>
+                            </div>
+                            <div class="col-lg-9">
+                                <h3 class="mb-3">AIを「優秀な部下」として活用する開発手法</h3>
+                                <p class="mb-4">
+                                    プログラミング学習過程で、<strong>AIとの協業方法</strong>を確立。
+                                    AIに主導権を渡すのではなく、<strong>私が指示を出してAIに作業させる</strong>
+                                    という関係性を構築しました。
+                                </p>
+                                
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="border border-warning rounded p-3">
+                                            <h6 class="text-warning mb-2">
+                                                <i class="fas fa-user me-2"></i>私の役割
+                                            </h6>
+                                            <ul class="list-unstyled small mb-0">
+                                                <li>• 課題の整理・分析</li>
+                                                <li>• 解決方針の決定</li>
+                                                <li>• 技術選定・設計</li>
+                                                <li>• 品質管理・方向修正</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="border border-secondary rounded p-3">
+                                            <h6 class="text-secondary mb-2">
+                                                <i class="fas fa-robot me-2"></i>AIの役割
+                                            </h6>
+                                            <ul class="list-unstyled small mb-0">
+                                                <li>• コード生成・実装</li>
+                                                <li>• テストケース作成</li>
+                                                <li>• ドキュメント生成</li>
+                                                <li>• デバッグ・最適化</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <blockquote class="blockquote border-start border-warning border-3 ps-3 mt-4">
+                                    <p class="mb-0 fst-italic">
+                                        「AIは非常に優秀な部下だと思っています。指示を明確に出せば、
+                                        期待以上の成果を返してくれる。重要なのは、何をどう指示するかです。」
+                                    </p>
+                                </blockquote>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- フェーズ4: 独自の価値提案 -->
+                <div class="card shadow-sm mb-5 animate-fade-in-up border-info">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <h3 class="text-info mb-3">
+                                <i class="fas fa-star me-2"></i>
+                                独自の価値提案
+                            </h3>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <div class="col-lg-4">
+                                <div class="text-center p-4 bg-light rounded">
+                                    <i class="fas fa-puzzle-piece fa-3x text-primary mb-3"></i>
+                                    <h5>ビジネス理解</h5>
+                                    <p class="small mb-0">
+                                        SE/PM経験により、<br>
+                                        <strong>課題の本質を見抜く力</strong>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="text-center p-4 bg-light rounded">
+                                    <i class="fas fa-plus fa-3x text-success mb-3"></i>
+                                    <h5 class="text-success">+</h5>
+                                    <p class="small mb-0">一般的なエンジニアが持たない<br><strong>上流工程の経験</strong></p>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="text-center p-4 bg-light rounded">
+                                    <i class="fas fa-code fa-3x text-warning mb-3"></i>
+                                    <h5>実装力</h5>
+                                    <p class="small mb-0">
+                                        AI活用により、<br>
+                                        <strong>高速・高品質な実装</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-5">
+                            <h4 class="text-info mb-3">
+                                = 「Business-Understanding Engineer」
+                            </h4>
+                            <p class="lead">
+                                要件定義から実装まで、すべてを一人で完結できるエンジニア
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 現在の取り組み -->
+                <div class="card shadow-sm animate-fade-in-up">
+                    <div class="card-body p-5">
+                        <h3 class="text-center mb-4">
+                            <i class="fas fa-rocket text-primary me-2"></i>
+                            現在の取り組み
+                        </h3>
+                        
+                        <div class="row align-items-center">
+                            <div class="col-lg-6">
+                                <h4 class="mb-3">継続的なスキル向上</h4>
+                                <p class="mb-4">
+                                    100日チャレンジを通じて、最新技術への対応力を証明。
+                                    学習プロセス自体も公開し、<strong>継続的成長能力</strong>をアピールしています。
+                                </p>
+                                
+                                <div class="d-flex gap-3">
+                                    <a href="{{ url_for('challenge') }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-trophy me-2"></i> チャレンジを見る
+                                    </a>
+                                    <a href="{{ url_for('blog') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-book-open me-2"></i> 学習記録
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h5 class="mb-3">技術力の証明方法</h5>
+                                        <div class="row g-3">
+                                            <div class="col-4">
+                                                <div class="h4 text-primary mb-1">{{ total_articles or '0' }}</div>
+                                                <small class="text-muted">学習記録</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="h4 text-success mb-1">{{ total_projects or '0' }}</div>
+                                                <small class="text-muted">実装プロジェクト</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="h4 text-warning mb-1">100</div>
+                                                <small class="text-muted">日間継続</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- なぜこの経験が価値になるのか -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="mb-3">なぜこの経験が価値になるのか</h2>
+            <p class="lead text-muted">一般的なエンジニアとの決定的な違い</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card border-danger h-100">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-times me-2"></i>一般的なエンジニア
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-arrow-right text-muted me-2"></i>
+                                <strong>仕様書をもらって実装</strong><br>
+                                <small class="text-muted">上流工程は他の人が担当</small>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-arrow-right text-muted me-2"></i>
+                                <strong>技術的な実装のみに集中</strong><br>
+                                <small class="text-muted">ビジネス課題は理解しない</small>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-arrow-right text-muted me-2"></i>
+                                <strong>「なぜそれを作るのか」がわからない</strong><br>
+                                <small class="text-muted">言われた通りに作るだけ</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card border-success h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-check me-2"></i>Business-Understanding Engineer
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-star text-success me-2"></i>
+                                <strong>課題から要件を整理して実装</strong><br>
+                                <small class="text-success">上流〜下流まで一貫対応</small>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-star text-success me-2"></i>
+                                <strong>ビジネス価値を理解した実装</strong><br>
+                                <small class="text-success">ROIを意識した技術選定</small>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-star text-success me-2"></i>
+                                <strong>「なぜ」を理解して最適解を提案</strong><br>
+                                <small class="text-success">課題解決のための技術活用</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <h2 class="mb-4">
+            <i class="fas fa-handshake me-2"></i>
+            一緒にビジネス課題を解決しませんか？
+        </h2>
+        <p class="lead mb-4">
+            要件整理から実装まで、一人で一貫対応。<br>
+            SE/PM経験 × プログラミング実装力で、あなたの課題を解決します。
+        </p>
+        
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <a href="{{ url_for('services') }}" class="btn btn-light btn-lg">
+                <i class="fas fa-briefcase me-2"></i> サービス詳細
+            </a>
+            <a href="mailto:t.miyakawa244@gmail.com" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-envelope me-2"></i> 相談する
+            </a>
+        </div>
+        
+        <div class="mt-4">
+            <small class="opacity-75">初回相談は無料です</small>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// アニメーション設定
+document.addEventListener('DOMContentLoaded', function() {
+    // Intersection Observer for fade-in animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+
+    // 全てのアニメーション要素を監視
+    document.querySelectorAll('.animate-fade-in-up, .animate-fade-in-left, .animate-fade-in-right').forEach(el => {
+        observer.observe(el);
+    });
+});
+</script>
+{% endblock %}

@@ -77,6 +77,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'services' else '' }}" href="{{ url_for('services') }}">
+                            <i class="fas fa-briefcase me-1"></i> サービス
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint in ['blog', 'article_detail', 'category_page'] else '' }}" href="{{ url_for('blog') }}">
                             <i class="fas fa-book me-1"></i> ブログ
                         </a>
@@ -84,6 +89,16 @@
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'projects' else '' }}" href="{{ url_for('projects') }}">
                             <i class="fas fa-folder-open me-1"></i> プロジェクト
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'challenge' else '' }}" href="{{ url_for('challenge') }}">
+                            <i class="fas fa-trophy me-1"></i> チャレンジ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'story' else '' }}" href="{{ url_for('story') }}">
+                            <i class="fas fa-book-reader me-1"></i> My Story
                         </a>
                     </li>
                     <li class="nav-item">

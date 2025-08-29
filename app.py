@@ -1109,7 +1109,32 @@ app.register_blueprint(admin_bp, url_prefix=f'/{ADMIN_URL_PREFIX}')
 
 @app.route('/')
 def landing():
-    """ポートフォリオのランディングページ"""
+    """ビジネス・サービス中心のトップページ"""
+    # 基本的なデータを取得
+    total_articles = db.session.execute(
+        select(func.count(Article.id)).where(Article.is_published.is_(True))
+    ).scalar()
+    
+    total_projects = db.session.execute(
+        select(func.count(Project.id)).where(Project.status == 'active')
+    ).scalar()
+    
+    # 注目プロジェクト（最新実績として表示）
+    featured_projects = db.session.execute(
+        select(Project).where(
+            Project.status == 'active',
+            Project.is_featured.is_(True)
+        ).order_by(Project.display_order).limit(3)
+    ).scalars().all()
+    
+    return render_template('landing.html',
+                         total_articles=total_articles,
+                         total_projects=total_projects,
+                         featured_projects=featured_projects)
+
+@app.route('/challenge')
+def challenge():
+    """100日チャレンジページ"""
     from models import SiteSetting, Challenge
     
     # アクティブなチャレンジを取得
@@ -1173,7 +1198,7 @@ def landing():
     if active_challenge:
         current_day = active_challenge.days_elapsed
     
-    return render_template('landing.html',
+    return render_template('challenge.html',
                          active_challenge=active_challenge,
                          latest_articles=latest_articles,
                          total_articles=total_articles,
@@ -1182,6 +1207,34 @@ def landing():
                          skill_categories=skill_categories,
                          all_challenges=all_challenges,
                          featured_projects=featured_projects)
+
+@app.route('/services')
+def services():
+    """サービス詳細ページ"""
+    # 実績プロジェクト（詳細表示用）
+    all_projects = db.session.execute(
+        select(Project).where(Project.status == 'active')
+        .order_by(Project.display_order)
+    ).scalars().all()
+    
+    return render_template('services.html',
+                         all_projects=all_projects)
+
+@app.route('/story')
+def story():
+    """キャリアストーリーページ"""
+    # 実際の数値を取得
+    total_articles = db.session.execute(
+        select(func.count(Article.id)).where(Article.is_published.is_(True))
+    ).scalar()
+    
+    total_projects = db.session.execute(
+        select(func.count(Project.id)).where(Project.status == 'active')
+    ).scalar()
+    
+    return render_template('story.html',
+                         total_articles=total_articles,
+                         total_projects=total_projects)
 
 @app.route('/blog')
 @app.route('/blog/page/<int:page>')

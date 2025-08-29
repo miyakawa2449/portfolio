@@ -1,0 +1,391 @@
+{% extends "layout.html" %}
+
+{% block title %}サービス詳細 - ビジネス課題解決エンジニア {{ admin_user.name if admin_user else 'Tsuyoshi Miyakawa' }}{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<section class="hero-section py-5">
+    <div class="container text-center py-4">
+        <h1 class="hero-title display-4 fw-bold mb-4">提供サービス</h1>
+        <p class="hero-subtitle lead mb-4">
+            ビジネス課題を技術で解決する、一貫対応エンジニアリングサービス
+        </p>
+    </div>
+</section>
+
+<!-- サービス詳細 -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-5">
+            <!-- サービス1: ビジネス課題解決パッケージ -->
+            <div class="col-12">
+                <div class="card shadow-sm border-primary">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 text-center mb-4 mb-lg-0">
+                                <i class="fas fa-project-diagram fa-5x text-primary mb-3"></i>
+                                <h3 class="h4">ビジネス課題解決パッケージ</h3>
+                                <div class="h5 text-primary">30-50万円/月</div>
+                            </div>
+                            <div class="col-lg-9">
+                                <h4 class="mb-3">要件定義から実装まで、すべて一人で対応</h4>
+                                <p class="mb-4">
+                                    お客様の課題を整理・分析し、最適な技術解決策を設計・実装します。
+                                    SE/PM経験により、曖昧な要求から具体的なシステム要件を導き出し、
+                                    実装可能な形まで落とし込みます。
+                                </p>
+                                
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-search text-primary me-2"></i>課題分析・要件定義</h6>
+                                        <ul class="list-unstyled ms-4">
+                                            <li>• 現状業務プロセスの調査・分析</li>
+                                            <li>• 課題の整理・優先度付け</li>
+                                            <li>• 要件定義書・機能仕様書の作成</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-cogs text-primary me-2"></i>設計・実装・デプロイ</h6>
+                                        <ul class="list-unstyled ms-4">
+                                            <li>• 技術選定・システム設計</li>
+                                            <li>• コーディング・テスト・品質保証</li>
+                                            <li>• デプロイ・運用設定・保守対応</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <a href="#contact" class="btn btn-primary btn-lg">このサービスについて相談する</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- サービス2: 既存システム改善コンサル -->
+            <div class="col-12">
+                <div class="card shadow-sm border-info">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 text-center mb-4 mb-lg-0">
+                                <i class="fas fa-chart-line fa-5x text-info mb-3"></i>
+                                <h3 class="h4">既存システム改善コンサル</h3>
+                                <div class="h5 text-info">10-20万円/案件</div>
+                            </div>
+                            <div class="col-lg-9">
+                                <h4 class="mb-3">現状システムの課題を分析し、改善施策を提案</h4>
+                                <p class="mb-4">
+                                    動作はしているが使いにくい、効率が悪い、拡張性がない...
+                                    そんなシステムの問題を特定し、具体的な改善策とROIを算出します。
+                                </p>
+                                
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-diagnoses text-info me-2"></i>現状分析・課題特定</h6>
+                                        <ul class="list-unstyled ms-4">
+                                            <li>• システム利用状況の調査</li>
+                                            <li>• ボトルネック・非効率箇所の特定</li>
+                                            <li>• ユーザビリティ課題の洗い出し</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-lightbulb text-info me-2"></i>改善提案・ROI算出</h6>
+                                        <ul class="list-unstyled ms-4">
+                                            <li>• 具体的な改善施策の提案</li>
+                                            <li>• 投資対効果（ROI）の算出</li>
+                                            <li>• 段階的実装計画の策定</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <a href="#contact" class="btn btn-info btn-lg">このサービスについて相談する</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- サービス3: 要件定義＋プロトタイプ開発 -->
+            <div class="col-12">
+                <div class="card shadow-sm border-warning">
+                    <div class="card-body p-5">
+                        <div class="row align-items-center">
+                            <div class="col-lg-3 text-center mb-4 mb-lg-0">
+                                <i class="fas fa-rocket fa-5x text-warning mb-3"></i>
+                                <h3 class="h4">要件定義＋プロトタイプ開発</h3>
+                                <div class="h5 text-warning">15-25万円/案件</div>
+                            </div>
+                            <div class="col-lg-9">
+                                <h4 class="mb-3">アイデアを動作するシステムに素早く変換</h4>
+                                <p class="mb-4">
+                                    「こんなことができたらいいな」というアイデアから、
+                                    ステークホルダーが触って確認できるプロトタイプまでを高速で実現します。
+                                </p>
+                                
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-comments text-warning me-2"></i>要件整理・翻訳</h6>
+                                        <ul class="list-unstyled ms-4">
+                                            <li>• ビジネス要求のヒアリング</li>
+                                            <li>• 技術要件への翻訳・整理</li>
+                                            <li>• 実現可能性・コスト評価</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-magic text-warning me-2"></i>高速プロトタイプ実装</h6>
+                                        <ul class="list-unstyled ms-4">
+                                            <li>• 動作するプロトタイプの実装</li>
+                                            <li>• デモ用データ・シナリオ作成</li>
+                                            <li>• 関係者向け説明資料</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <a href="#contact" class="btn btn-warning btn-lg">このサービスについて相談する</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 差別化要素詳細 -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">なぜ一人で要件定義から実装まで対応できるのか</h2>
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="mb-3">
+                            <i class="fas fa-user-tie text-primary me-2"></i>
+                            SE/PM経験の活用
+                        </h4>
+                        <p class="mb-3">
+                            システムエンジニア・プロジェクトマネージャーとして培った経験により：
+                        </p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>曖昧な課題を具体的な要件に整理できる</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>技術的制約とビジネス要求のバランスを取れる</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>実装しやすい設計・仕様書を作成できる</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>プロジェクト全体のリスク管理ができる</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h4 class="mb-3">
+                            <i class="fas fa-robot text-success me-2"></i>
+                            AI活用による開発効率化
+                        </h4>
+                        <p class="mb-3">
+                            AIを「優秀な部下」として活用する独自手法：
+                        </p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>コーディング効率を3-5倍に向上</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>品質保証・テストケース生成を自動化</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ドキュメント作成・保守を効率化</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>最新技術トレンドへの対応を加速</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 開発プロセス -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">開発プロセス</h2>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <span class="h4 mb-0">1</span>
+                    </div>
+                    <h5>課題ヒアリング</h5>
+                    <p class="text-muted">現状の課題・要望を詳しくお聞きし、解決すべき問題を明確化します。</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center">
+                    <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <span class="h4 mb-0">2</span>
+                    </div>
+                    <h5>要件定義・設計</h5>
+                    <p class="text-muted">技術要件への翻訳、システム設計、実装計画の策定を行います。</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center">
+                    <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <span class="h4 mb-0">3</span>
+                    </div>
+                    <h5>実装・テスト</h5>
+                    <p class="text-muted">AI活用により高速・高品質な実装を行い、徹底的なテストで品質を保証。</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="text-center">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <span class="h4 mb-0">4</span>
+                    </div>
+                    <h5>デプロイ・保守</h5>
+                    <p class="text-muted">本番環境への展開、運用設定、継続的な保守サポートまで対応。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 実績・事例 -->
+{% if all_projects %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">開発実績</h2>
+        <div class="row g-4">
+            {% for project in all_projects[:6] %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 shadow-sm">
+                    {% if project.featured_image %}
+                    <img src="{{ url_for('static', filename=project.featured_image) }}" 
+                         class="card-img-top" 
+                         alt="{{ project.title }}"
+                         style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-gradient-primary text-white d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <i class="fas fa-code fa-3x"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ project.title }}</h5>
+                        {% if project.description %}
+                        <p class="card-text">{{ project.description[:120] }}...</p>
+                        {% endif %}
+                        
+                        <!-- 技術スタック -->
+                        {% if project.technology_list %}
+                        <div class="mb-3">
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for tech in project.technology_list %}
+                                <span class="badge bg-secondary">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- アクションボタン -->
+                        <div class="mt-auto">
+                            <div class="d-flex gap-2 mb-2">
+                                {% if project.github_url %}
+                                <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm flex-fill">
+                                    <i class="fab fa-github me-1"></i> Code
+                                </a>
+                                {% endif %}
+                                
+                                {% set demo_urls = project.demo_url_list %}
+                                {% if demo_urls %}
+                                    <a href="{{ demo_urls[0].url }}" target="_blank" class="btn btn-primary btn-sm flex-fill">
+                                        <i class="fas fa-external-link-alt me-1"></i> Demo
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if all_projects|length > 6 %}
+        <div class="text-center mt-5">
+            <a href="{{ url_for('projects') }}" class="btn btn-outline-primary btn-lg">
+                すべての実績を見る ({{ all_projects|length }}件)
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- お問い合わせセクション -->
+<section class="py-5 bg-primary text-white" id="contact">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-3">プロジェクトのご相談・お見積り</h2>
+                <p class="lead mb-4">
+                    システム開発・業務効率化・DX推進でお困りの際は、<br>
+                    まずはお気軽にご相談ください。初回相談は無料です。
+                </p>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clock text-warning me-3 fa-lg"></i>
+                            <div>
+                                <strong>初回相談</strong><br>
+                                <small class="opacity-75">無料（60分まで）</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-reply text-warning me-3 fa-lg"></i>
+                            <div>
+                                <strong>レスポンス</strong><br>
+                                <small class="opacity-75">24時間以内</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="d-grid gap-3">
+                    <a href="mailto:t.miyakawa244@gmail.com" class="btn btn-light btn-lg">
+                        <i class="fas fa-envelope me-2"></i> メールで相談
+                    </a>
+                    <a href="{{ url_for('challenge') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-trophy me-2"></i> 技術力を詳しく見る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// スムーズスクロール
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
