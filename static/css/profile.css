@@ -11,7 +11,7 @@
     --profile-purple: #6f42c1;
     
     /* グラデーション */
-    --profile-gradient: linear-gradient(135deg, var(--profile-primary) 0%, var(--profile-secondary) 100%);
+    --profile-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     --skill-expert-gradient: linear-gradient(90deg, var(--profile-success), #20c997);
     --skill-proficient-gradient: linear-gradient(90deg, var(--profile-warning), #fd7e14);
     --skill-developing-gradient: linear-gradient(90deg, var(--profile-purple), #e83e8c);
