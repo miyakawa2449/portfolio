@@ -1772,15 +1772,13 @@ def add_comment(article_id):
     
     return redirect(url_for('article_detail', slug=article.slug))
 
-@app.route('/profile/<handle_name>/')
-def profile(handle_name):
+@app.route('/profile/')
+def profile():
     """ユーザープロフィールページ（ポートフォリオ版）"""
-    user = db.session.execute(select(User).where(User.handle_name == handle_name)).scalar_one_or_none()
+    # 管理者ユーザーを取得（一人管理前提）
+    user = db.session.execute(select(User).where(User.role == 'admin')).scalar_one_or_none()
     if not user:
-        # ハンドルネームが見つからない場合、nameで検索
-        user = db.session.execute(select(User).where(User.name == handle_name)).scalar_one_or_none()
-        if not user:
-            abort(404)
+        abort(404)
     
     # 公開記事のみ取得
     articles = db.session.execute(
