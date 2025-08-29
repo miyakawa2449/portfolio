@@ -274,8 +274,8 @@ FLASK_ENV=development
 DATABASE_URL=mysql+pymysql://username:password@localhost:3306/portfolio_db?charset=utf8mb4
 
 # セキュリティ設定
-ADMIN_URL_PREFIX=management-panel-2024
-LOGIN_URL_PATH=auth-signin-2fa
+ADMIN_URL_PREFIX=XXXXXXXXXXXXXXX
+LOGIN_URL_PATH=XXXXXXXXXXXXXXX
 
 # Google Analytics（オプション）
 GA4_MEASUREMENT_ID=G-XXXXXXXXXX
