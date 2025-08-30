@@ -1,0 +1,352 @@
+{% extends "layout.html" %}
+
+{% block title %}
+{% if query %}
+「{{ query }}」の検索結果 - {{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}
+{% else %}
+サイト内検索 - {{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}
+{% endif %}
+{% endblock %}
+
+{% block description %}
+{% if query %}
+「{{ query }}」の検索結果 - 記事とプロジェクトを横断して検索
+{% else %}
+サイト内検索 - 記事とプロジェクトを横断した検索機能
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- ヒーローセクション -->
+<section class="hero-section py-5">
+    <div class="container text-center">
+        <h1 class="hero-title display-4 fw-bold mb-4">
+            <i class="fas fa-search text-white me-3"></i>サイト内検索
+        </h1>
+        
+        <!-- 検索フォーム -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <form method="GET" action="{{ url_for('search') }}" class="mb-4">
+                    <div class="input-group input-group-lg">
+                        <input type="text" class="form-control" name="q" 
+                               value="{{ query }}" 
+                               placeholder="記事やプロジェクトを検索..."
+                               autofocus>
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-search me-2"></i>検索
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- 検索フィルター -->
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="{{ url_for('search', q=query, type='all') }}" 
+                       class="btn btn-sm {{ 'btn-light' if search_type == 'all' else 'btn-outline-light' }}">
+                        すべて
+                    </a>
+                    <a href="{{ url_for('search', q=query, type='articles') }}" 
+                       class="btn btn-sm {{ 'btn-light' if search_type == 'articles' else 'btn-outline-light' }}">
+                        記事のみ
+                    </a>
+                    <a href="{{ url_for('search', q=query, type='projects') }}" 
+                       class="btn btn-sm {{ 'btn-light' if search_type == 'projects' else 'btn-outline-light' }}">
+                        プロジェクトのみ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 検索結果 -->
+<div class="container py-5">
+    {% if query %}
+        <!-- 検索結果ヘッダー -->
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h4 mb-0">
+                        「<span class="text-primary">{{ query }}</span>」の検索結果
+                    </h2>
+                    <small class="text-muted">
+                        {{ total_count }}件見つかりました
+                    </small>
+                </div>
+                
+                {% if total_count == 0 %}
+                <!-- 検索結果なし -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-search fa-4x text-muted"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">検索結果が見つかりませんでした</h3>
+                    <p class="text-muted mb-4">
+                        別のキーワードで検索してみてください。
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{{ url_for('blog') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-book me-2"></i>記事一覧
+                        </a>
+                        <a href="{{ url_for('projects') }}" class="btn btn-outline-info">
+                            <i class="fas fa-folder-open me-2"></i>プロジェクト一覧
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                    <!-- 記事検索結果 -->
+                    {% if articles %}
+                    <div class="mb-5">
+                        <h3 class="h5 mb-3 d-flex align-items-center">
+                            <i class="fas fa-book text-primary me-2"></i>
+                            記事
+                            <span class="badge bg-primary ms-2">{{ articles|length }}件</span>
+                            {% if search_type == 'all' and article_pagination is none %}
+                            <a href="{{ url_for('search', q=query, type='articles') }}" class="btn btn-sm btn-outline-primary ms-auto">
+                                すべて見る
+                            </a>
+                            {% endif %}
+                        </h3>
+                        
+                        <div class="row g-4">
+                            {% for article in articles %}
+                            <div class="col-lg-6">
+                                <div class="card h-100 shadow-sm">
+                                    {% if article.featured_image %}
+                                    <img src="{{ url_for('static', filename=article.featured_image) }}" 
+                                         class="card-img-top" 
+                                         alt="{{ article.title }}"
+                                         style="height: 200px; object-fit: cover;">
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="badge bg-info">記事</span>
+                                            {% if article.challenge %}
+                                            <small class="text-muted">
+                                                {{ article.challenge.name }}
+                                                {% if article.challenge_day %} - Day {{ article.challenge_day }}{% endif %}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <h5 class="card-title">{{ article.title }}</h5>
+                                        
+                                        {% if article.summary %}
+                                        <p class="card-text">{{ article.summary[:150] }}...</p>
+                                        {% endif %}
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar-alt me-1"></i>
+                                                {{ article.published_at.strftime('%Y年%m月%d日') if article.published_at else article.created_at.strftime('%Y年%m月%d日') }}
+                                            </small>
+                                            <a href="{{ url_for('article_detail', slug=article.slug) }}" class="btn btn-primary btn-sm">
+                                                詳細を見る
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- 記事のページング -->
+                        {% if article_pagination %}
+                        <nav aria-label="記事検索結果ページング" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if article_pagination.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=article_pagination.prev_num) }}">前へ</a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in article_pagination.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != article_pagination.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if article_pagination.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=article_pagination.next_num) }}">次へ</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- プロジェクト検索結果 -->
+                    {% if projects %}
+                    <div class="mb-5">
+                        <h3 class="h5 mb-3 d-flex align-items-center">
+                            <i class="fas fa-folder-open text-success me-2"></i>
+                            プロジェクト
+                            <span class="badge bg-success ms-2">{{ projects|length }}件</span>
+                            {% if search_type == 'all' and project_pagination is none %}
+                            <a href="{{ url_for('search', q=query, type='projects') }}" class="btn btn-sm btn-outline-success ms-auto">
+                                すべて見る
+                            </a>
+                            {% endif %}
+                        </h3>
+                        
+                        <div class="row g-4">
+                            {% for project in projects %}
+                            <div class="col-lg-6">
+                                <div class="card h-100 shadow-sm">
+                                    {% if project.featured_image %}
+                                    <img src="{{ url_for('static', filename=project.featured_image) }}" 
+                                         class="card-img-top" 
+                                         alt="{{ project.title }}"
+                                         style="height: 200px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="card-img-top bg-gradient-primary text-white d-flex align-items-center justify-content-center" 
+                                         style="height: 200px;">
+                                        <i class="fas fa-code fa-3x"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="badge bg-success">プロジェクト</span>
+                                            {% if project.is_featured %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-star"></i>注目
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <h5 class="card-title">{{ project.title }}</h5>
+                                        
+                                        {% if project.description %}
+                                        <p class="card-text">{{ project.description[:150] }}...</p>
+                                        {% endif %}
+                                        
+                                        <!-- 技術スタック -->
+                                        {% if project.technology_list %}
+                                        <div class="mb-3">
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for tech in project.technology_list[:3] %}
+                                                <span class="badge bg-light text-dark">{{ tech }}</span>
+                                                {% endfor %}
+                                                {% if project.technology_list|length > 3 %}
+                                                <span class="badge bg-secondary">+{{ project.technology_list|length - 3 }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="d-flex gap-2 mt-auto">
+                                            {% if project.github_url %}
+                                            <a href="{{ project.github_url }}" target="_blank" class="btn btn-outline-dark btn-sm">
+                                                <i class="fab fa-github me-1"></i>Code
+                                            </a>
+                                            {% endif %}
+                                            {% if project.demo_url_list %}
+                                            <a href="{{ project.demo_url_list[0].url }}" target="_blank" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-external-link-alt me-1"></i>Demo
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- プロジェクトのページング -->
+                        {% if project_pagination %}
+                        <nav aria-label="プロジェクト検索結果ページング" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if project_pagination.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=project_pagination.prev_num) }}">前へ</a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in project_pagination.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != project_pagination.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if project_pagination.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=project_pagination.next_num) }}">次へ</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <!-- 初回アクセス時のメッセージ -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <div class="py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-search fa-4x text-muted"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">サイト内検索</h3>
+                    <p class="text-muted mb-4">
+                        記事やプロジェクトを横断して検索できます。<br>
+                        キーワードを入力して検索してみてください。
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{{ url_for('blog') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-book me-2"></i>記事一覧を見る
+                        </a>
+                        <a href="{{ url_for('projects') }}" class="btn btn-outline-info">
+                            <i class="fas fa-folder-open me-2"></i>プロジェクト一覧を見る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 検索フォームのエンターキー送信
+    const searchInput = document.querySelector('input[name="q"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.target.closest('form').submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

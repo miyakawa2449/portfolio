@@ -48,6 +48,20 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- 検索フォーム -->
+                <div class="navbar-nav me-auto">
+                    <form method="GET" action="{{ url_for('search') }}" class="d-flex">
+                        <div class="input-group" style="width: 250px;">
+                            <input type="text" class="form-control form-control-sm" name="q" 
+                                   placeholder="記事・プロジェクト検索..." 
+                                   value="{{ request.args.get('q', '') }}">
+                            <button class="btn btn-outline-secondary btn-sm" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'landing' else '' }}" href="{{ url_for('landing') }}">
