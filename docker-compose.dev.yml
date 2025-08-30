@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      # ソースコードのライブリロード用
+      - .:/app
+      # ログディレクトリの共有
+      - ./logs:/var/log
+      # 静的ファイルの共有
+      - ./static:/app/static
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_URL=mysql+pymysql://root:sa19qiZ-dq9iZ6p-@host.docker.internal:3306/portfolio_db?charset=utf8mb4
+    depends_on:
+      - mysql
+    networks:
+      - portfolio_network
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"  # ホストの3306と衝突を避けるため3307を使用
+    environment:
+      MYSQL_ROOT_PASSWORD: sa19qiZ-dq9iZ6p-
+      MYSQL_DATABASE: portfolio_db
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      # データの永続化
+      - mysql_data:/var/lib/mysql
+      # 設定ファイル
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - portfolio_network
+
+volumes:
+  mysql_data:
+
+networks:
+  portfolio_network:
+    driver: bridge
