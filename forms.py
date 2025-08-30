@@ -10,6 +10,44 @@ import re
 from wtforms.widgets import HiddenInput
 from flask_wtf.file import FileAllowed, FileRequired
 
+class StaticPageSEOForm(FlaskForm):
+    """静的ページのSEO設定フォーム"""
+    # SEO基本設定
+    meta_title = StringField('メタタイトル', validators=[Optional(), Length(max=255)])
+    meta_description = TextAreaField('メタディスクリプション', validators=[Optional(), Length(max=300)])
+    meta_keywords = StringField('メタキーワード (カンマ区切り)', validators=[Optional(), Length(max=255)])
+    
+    # OGP設定
+    ogp_title = StringField('OGPタイトル', validators=[Optional(), Length(max=255)])
+    ogp_description = TextAreaField('OGP説明', validators=[Optional(), Length(max=300)])
+    
+    # OGP画像関連（カテゴリフォームと同様の実装）
+    ogp_image = FileField('OGP画像', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif'], '画像ファイルのみアップロード可能です。')
+    ])
+    ogp_crop_x = HiddenField('OGP Crop X')
+    ogp_crop_y = HiddenField('OGP Crop Y')
+    ogp_crop_width = HiddenField('OGP Crop Width')
+    ogp_crop_height = HiddenField('OGP Crop Height')
+    ogp_crop_rotate = IntegerField('OGP Crop Rotate', widget=HiddenInput(), validators=[Optional()])
+    ogp_crop_scale_x = IntegerField('OGP Crop ScaleX', widget=HiddenInput(), validators=[Optional()])
+    ogp_crop_scale_y = IntegerField('OGP Crop ScaleY', widget=HiddenInput(), validators=[Optional()])
+    ogp_image_alt = StringField('OGP画像のALT', validators=[Optional(), Length(max=255)])
+    
+    # その他のSEO設定
+    canonical_url = StringField('正規URL', validators=[Optional(), URL(), Length(max=255)])
+    robots = SelectField('検索エンジンロボット設定', 
+                        choices=[('index,follow', 'index,follow (推奨)'),
+                                ('noindex,follow', 'noindex,follow'),
+                                ('index,nofollow', 'index,nofollow'),
+                                ('noindex,nofollow', 'noindex,nofollow')],
+                        default='index,follow')
+    
+    # JSON-LD構造化データ
+    json_ld = TextAreaField('JSON-LD 構造化データ', validators=[Optional()])
+    
+    submit = SubmitField('保存')
+
 class CategoryForm(FlaskForm):
     name = StringField('カテゴリ名', validators=[DataRequired(), Length(max=100)])
     slug = StringField('スラッグ', validators=[DataRequired(), Length(max=100)])
@@ -55,6 +93,7 @@ class ArticleForm(FlaskForm):
     meta_description = TextAreaField('メタディスクリプション', validators=[Optional(), Length(max=300)])
     meta_keywords = StringField('メタキーワード', validators=[Optional(), Length(max=255)])
     canonical_url = StringField('正規URL', validators=[Optional(), URL(), Length(max=255)])
+    json_ld = TextAreaField('構造化データ (JSON-LD)', validators=[Optional()])
     
     # 画像アップロード
     featured_image = FileField('アイキャッチ画像', validators=[

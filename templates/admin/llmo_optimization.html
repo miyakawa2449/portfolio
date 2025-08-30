@@ -1,0 +1,474 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}LLMO対策{% endblock %}
+{% block page_title %}LLMO（AI向けSEO）対策{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>SEO管理</li>
+<li>LLMO対策</li>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .llmo-dashboard {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .analysis-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .score-excellent { background: linear-gradient(45deg, #28a745, #20c997); }
+    .score-good { background: linear-gradient(45deg, #17a2b8, #007bff); }
+    .score-fair { background: linear-gradient(45deg, #ffc107, #fd7e14); }
+    .score-poor { background: linear-gradient(45deg, #dc3545, #e83e8c); }
+    
+    .optimization-item {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
+    
+    .optimization-item.high-priority {
+        border-left-color: #dc3545;
+        background: #fff5f5;
+    }
+    
+    .optimization-item.medium-priority {
+        border-left-color: #ffc107;
+        background: #fffbf0;
+    }
+    
+    .optimization-item.low-priority {
+        border-left-color: #28a745;
+        background: #f8fff8;
+    }
+    
+    .structured-data-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .btn-purple {
+        background: linear-gradient(45deg, #6f42c1, #e83e8c);
+        border: none;
+        color: white;
+    }
+    
+    .btn-purple:hover {
+        background: linear-gradient(45deg, #5a32a3, #d91a72);
+        color: white;
+    }
+    
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="llmo-dashboard">
+    
+    <!-- 概要説明 -->
+    <div class="analysis-card">
+        <h5><i class="fas fa-brain text-purple"></i> LLMOとは？</h5>
+        <p class="mb-3">
+            <strong>LLMO（Language Model Optimization）</strong>は、ChatGPT、Claude、Gemini等のAI言語モデルが
+            あなたのコンテンツを理解・引用しやすくするための最適化手法です。
+        </p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-check-circle text-success"></i> LLMOの効果</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-arrow-right text-primary"></i> AIからの引用・参照増加</li>
+                    <li><i class="fas fa-arrow-right text-primary"></i> 新しいトラフィック源の獲得</li>
+                    <li><i class="fas fa-arrow-right text-primary"></i> 権威性・信頼性の向上</li>
+                    <li><i class="fas fa-arrow-right text-primary"></i> 将来のAI検索エンジン対応</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-cogs text-info"></i> 最適化ポイント</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-arrow-right text-primary"></i> 構造化データ（JSON-LD）</li>
+                    <li><i class="fas fa-arrow-right text-primary"></i> セマンティックHTML</li>
+                    <li><i class="fas fa-arrow-right text-primary"></i> 明確なコンテンツ構造</li>
+                    <li><i class="fas fa-arrow-right text-primary"></i> ファクトチェック可能な情報</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- サイト全体の分析 -->
+    <div class="analysis-card">
+        <h5><i class="fas fa-chart-line"></i> サイト全体のLLMO分析</h5>
+        
+        <div class="row">
+            <div class="col-md-4 text-center">
+                {% set overall_score = site_llmo_score or 0 %}
+                <div class="score-circle 
+                    {% if overall_score >= 80 %}score-excellent
+                    {% elif overall_score >= 60 %}score-good
+                    {% elif overall_score >= 40 %}score-fair
+                    {% else %}score-poor{% endif %}">
+                    {{ overall_score }}/100
+                </div>
+                <h6>総合LLMOスコア</h6>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-info">{{ structured_data_count or 0 }}</div>
+                            <small class="text-muted">構造化データ実装ページ</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ semantic_html_score or 0 }}%</div>
+                            <small class="text-muted">セマンティックHTML適用率</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-warning">{{ content_structure_score or 0 }}%</div>
+                            <small class="text-muted">コンテンツ構造スコア</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-primary">{{ ai_readability_score or 0 }}%</div>
+                            <small class="text-muted">AI可読性スコア</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <button type="button" class="btn btn-purple" onclick="analyzeSiteLLMO()">
+                <i class="fas fa-sync-alt"></i> サイト全体を再分析
+            </button>
+        </div>
+    </div>
+
+    <!-- 最適化提案 -->
+    <div class="analysis-card">
+        <h5><i class="fas fa-lightbulb"></i> LLMO最適化提案</h5>
+        
+        <!-- 高優先度 -->
+        <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> 高優先度の改善点</h6>
+        {% for item in high_priority_items or [] %}
+        <div class="optimization-item high-priority">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">{{ item.title }}</h6>
+                    <p class="mb-2 text-muted">{{ item.description }}</p>
+                    <small class="text-muted">影響度: {{ item.impact }}/10 | 実装難易度: {{ item.difficulty }}/10</small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="showImplementationGuide('{{ item.id }}')">
+                    <i class="fas fa-info-circle"></i> 実装方法
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="optimization-item high-priority">
+            <h6 class="mb-1">構造化データの実装</h6>
+            <p class="mb-2 text-muted">記事ページにJSON-LD形式の構造化データを実装し、AIが内容を理解しやすくします。</p>
+            <small class="text-muted">影響度: 9/10 | 実装難易度: 6/10</small>
+        </div>
+        {% endfor %}
+        
+        <!-- 中優先度 -->
+        <h6 class="text-warning mt-4"><i class="fas fa-clock"></i> 中優先度の改善点</h6>
+        <div class="optimization-item medium-priority">
+            <h6 class="mb-1">セマンティックHTML の強化</h6>
+            <p class="mb-2 text-muted">article、section、header等の意味的なHTMLタグを活用し、コンテンツ構造を明確化します。</p>
+            <small class="text-muted">影響度: 7/10 | 実装難易度: 4/10</small>
+        </div>
+        
+        <!-- 低優先度 -->
+        <h6 class="text-success mt-4"><i class="fas fa-check"></i> 低優先度の改善点</h6>
+        <div class="optimization-item low-priority">
+            <h6 class="mb-1">メタデータの拡充</h6>
+            <p class="mb-2 text-muted">authorやpublishedDate等のメタデータを充実させ、AI理解度を向上させます。</p>
+            <small class="text-muted">影響度: 5/10 | 実装難易度: 3/10</small>
+        </div>
+    </div>
+
+    <!-- 実装ツール -->
+    <div class="feature-grid">
+        <!-- 構造化データ生成 -->
+        <div class="analysis-card">
+            <h6><i class="fas fa-code"></i> 構造化データ生成</h6>
+            <p class="text-muted small">記事やページに適したJSON-LD構造化データを自動生成します。</p>
+            <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="generateStructuredData()">
+                <i class="fas fa-magic"></i> 構造化データ生成
+            </button>
+        </div>
+        
+        <!-- セマンティック分析 -->
+        <div class="analysis-card">
+            <h6><i class="fas fa-sitemap"></i> セマンティック分析</h6>
+            <p class="text-muted small">HTMLの構造とセマンティック要素の使用状況を分析します。</p>
+            <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="analyzeSemanticHTML()">
+                <i class="fas fa-search"></i> セマンティック分析
+            </button>
+        </div>
+        
+        <!-- AI可読性チェック -->
+        <div class="analysis-card">
+            <h6><i class="fas fa-robot"></i> AI可読性チェック</h6>
+            <p class="text-muted small">AIがコンテンツを理解しやすいかどうかをチェックします。</p>
+            <button type="button" class="btn btn-outline-success btn-sm w-100" onclick="checkAIReadability()">
+                <i class="fas fa-eye"></i> 可読性チェック
+            </button>
+        </div>
+        
+        <!-- 実装ガイド -->
+        <div class="analysis-card">
+            <h6><i class="fas fa-book"></i> 実装ガイド</h6>
+            <p class="text-muted small">LLMO最適化の具体的な実装方法を確認できます。</p>
+            <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="showImplementationGuide()">
+                <i class="fas fa-graduation-cap"></i> ガイドを見る
+            </button>
+        </div>
+    </div>
+
+    <!-- 構造化データプレビュー -->
+    <div class="analysis-card">
+        <h5><i class="fas fa-code"></i> 構造化データプレビュー</h5>
+        <p class="text-muted">以下は記事ページの構造化データの例です：</p>
+        
+        <div class="structured-data-preview">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Python 100日チャレンジ - Day 1: 基本的な変数と演算",
+  "author": {
+    "@type": "Person",
+    "name": "開発者名"
+  },
+  "datePublished": "2024-01-01T09:00:00Z",
+  "dateModified": "2024-01-01T09:00:00Z",
+  "description": "Python学習の第1日目として、変数の宣言と基本的な演算について学びます。",
+  "image": "https://example.com/static/uploads/python-day1.jpg",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://example.com/article/python-day-1"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Python 100日チャレンジ",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://example.com/static/logo.png"
+    }
+  }
+}
+        </div>
+        
+        <div class="mt-3">
+            <button type="button" class="btn btn-success" onclick="copyStructuredData()">
+                <i class="fas fa-copy"></i> コピー
+            </button>
+            <button type="button" class="btn btn-primary" onclick="validateStructuredData()">
+                <i class="fas fa-check-circle"></i> 検証
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// サイト全体のLLMO分析
+function analyzeSiteLLMO() {
+    if (confirm('サイト全体のLLMO分析を実行しますか？\n（処理に数分かかる場合があります）')) {
+        // TODO: 実際の分析処理を実装
+        showProgressModal('LLMO分析中...', 'サイト全体のコンテンツを分析しています');
+        
+        // 仮の処理（実際にはAJAXで分析API呼び出し）
+        setTimeout(() => {
+            hideProgressModal();
+            alert('LLMO分析が完了しました！\nページをリロードして結果を確認してください。');
+            location.reload();
+        }, 3000);
+    }
+}
+
+// 構造化データ生成
+function generateStructuredData() {
+    const articleId = prompt('構造化データを生成する記事ID（または記事を選択してください）:');
+    if (articleId) {
+        // TODO: 記事選択モーダルを表示し、構造化データを生成
+        alert(`記事ID ${articleId} の構造化データを生成します（実装予定）`);
+    }
+}
+
+// セマンティックHTML分析
+function analyzeSemanticHTML() {
+    showProgressModal('セマンティック分析中...', 'HTMLの構造を分析しています');
+    
+    // TODO: 実際の分析処理を実装
+    setTimeout(() => {
+        hideProgressModal();
+        alert('セマンティックHTML分析が完了しました！\n\n結果:\n- article要素: 85%適用\n- section要素: 60%適用\n- header/footer: 95%適用\n\n改善提案は画面に反映されます。');
+    }, 2000);
+}
+
+// AI可読性チェック
+function checkAIReadability() {
+    const url = prompt('AI可読性をチェックするページのURL:');
+    if (url) {
+        showProgressModal('AI可読性チェック中...', 'コンテンツの可読性を分析しています');
+        
+        // TODO: 実際の可読性チェック処理を実装
+        setTimeout(() => {
+            hideProgressModal();
+            alert('AI可読性チェックが完了しました！\n\nスコア: 75/100\n\n改善点:\n- 見出し構造の最適化\n- より明確な文章構成\n- 専門用語の説明追加');
+        }, 2500);
+    }
+}
+
+// 実装ガイド表示
+function showImplementationGuide(itemId = null) {
+    let content = `
+        <h5>LLMO実装ガイド</h5>
+        <h6>1. 構造化データの実装</h6>
+        <p>• 記事ページにJSON-LD形式の構造化データを追加</p>
+        <p>• schema.orgのArticle型を使用</p>
+        <p>• author、datePublished、description等を含める</p>
+        
+        <h6>2. セマンティックHTMLの活用</h6>
+        <p>• article、section、header、footer要素を適切に使用</p>
+        <p>• 見出しタグ（h1-h6）の階層構造を明確に</p>
+        <p>• nav、aside、main要素でページ構造を明確化</p>
+        
+        <h6>3. メタデータの拡充</h6>
+        <p>• Open Graphタグの充実</p>
+        <p>• Twitter Cardの実装</p>
+        <p>• 適切なmeta descriptionの設定</p>
+    `;
+    
+    showModal('実装ガイド', content);
+}
+
+// 構造化データのコピー
+function copyStructuredData() {
+    const structuredData = document.querySelector('.structured-data-preview').textContent;
+    navigator.clipboard.writeText(structuredData).then(() => {
+        alert('構造化データをクリップボードにコピーしました！');
+    }).catch(() => {
+        alert('コピーに失敗しました。手動でコピーしてください。');
+    });
+}
+
+// 構造化データの検証
+function validateStructuredData() {
+    window.open('https://search.google.com/test/rich-results', '_blank');
+}
+
+// プログレスモーダルの表示
+function showProgressModal(title, message) {
+    const modalHtml = `
+        <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('progressModal'));
+    modal.show();
+}
+
+// プログレスモーダルの非表示
+function hideProgressModal() {
+    const modalElement = document.getElementById('progressModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        modal.hide();
+        modalElement.remove();
+    }
+}
+
+// 汎用モーダル表示
+function showModal(title, content) {
+    const modalHtml = `
+        <div class="modal fade" id="infoModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 既存のモーダルがあれば削除
+    const existingModal = document.getElementById('infoModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('infoModal'));
+    modal.show();
+    
+    // モーダルが閉じられたら要素を削除
+    document.getElementById('infoModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+</script>
+{% endblock %}

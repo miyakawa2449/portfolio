@@ -147,6 +147,23 @@
                     </a>
                 </li>
                 
+                <!-- SEO管理 -->
+                <li class="sidebar-list">
+                    <a href="#" class="has-submenu {{ 'active' if 'seo' in request.endpoint else '' }}">
+                        <i class="fa fa-search"></i>
+                        <span class="menu-text">SEO管理</span>
+                        <i class="fa fa-angle-right arrow"></i>
+                    </a>
+                    <ul class="submenu {{ 'show' if 'seo' in request.endpoint else '' }}">
+                        <li><a href="{{ url_for('admin.static_pages_seo_list') }}" class="{{ 'active' if request.endpoint == 'admin.static_pages_seo_list' else '' }}">
+                            <i class="fa fa-file"></i>静的ページSEO
+                        </a></li>
+                        <li><a href="{{ url_for('admin.seo_tools') }}" class="{{ 'active' if request.endpoint == 'admin.seo_tools' else '' }}">
+                            <i class="fa fa-tools"></i>SEOツール
+                        </a></li>
+                    </ul>
+                </li>
+                
                 <!-- セキュリティ -->
                 <li class="sidebar-title">
                     <span>セキュリティ</span>
@@ -184,12 +201,6 @@
                     <a href="{{ url_for('admin.access_logs') }}">
                         <i class="fa fa-chart-bar"></i>
                         <span class="menu-text">アクセスログ分析</span>
-                    </a>
-                </li>
-                <li class="sidebar-list {{ 'active' if 'seo' in request.endpoint else '' }}">
-                    <a href="{{ url_for('admin.seo_tools') }}">
-                        <i class="fa fa-search"></i>
-                        <span class="menu-text">SEO対策ツール</span>
                     </a>
                 </li>
                 

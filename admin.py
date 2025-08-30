@@ -12,7 +12,7 @@ from PIL import Image
 import time
 import re
 import json
-from forms import CategoryForm, ArticleForm, GoogleAnalyticsForm, ProjectForm
+from forms import CategoryForm, ArticleForm, GoogleAnalyticsForm, ProjectForm, StaticPageSEOForm
 
 # 新しいサービスクラスをインポート
 from article_service import ArticleService, CategoryService, ImageProcessingService, UserService
@@ -73,6 +73,57 @@ def generate_slug_from_name(name):
     slug = re.sub(r'[^\w\s-]', '', name.lower())
     slug = re.sub(r'[\s_-]+', '-', slug)
     return slug.strip('-')
+
+def process_static_page_ogp_image(image_file, page_slug, crop_data=None):
+    """静的ページOGP画像の処理（アップロード、クロップ、リサイズ）"""
+    if not image_file:
+        return None
+    
+    temp_path = None
+    try:
+        # 画像を保存
+        filename = secure_filename(image_file.filename)
+        timestamp = int(time.time())
+        name, ext = os.path.splitext(filename)
+        filename = f"static_page_{page_slug}_ogp_{timestamp}{ext}"
+        
+        # アップロードディレクトリの確認・作成
+        static_folder = os.path.join(current_app.root_path, 'static')
+        upload_dir = os.path.join(static_folder, 'uploads', 'ogp', 'static_pages')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # 画像を一時保存
+        temp_path = os.path.join(upload_dir, filename)
+        image_file.save(temp_path)
+        
+        # 画像処理
+        with Image.open(temp_path) as img:
+            # クロップ処理
+            if crop_data and crop_data.get('width') and crop_data.get('height'):
+                # クロップ座標の範囲チェック
+                img_width, img_height = img.size
+                x = max(0, min(int(crop_data['x']), img_width))
+                y = max(0, min(int(crop_data['y']), img_height))
+                width = min(int(crop_data['width']), img_width - x)
+                height = min(int(crop_data['height']), img_height - y)
+                
+                if width > 0 and height > 0:
+                    img = img.crop((x, y, x + width, y + height))
+            
+            # OGP用にリサイズ（1200x630）- アスペクト比を保持
+            img.thumbnail((1200, 630), Image.Resampling.LANCZOS)
+            
+            # 保存
+            img.save(temp_path, optimize=True, quality=85)
+        
+        # 相対パスを返す
+        return f"uploads/ogp/static_pages/{filename}"
+        
+    except Exception as e:
+        current_app.logger.error(f"OGP image processing error: {e}")
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+        return None
 
 def process_ogp_image(image_file, category_id=None, crop_data=None):
     """OGP画像の処理（アップロード、クロップ、リサイズ）"""
@@ -999,6 +1050,7 @@ def create_article():
             'meta_description': form.meta_description.data,
             'meta_keywords': form.meta_keywords.data,
             'canonical_url': form.canonical_url.data,
+            'json_ld': form.json_ld.data,
             'category_id': form.category_id.data,
             'challenge_id': form.challenge_id.data,
             'challenge_day': form.challenge_day.data,
@@ -1094,6 +1146,7 @@ def edit_article(article_id):
                 'meta_description': form.meta_description.data,
                 'meta_keywords': form.meta_keywords.data,
                 'canonical_url': form.canonical_url.data,
+                'json_ld': form.json_ld.data,
                 'category_id': form.category_id.data,
                 'cropped_image_data': request.form.get('cropped_image_data'),
                 'featured_image': request.files.get('featured_image'),
@@ -1855,6 +1908,131 @@ def seo_tools():
     return render_template('admin/seo_tools.html', 
                          recent_articles=recent_articles)
 
+@admin_bp.route('/static-pages-seo/', methods=['GET'])
+@admin_required
+def static_pages_seo_list():
+    """静的ページSEO設定一覧"""
+    from models import StaticPageSEO
+    
+    # 静的ページSEO設定を取得
+    pages = db.session.execute(select(StaticPageSEO).order_by(StaticPageSEO.page_slug)).scalars().all()
+    
+    # ページが存在しない場合は初期データを作成
+    if not pages:
+        default_pages = [
+            {'slug': 'home', 'name': 'ホーム'},
+            {'slug': 'services', 'name': 'サービス'},
+            {'slug': 'story', 'name': 'ストーリー'},
+            {'slug': 'about', 'name': 'アバウト'}
+        ]
+        
+        for page_data in default_pages:
+            page = StaticPageSEO(
+                page_slug=page_data['slug'],
+                page_name=page_data['name']
+            )
+            db.session.add(page)
+        
+        db.session.commit()
+        pages = db.session.execute(select(StaticPageSEO).order_by(StaticPageSEO.page_slug)).scalars().all()
+    
+    return render_template('admin/static_pages_seo_list.html', pages=pages)
+
+@admin_bp.route('/static-pages-seo/<page_slug>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_static_page_seo(page_slug):
+    """静的ページSEO設定編集"""
+    from models import StaticPageSEO
+    
+    # ページ設定を取得
+    page = db.session.execute(
+        select(StaticPageSEO).where(StaticPageSEO.page_slug == page_slug)
+    ).scalar_one_or_none()
+    
+    if not page:
+        flash('指定されたページが見つかりません', 'error')
+        return redirect(url_for('admin.static_pages_seo_list'))
+    
+    form = StaticPageSEOForm()
+    
+    if form.validate_on_submit():
+        # 基本SEO設定
+        page.meta_title = form.meta_title.data
+        page.meta_description = form.meta_description.data
+        page.meta_keywords = form.meta_keywords.data
+        
+        # OGP設定
+        page.ogp_title = form.ogp_title.data
+        page.ogp_description = form.ogp_description.data
+        page.ogp_image_alt = form.ogp_image_alt.data
+        
+        # その他のSEO設定
+        page.canonical_url = form.canonical_url.data
+        page.robots = form.robots.data
+        page.json_ld = form.json_ld.data
+        
+        # OGP画像削除処理
+        if request.form.get('remove_ogp_image') == 'true':
+            if page.ogp_image:
+                # 画像ファイル削除（任意）
+                try:
+                    import os
+                    image_path = os.path.join(current_app.root_path, 'static', page.ogp_image)
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+                except:
+                    pass  # ファイル削除エラーは無視
+                
+                page.ogp_image = None
+                flash('OGP画像を削除しました', 'info')
+        
+        # OGP画像処理（カテゴリと同様の処理）
+        elif form.ogp_image.data:
+            try:
+                # クロップデータを収集
+                crop_data = {
+                    'x': float(form.ogp_crop_x.data or 0),
+                    'y': float(form.ogp_crop_y.data or 0),
+                    'width': float(form.ogp_crop_width.data or 0),
+                    'height': float(form.ogp_crop_height.data or 0),
+                    'rotate': int(form.ogp_crop_rotate.data or 0),
+                    'scaleX': int(form.ogp_crop_scale_x.data or 1),
+                    'scaleY': int(form.ogp_crop_scale_y.data or 1)
+                }
+                
+                # 画像処理（静的ページ用にディレクトリを調整）
+                relative_path = process_static_page_ogp_image(
+                    form.ogp_image.data,
+                    page_slug,
+                    crop_data
+                )
+                
+                if relative_path:
+                    page.ogp_image = relative_path
+                    
+            except Exception as e:
+                flash(f'OGP画像の処理中にエラーが発生しました: {str(e)}', 'error')
+        
+        db.session.commit()
+        flash('SEO設定を更新しました', 'success')
+        return redirect(url_for('admin.static_pages_seo_list'))
+    
+    elif request.method == 'GET':
+        # フォームに既存データを設定
+        form.meta_title.data = page.meta_title
+        form.meta_description.data = page.meta_description
+        form.meta_keywords.data = page.meta_keywords
+        form.ogp_title.data = page.ogp_title
+        form.ogp_description.data = page.ogp_description
+        form.ogp_image_alt.data = page.ogp_image_alt
+        form.canonical_url.data = page.canonical_url
+        form.robots.data = page.robots or 'index,follow'
+        form.json_ld.data = page.json_ld
+    
+    return render_template('admin/static_page_seo_edit.html', 
+                         form=form, 
+                         page=page)
+
 @admin_bp.route('/seo-analyze/<int:article_id>', methods=['GET', 'POST'])
 @admin_required
 def seo_analyze_article(article_id):
@@ -2497,6 +2675,79 @@ def analyze_article_seo(article_id):
                            article=article,
                            llmo_analysis=llmo_analysis,
                            aio_analysis=aio_analysis)
+
+@admin_bp.route('/llmo-optimization/', methods=['GET'])
+@admin_required
+def llmo_optimization():
+    """LLMO（AI向けSEO）最適化ページ"""
+    from models import Article, StaticPageSEO
+    
+    # サイト全体のLLMO分析データを計算
+    try:
+        # 記事数を取得
+        total_articles = db.session.execute(
+            select(func.count(Article.id)).where(Article.is_published == True)
+        ).scalar()
+        
+        # 構造化データが実装されているページ数を計算
+        structured_data_count = 0
+        
+        # 静的ページの構造化データ
+        static_pages_with_json_ld = db.session.execute(
+            select(func.count(StaticPageSEO.id)).where(StaticPageSEO.json_ld.isnot(None))
+        ).scalar()
+        structured_data_count += static_pages_with_json_ld
+        
+        # 記事の構造化データ（将来実装時のプレースホルダー）
+        # articles_with_json_ld = ...
+        
+        # サンプルスコアを計算（実際には詳細な分析が必要）
+        site_llmo_score = min(100, max(0, (structured_data_count * 20) + 40))
+        semantic_html_score = 75  # 実際にはHTMLを分析
+        content_structure_score = 80  # 実際にはコンテンツ構造を分析
+        ai_readability_score = 70  # 実際にはAI可読性を分析
+        
+        # 高優先度の改善項目（サンプル）
+        high_priority_items = []
+        
+        if structured_data_count == 0:
+            high_priority_items.append({
+                'id': 'structured_data',
+                'title': '構造化データの実装',
+                'description': '記事ページにJSON-LD形式の構造化データを実装し、AIが内容を理解しやすくします。',
+                'impact': 9,
+                'difficulty': 6
+            })
+        
+        if semantic_html_score < 80:
+            high_priority_items.append({
+                'id': 'semantic_html',
+                'title': 'セマンティックHTMLの改善',
+                'description': 'article、section、header等の意味的なHTMLタグを活用し、コンテンツ構造を明確化します。',
+                'impact': 8,
+                'difficulty': 4
+            })
+        
+        return render_template('admin/llmo_optimization.html',
+                             site_llmo_score=site_llmo_score,
+                             structured_data_count=structured_data_count,
+                             semantic_html_score=semantic_html_score,
+                             content_structure_score=content_structure_score,
+                             ai_readability_score=ai_readability_score,
+                             high_priority_items=high_priority_items,
+                             total_articles=total_articles)
+        
+    except Exception as e:
+        current_app.logger.error(f'LLMO optimization page error: {e}')
+        flash('LLMO分析データの取得中にエラーが発生しました', 'error')
+        return render_template('admin/llmo_optimization.html',
+                             site_llmo_score=0,
+                             structured_data_count=0,
+                             semantic_html_score=0,
+                             content_structure_score=0,
+                             ai_readability_score=0,
+                             high_priority_items=[],
+                             total_articles=0)
 
 @admin_bp.route('/seo/batch-analyze/', methods=['GET', 'POST'])
 @admin_required

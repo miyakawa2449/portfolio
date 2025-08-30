@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block title %}ビジネス課題から実装まで一人で解決するエンジニア - {{ admin_user.name if admin_user else 'Tsuyoshi Miyakawa' }}{% endblock %}
+{% block title %}{% if page_seo and page_seo.meta_title %}{{ page_seo.meta_title }}{% else %}ビジネス課題から実装まで一人で解決するエンジニア - {{ admin_user.name if admin_user else 'Tsuyoshi Miyakawa' }}{% endif %}{% endblock %}
 
 {% block content %}
 <!-- ヒーローセクション -->

@@ -215,6 +215,7 @@ def markdown_filter(text):
         'img': ['src', 'alt', 'title', 'width', 'height'],
         'code': ['class'],
         'pre': ['class'],
+        'h1': ['id'], 'h2': ['id'], 'h3': ['id'], 'h4': ['id'], 'h5': ['id'], 'h6': ['id'],
         # SNS埋込用属性
         'div': ['class', 'id', 'style', 'data-href', 'data-width', 'data-instgrm-permalink'],
         'iframe': ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title', 'style'],
@@ -229,6 +230,9 @@ def markdown_filter(text):
     else:
         # 通常のMarkdownコンテンツのみサニタイズ
         clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attributes)
+    
+    # 見出しにアンカーIDを追加
+    clean_html = add_heading_anchors(clean_html)
     
     return Markup(clean_html)
 mail.init_app(app)  # メール機能を有効化
@@ -1107,6 +1111,158 @@ if app.debug:
 ADMIN_URL_PREFIX = os.environ.get('ADMIN_URL_PREFIX', 'admin')
 app.register_blueprint(admin_bp, url_prefix=f'/{ADMIN_URL_PREFIX}')
 
+def get_static_page_seo(page_slug):
+    """静的ページのSEO設定を取得"""
+    from models import StaticPageSEO
+    page_seo = db.session.execute(
+        select(StaticPageSEO).where(StaticPageSEO.page_slug == page_slug)
+    ).scalar_one_or_none()
+    return page_seo
+
+def generate_article_structured_data(article):
+    """記事の構造化データ（JSON-LD）を生成"""
+    import json
+    from datetime import datetime
+    
+    # 既にJSON-LDが設定されている場合はそれを使用
+    if hasattr(article, 'json_ld') and article.json_ld:
+        try:
+            # 既存のJSON-LDが有効かチェック
+            json.loads(article.json_ld)
+            return article.json_ld
+        except (json.JSONDecodeError, TypeError):
+            pass
+    
+    # サイト設定を取得
+    from models import SiteSetting
+    try:
+        site_name = SiteSetting.get_setting('site_name', 'Python 100日チャレンジ')
+    except:
+        site_name = 'Python 100日チャレンジ'
+    
+    # 基本的な記事の構造化データを生成
+    structured_data = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": article.title,
+        "description": article.meta_description or (
+            article.summary[:160] + '...' if article.summary and len(article.summary) > 160 
+            else article.summary
+        ) or "",
+        "author": {
+            "@type": "Person",
+            "name": (
+                article.author.display_name if hasattr(article, 'author') and article.author and hasattr(article.author, 'display_name') and article.author.display_name
+                else article.author.email if hasattr(article, 'author') and article.author and hasattr(article.author, 'email') and article.author.email
+                else "管理者"
+            )
+        },
+        "datePublished": article.published_at.isoformat() if article.published_at else article.created_at.isoformat(),
+        "dateModified": article.updated_at.isoformat() if article.updated_at else article.created_at.isoformat(),
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": url_for('article_detail', slug=article.slug, _external=True)
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": site_name,
+            "logo": {
+                "@type": "ImageObject",
+                "url": url_for('static', filename='images/logo.png', _external=True)
+            }
+        }
+    }
+    
+    # アイキャッチ画像があれば追加
+    if hasattr(article, 'featured_image') and article.featured_image:
+        structured_data["image"] = url_for('static', filename=article.featured_image, _external=True)
+    
+    # カテゴリがあれば追加
+    if hasattr(article, 'categories') and article.categories:
+        structured_data["about"] = [
+            {
+                "@type": "Thing",
+                "name": category.name
+            } for category in article.categories
+        ]
+    
+    # キーワードがあれば追加
+    if article.meta_keywords:
+        keywords = [kw.strip() for kw in article.meta_keywords.split(',') if kw.strip()]
+        if keywords:
+            structured_data["keywords"] = keywords
+    
+    # 文字数を推定（SEO指標として）
+    if article.body:
+        word_count = len(article.body.split())
+        structured_data["wordCount"] = word_count
+    
+    return json.dumps(structured_data, ensure_ascii=False, indent=2)
+
+def generate_table_of_contents(markdown_content):
+    """Markdownから目次を生成"""
+    import re
+    
+    if not markdown_content:
+        return None
+    
+    # 見出しを抽出するパターン（# ## ### #### ##### ######）
+    heading_pattern = r'^(#{1,6})\s+(.+)$'
+    headings = []
+    heading_counter = 0
+    
+    for line_num, line in enumerate(markdown_content.split('\n'), 1):
+        line = line.strip()
+        match = re.match(heading_pattern, line)
+        if match:
+            heading_counter += 1  # 見出しの順番をカウント
+            level = len(match.group(1))  # # の数
+            title = match.group(2).strip()
+            
+            # アンカー用のIDを生成（日本語対応）
+            anchor_id = re.sub(r'[^\w\-_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', '-', title.lower())
+            anchor_id = re.sub(r'-+', '-', anchor_id).strip('-')
+            anchor_id = f"heading-{heading_counter}-{anchor_id}" if anchor_id else f"heading-{heading_counter}"
+            
+            headings.append({
+                'level': level,
+                'title': title,
+                'anchor': anchor_id,
+                'line': line_num
+            })
+    
+    return headings if headings else None
+
+def add_heading_anchors(html_content):
+    """HTMLの見出しにアンカーIDを追加"""
+    import re
+    from bs4 import BeautifulSoup
+    
+    if not html_content:
+        return html_content
+    
+    try:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # h1-h6タグを検索
+        headings = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+        
+        for i, heading in enumerate(headings, 1):
+            # 既存のIDがあっても上書きして、目次と一致させる
+            title = heading.get_text().strip()
+            # アンカー用のIDを生成
+            anchor_id = re.sub(r'[^\w\-_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', '-', title.lower())
+            anchor_id = re.sub(r'-+', '-', anchor_id).strip('-')
+            anchor_id = f"heading-{i}-{anchor_id}" if anchor_id else f"heading-{i}"
+            
+            heading['id'] = anchor_id
+        
+        return str(soup)
+    except Exception as e:
+        # エラー時は元のHTMLを返す
+        current_app.logger.error(f"Failed to add heading anchors: {e}")
+        return html_content
+
 @app.route('/')
 def landing():
     """ビジネス・サービス中心のトップページ"""
@@ -1127,10 +1283,14 @@ def landing():
         ).order_by(Project.display_order).limit(3)
     ).scalars().all()
     
+    # SEO設定を取得
+    page_seo = get_static_page_seo('home')
+    
     return render_template('landing.html',
                          total_articles=total_articles,
                          total_projects=total_projects,
-                         featured_projects=featured_projects)
+                         featured_projects=featured_projects,
+                         page_seo=page_seo)
 
 @app.route('/portfolio')
 def portfolio():
@@ -1217,8 +1377,12 @@ def services():
         .order_by(Project.display_order)
     ).scalars().all()
     
+    # SEO設定を取得
+    page_seo = get_static_page_seo('services')
+    
     return render_template('services.html',
-                         all_projects=all_projects)
+                         all_projects=all_projects,
+                         page_seo=page_seo)
 
 @app.route('/story')
 def story():
@@ -1232,9 +1396,13 @@ def story():
         select(func.count(Project.id)).where(Project.status == 'active')
     ).scalar()
     
+    # SEO設定を取得
+    page_seo = get_static_page_seo('story')
+    
     return render_template('story.html',
                          total_articles=total_articles,
-                         total_projects=total_projects)
+                         total_projects=total_projects,
+                         page_seo=page_seo)
 
 @app.route('/blog')
 @app.route('/blog/page/<int:page>')
@@ -1337,11 +1505,26 @@ def projects(page=1, challenge_id=None):
             error_out=False
         )
         
+        # 注目プロジェクト（ページネーション外で全件取得）
+        featured_projects = Project.query.filter(
+            Project.status == 'active',
+            Project.is_featured == True
+        ).order_by(Project.display_order, Project.created_at.desc()).all()
+        
+        # 使用技術の集計
+        all_projects = Project.query.filter(Project.status == 'active').all()
+        technologies = set()
+        for project in all_projects:
+            technologies.update(project.technology_list)
+        technologies = sorted(list(technologies))
+        
         return render_template('projects.html',
                              projects=projects_pagination.items,
                              pagination=projects_pagination,
                              challenges=challenges,
-                             current_challenge=current_challenge)
+                             current_challenge=current_challenge,
+                             featured_projects=featured_projects,
+                             technologies=technologies)
                              
     except Exception as e:
         print(f"Projects route error: {e}")
@@ -1716,7 +1899,18 @@ def article_detail(slug):
     # コメントフォームを作成
     comment_form = CommentForm()
     
-    return render_template('article_detail.html', article=article, approved_comments=approved_comments, comment_form=comment_form)
+    # 構造化データ（JSON-LD）を生成
+    structured_data = generate_article_structured_data(article)
+    
+    # 目次を生成
+    table_of_contents = generate_table_of_contents(article.body) if article.body else None
+    
+    return render_template('article_detail.html', 
+                         article=article, 
+                         approved_comments=approved_comments, 
+                         comment_form=comment_form,
+                         structured_data=structured_data,
+                         table_of_contents=table_of_contents)
 
 @app.route('/add_comment/<int:article_id>', methods=['POST'])
 def add_comment(article_id):
@@ -1780,6 +1974,9 @@ def profile():
     if not user:
         abort(404)
     
+    # SEO設定を取得
+    page_seo = get_static_page_seo('about')
+    
     # 公開記事のみ取得
     articles = db.session.execute(
         select(Article).where(Article.author_id == user.id, Article.is_published.is_(True)).order_by(
@@ -1808,7 +2005,8 @@ def profile():
                            articles=articles,
                            projects=projects,
                            featured_projects=featured_projects,
-                           challenges=challenges)
+                           challenges=challenges,
+                           page_seo=page_seo)
 
 @app.route('/download/resume/<int:user_id>')
 @login_required

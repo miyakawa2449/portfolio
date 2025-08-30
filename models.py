@@ -357,6 +357,7 @@ class Article(db.Model):
     meta_description = db.Column(db.Text, nullable=True)
     meta_keywords = db.Column(db.String(255), nullable=True)
     canonical_url = db.Column(db.String(255), nullable=True)
+    json_ld = db.Column(db.Text, nullable=True)  # JSON-LD構造化データ
     
     # 画像関連
     featured_image = db.Column(db.String(255), nullable=True)  # アイキャッチ画像
@@ -483,6 +484,39 @@ class Comment(db.Model):
     
     def __repr__(self):
         return f'<Comment {self.id}: {self.author_name} on Article {self.article_id}>'
+
+class StaticPageSEO(db.Model):
+    """静的ページのSEO設定を管理するモデル"""
+    __tablename__ = 'static_page_seo'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    page_slug = db.Column(db.String(50), unique=True, nullable=False)  # home, services, story, about
+    page_name = db.Column(db.String(100), nullable=False)  # 表示用ページ名
+    
+    # SEO基本設定
+    meta_title = db.Column(db.String(255), nullable=True)
+    meta_description = db.Column(db.Text, nullable=True)
+    meta_keywords = db.Column(db.String(255), nullable=True)
+    
+    # OGP設定
+    ogp_title = db.Column(db.String(255), nullable=True)
+    ogp_description = db.Column(db.Text, nullable=True)
+    ogp_image = db.Column(db.String(255), nullable=True)
+    ogp_image_alt = db.Column(db.String(255), nullable=True)
+    
+    # その他のSEO設定
+    canonical_url = db.Column(db.String(255), nullable=True)
+    robots = db.Column(db.String(50), nullable=True, default='index,follow')
+    
+    # JSON-LD構造化データ（LLMO対策）
+    json_ld = db.Column(db.Text, nullable=True)
+    
+    # タイムスタンプ
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<StaticPageSEO {self.page_slug}>'
 
 class SiteSetting(db.Model):
     __tablename__ = 'site_settings'

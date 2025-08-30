@@ -1,0 +1,687 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}{{ page.page_name }}のSEO設定編集{% endblock %}
+{% block page_title %}{{ page.page_name }}のSEO設定編集{% endblock %}
+
+{% block breadcrumb %}
+{{ super() }}
+<li>SEO</li>
+<li><a href="{{ url_for('admin.static_pages_seo_list') }}">静的ページSEO設定</a></li>
+<li>{{ page.page_name }}の編集</li>
+{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+<style>
+    .nav-tabs .nav-link {
+        color: #495057;
+    }
+    .nav-tabs .nav-link.active {
+        font-weight: bold;
+    }
+    .form-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    .preview-container {
+        max-width: 600px;
+        margin: 20px 0;
+    }
+    .ogp-preview {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        background: white;
+    }
+    .ogp-preview img {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
+    #image-preview-container {
+        max-height: 400px;
+        margin: 20px 0;
+    }
+    .preview-container {
+        max-width: 600px;
+        margin: 20px 0;
+    }
+    .image-preview {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+    }
+    .current-image-preview {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data" id="seo-form">
+    {{ form.hidden_tag() }}
+    
+    <!-- タブナビゲーション -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#basic-seo">
+                <i class="fas fa-search"></i> 基本SEO設定
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ogp-settings">
+                <i class="fas fa-share-alt"></i> OGP設定
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#advanced-seo">
+                <i class="fas fa-cog"></i> 高度な設定
+            </a>
+        </li>
+    </ul>
+    
+    <!-- タブコンテンツ -->
+    <div class="tab-content">
+        <!-- 基本SEO設定 -->
+        <div class="tab-pane fade show active" id="basic-seo">
+            <div class="form-section">
+                <h5 class="mb-3"><i class="fas fa-tag"></i> 基本SEO情報</h5>
+                
+                <div class="mb-3">
+                    {{ form.meta_title.label(class="form-label") }}
+                    {{ form.meta_title(class="form-control", placeholder="ページタイトル | サイト名") }}
+                    <small class="form-text text-muted">
+                        50-60文字程度を推奨。検索結果に表示されるタイトルです。
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.meta_description.label(class="form-label") }}
+                    {{ form.meta_description(class="form-control", rows=3, placeholder="このページの説明を入力...") }}
+                    <small class="form-text text-muted">
+                        120-150文字程度を推奨。検索結果に表示される説明文です。
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.meta_keywords.label(class="form-label") }}
+                    {{ form.meta_keywords(class="form-control", placeholder="キーワード1, キーワード2, キーワード3") }}
+                    <small class="form-text text-muted">
+                        関連性の高いキーワードをカンマ区切りで入力してください。
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- OGP設定 -->
+        <div class="tab-pane fade" id="ogp-settings">
+            <div class="form-section">
+                <h5 class="mb-3"><i class="fas fa-share-square"></i> Open Graph Protocol設定</h5>
+                
+                <div class="mb-3">
+                    {{ form.ogp_title.label(class="form-label") }}
+                    {{ form.ogp_title(class="form-control", placeholder="SNSシェア時のタイトル") }}
+                    <small class="form-text text-muted">
+                        空欄の場合はメタタイトルが使用されます。
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.ogp_description.label(class="form-label") }}
+                    {{ form.ogp_description(class="form-control", rows=3, placeholder="SNSシェア時の説明文") }}
+                    <small class="form-text text-muted">
+                        空欄の場合はメタディスクリプションが使用されます。
+                    </small>
+                </div>
+                
+                <!-- 現在の画像表示 -->
+                {% if page.ogp_image %}
+                    <div class="mb-3" id="currentOgpImage">
+                        <label class="form-label">現在のOGP画像</label>
+                        <div class="current-image-preview">
+                            <img src="{{ url_for('static', filename=page.ogp_image) }}?t={{ range(1, 100000) | random }}" 
+                                 alt="現在のOGP画像" 
+                                 class="image-preview"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-file me-1"></i>{{ page.ogp_image }}
+                                </small>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="removeOgpImageBtn">
+                                    <i class="fas fa-trash me-1"></i>削除
+                                </button>
+                            </div>
+                            <div class="alert alert-warning small mt-2" style="display:none;">
+                                <i class="fas fa-exclamation-triangle me-1"></i>画像ファイルが見つかりません
+                            </div>
+                        </div>
+                        <input type="hidden" name="remove_ogp_image" id="removeOgpImage" value="false">
+                    </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.ogp_image.id }}" class="form-label">{{ form.ogp_image.label.text }}</label>
+                    {{ form.ogp_image(class="form-control" + (" is-invalid" if form.ogp_image.errors else ""), onchange="previewImage(event)") }}
+                    {% if form.ogp_image.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.ogp_image.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        推奨サイズ: 1200×630px（1.91:1比率、OGP対応、JPG/PNG形式）<br>
+                        新しい画像をアップロードする場合のみ選択してください
+                    </div>
+                </div>
+                
+                <div id="imagePreviewContainer" class="preview-container" style="display: none;">
+                    <img id="imagePreview" class="image-preview" alt="プレビュー">
+                    <div class="mt-2">
+                        <small class="text-muted">新しい画像のプレビュー</small>
+                    </div>
+                    
+                    <!-- クロップボタン -->
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="startCropping()">
+                            <i class="fas fa-crop"></i> 画像をトリミング
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- クロップモーダル -->
+                <div class="modal fade" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl" style="max-width: 90vw; margin: 1rem auto;">
+                        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+                            <div class="modal-header" style="flex-shrink: 0;">
+                                <h5 class="modal-title" id="cropModalLabel">画像トリミング</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" style="flex: 1; overflow-y: auto; max-height: calc(90vh - 120px);">
+                                <div class="mb-3">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>トリミング方法:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>選択範囲をドラッグして移動できます</li>
+                                            <li>角や辺をドラッグしてサイズを調整できます</li>
+                                            <li>マウスホイールで拡大・縮小できます</li>
+                                            <li>選択外の部分は半透明で表示されます</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="crop-container" style="max-height: 50vh; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+                                    <img id="cropImage" style="max-width: 100%; max-height: 50vh; object-fit: contain;">
+                                </div>
+                                <div class="mt-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperZoomIn()">
+                                                <i class="fas fa-search-plus"></i> 拡大
+                                            </button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperZoomOut()">
+                                                <i class="fas fa-search-minus"></i> 縮小
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveLeft()">
+                                                <i class="fas fa-arrow-left"></i> 左移動
+                                            </button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveRight()">
+                                                <i class="fas fa-arrow-right"></i> 右移動
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveUp()">
+                                                <i class="fas fa-arrow-up"></i> 上移動
+                                            </button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="cropperMoveDown()">
+                                                <i class="fas fa-arrow-down"></i> 下移動
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="cropperReset()">
+                                                <i class="fas fa-refresh"></i> リセット
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="flex-shrink: 0;">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                                <button type="button" class="btn btn-primary" onclick="applyCrop()">トリミングを適用</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 隠しフィールド（クロップデータ） -->
+                {% if form.ogp_crop_x %}{{ form.ogp_crop_x() }}{% else %}<input type="hidden" name="ogp_crop_x" id="ogp_crop_x">{% endif %}
+                {% if form.ogp_crop_y %}{{ form.ogp_crop_y() }}{% else %}<input type="hidden" name="ogp_crop_y" id="ogp_crop_y">{% endif %}
+                {% if form.ogp_crop_width %}{{ form.ogp_crop_width() }}{% else %}<input type="hidden" name="ogp_crop_width" id="ogp_crop_width">{% endif %}
+                {% if form.ogp_crop_height %}{{ form.ogp_crop_height() }}{% else %}<input type="hidden" name="ogp_crop_height" id="ogp_crop_height">{% endif %}
+                
+                <div class="mb-3">
+                    {{ form.ogp_image_alt.label(class="form-label") }}
+                    {{ form.ogp_image_alt(class="form-control", placeholder="画像の代替テキスト") }}
+                </div>
+            </div>
+            
+            <!-- OGPプレビュー -->
+            <div class="form-section">
+                <h5 class="mb-3"><i class="fas fa-eye"></i> SNSシェアプレビュー</h5>
+                <div class="ogp-preview">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0 me-3" style="width: 120px;">
+                            {% if page.ogp_image %}
+                            <img src="{{ url_for('static', filename=page.ogp_image) }}" 
+                                 class="img-fluid" id="ogp-preview-image">
+                            {% else %}
+                            <div class="bg-light text-center p-3">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 id="ogp-preview-title">{{ page.ogp_title or page.meta_title or page.page_name }}</h6>
+                            <p class="text-muted small mb-0" id="ogp-preview-description">
+                                {{ page.ogp_description or page.meta_description or 'ページの説明が入ります' }}
+                            </p>
+                            <small class="text-muted">{{ request.host }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 高度な設定 -->
+        <div class="tab-pane fade" id="advanced-seo">
+            <div class="form-section">
+                <h5 class="mb-3"><i class="fas fa-tools"></i> 高度なSEO設定</h5>
+                
+                <div class="mb-3">
+                    {{ form.canonical_url.label(class="form-label") }}
+                    {{ form.canonical_url(class="form-control", placeholder="https://example.com/page") }}
+                    <small class="form-text text-muted">
+                        このページの正規URLを指定します。通常は空欄で問題ありません。
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.robots.label(class="form-label") }}
+                    {{ form.robots(class="form-select") }}
+                    <small class="form-text text-muted">
+                        検索エンジンのクロール・インデックス設定を指定します。
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.json_ld.label(class="form-label") }}
+                    {{ form.json_ld(class="form-control font-monospace", rows=10, placeholder='{"@context": "https://schema.org", ...}') }}
+                    <small class="form-text text-muted">
+                        構造化データをJSON-LD形式で入力します。AI/LLM向けSEO対策に有効です。
+                    </small>
+                    <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="formatJsonLd()">
+                        <i class="fas fa-code"></i> JSONフォーマット
+                    </button>
+                    <button type="button" class="btn btn-sm btn-info mt-2" onclick="generateJsonLdTemplate()">
+                        <i class="fas fa-magic"></i> テンプレート生成
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 保存ボタン -->
+    <div class="mt-4">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('admin.static_pages_seo_list') }}" class="btn btn-secondary">キャンセル</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<script>
+let cropper = null;
+
+// ページの読み込み完了を待つ
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded, Bootstrap available:', typeof bootstrap !== 'undefined');
+    console.log('Cropper available:', typeof Cropper !== 'undefined');
+    
+    // OGP画像削除ボタンのイベント設定
+    const removeOgpImageBtn = document.getElementById('removeOgpImageBtn');
+    if (removeOgpImageBtn) {
+        removeOgpImageBtn.addEventListener('click', function() {
+            if (confirm('OGP画像を削除しますか？\n※画像ファイル自体は削除されず、ページとの関連付けのみ解除されます。')) {
+                // 現在の画像プレビューを非表示
+                const currentImage = document.getElementById('currentOgpImage');
+                if (currentImage) {
+                    currentImage.style.display = 'none';
+                }
+                
+                // 削除フラグを設定
+                const removeFlag = document.getElementById('removeOgpImage');
+                if (removeFlag) {
+                    removeFlag.value = 'true';
+                }
+                
+                // ファイル入力をリセット
+                const fileInput = document.querySelector('input[name="ogp_image"]');
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                
+                // プレビューコンテナも非表示
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                if (previewContainer) {
+                    previewContainer.style.display = 'none';
+                }
+                
+                // 成功メッセージ
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    OGP画像の削除をマークしました。保存ボタンを押すと削除が確定します。
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                const cardBody = currentImage.closest('.card-body');
+                if (cardBody) {
+                    cardBody.insertBefore(alertDiv, cardBody.firstChild);
+                }
+            }
+        });
+    }
+});
+
+// 画像プレビュー
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            const container = document.getElementById('imagePreviewContainer');
+            preview.src = e.target.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// クロップ機能
+function startCropping() {
+    const preview = document.getElementById('imagePreview');
+    const cropImage = document.getElementById('cropImage');
+    
+    if (preview.src) {
+        cropImage.src = preview.src;
+        // Bootstrapがロードされるまで待機
+        if (typeof bootstrap !== 'undefined') {
+            const modal = new bootstrap.Modal(document.getElementById('cropModal'));
+            modal.show();
+        } else {
+            // フォールバック: 直接モーダルを表示
+            const modalElement = document.getElementById('cropModal');
+            modalElement.style.display = 'block';
+            modalElement.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+        
+        // モーダルが完全に表示された後にCropperを初期化
+        const initCropper = () => {
+            if (cropper) {
+                cropper.destroy();
+            }
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 1200 / 630, // OGP画像のアスペクト比
+                viewMode: 1, // 画像がコンテナを超えないように制限
+                dragMode: 'crop', // ドラッグでクロップボックスを移動
+                autoCropArea: 0.7, // 初期クロップエリアを少し小さく
+                responsive: true,
+                restore: false,
+                checkCrossOrigin: false,
+                checkOrientation: false,
+                modal: true, // マスクを表示（選択外を半透明にする）
+                guides: true, // ガイドラインを表示
+                center: true, // 中央線を表示
+                highlight: true, // ハイライト表示
+                background: true, // グリッド背景を表示
+                autoCrop: true, // 自動でクロップエリアを作成
+                movable: true, // 画像の移動を許可
+                rotatable: false, // 回転は無効化
+                scalable: true, // 拡大縮小を許可
+                zoomable: true, // ズーム機能を有効
+                zoomOnTouch: true, // タッチでズーム
+                zoomOnWheel: true, // マウスホイールでズーム
+                wheelZoomRatio: 0.1,
+                cropBoxMovable: true, // クロップボックスの移動を許可
+                cropBoxResizable: true, // クロップボックスのリサイズを許可
+                toggleDragModeOnDblclick: false, // ダブルクリックでのモード切替を無効化
+                // 最小クロップボックスサイズ
+                minCropBoxWidth: 100,
+                minCropBoxHeight: 52, // 100 * (630/1200) = 52.5
+                ready: function () {
+                    console.log('Cropper ready');
+                }
+            });
+        };
+        
+        // Bootstrap modalイベントかタイムアウトでCropper初期化
+        if (typeof bootstrap !== 'undefined') {
+            document.getElementById('cropModal').addEventListener('shown.bs.modal', initCropper, { once: true });
+        } else {
+            // フォールバック: 少し待ってから初期化
+            setTimeout(initCropper, 300);
+        }
+    }
+}
+
+function applyCrop() {
+    if (cropper) {
+        // getData()メソッドでより正確なクロップデータを取得
+        const cropData = cropper.getData();
+        
+        // クロップデータを隠しフィールドに設定（画像の実際のサイズに対する値）
+        document.getElementById('ogp_crop_x').value = Math.round(cropData.x);
+        document.getElementById('ogp_crop_y').value = Math.round(cropData.y);
+        document.getElementById('ogp_crop_width').value = Math.round(cropData.width);
+        document.getElementById('ogp_crop_height').value = Math.round(cropData.height);
+        
+        console.log('Crop data:', cropData);
+        
+        // クロップされた画像をプレビューに表示
+        const canvas = cropper.getCroppedCanvas({
+            width: 1200,
+            height: 630 // 1200:630の比率を維持（OGP対応）
+        });
+        
+        document.getElementById('imagePreview').src = canvas.toDataURL();
+        
+        // モーダルを閉じる
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cropModal'));
+            if (modal) {
+                modal.hide();
+            }
+        } else {
+            // フォールバック
+            const modalElement = document.getElementById('cropModal');
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+        
+        // Cropperを破棄
+        cropper.destroy();
+        cropper = null;
+    }
+}
+
+// Cropperコントロール関数群
+function cropperZoomIn() {
+    if (cropper) {
+        cropper.zoom(0.1);
+    }
+}
+
+function cropperZoomOut() {
+    if (cropper) {
+        cropper.zoom(-0.1);
+    }
+}
+
+function cropperMoveLeft() {
+    if (cropper) {
+        cropper.move(-10, 0);
+    }
+}
+
+function cropperMoveRight() {
+    if (cropper) {
+        cropper.move(10, 0);
+    }
+}
+
+function cropperMoveUp() {
+    if (cropper) {
+        cropper.move(0, -10);
+    }
+}
+
+function cropperMoveDown() {
+    if (cropper) {
+        cropper.move(0, 10);
+    }
+}
+
+function cropperReset() {
+    if (cropper) {
+        cropper.reset();
+    }
+}
+
+// モーダルが閉じられた時にCropperを破棄
+document.getElementById('cropModal').addEventListener('hidden.bs.modal', function () {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+});
+
+// プレビュー更新
+document.getElementById('ogp_title').addEventListener('input', function(e) {
+    document.getElementById('ogp-preview-title').textContent = 
+        e.target.value || document.getElementById('meta_title').value || '{{ page.page_name }}';
+});
+
+document.getElementById('ogp_description').addEventListener('input', function(e) {
+    document.getElementById('ogp-preview-description').textContent = 
+        e.target.value || document.getElementById('meta_description').value || 'ページの説明が入ります';
+});
+
+// JSON-LDフォーマット
+function formatJsonLd() {
+    const textarea = document.getElementById('json_ld');
+    try {
+        const json = JSON.parse(textarea.value);
+        textarea.value = JSON.stringify(json, null, 2);
+    } catch (e) {
+        alert('JSONの形式が正しくありません: ' + e.message);
+    }
+}
+
+// JSON-LDテンプレート生成
+function generateJsonLdTemplate() {
+    const pageType = '{{ page.page_slug }}';
+    let template = {};
+    
+    switch(pageType) {
+        case 'home':
+            template = {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "サイト名",
+                "url": "{{ request.url_root }}",
+                "description": "サイトの説明",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "{{ request.url_root }}search?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                }
+            };
+            break;
+        case 'services':
+            template = {
+                "@context": "https://schema.org",
+                "@type": "Service",
+                "name": "サービス名",
+                "description": "サービスの説明",
+                "provider": {
+                    "@type": "Person",
+                    "name": "提供者名"
+                }
+            };
+            break;
+        case 'about':
+            template = {
+                "@context": "https://schema.org",
+                "@type": "Person",
+                "name": "名前",
+                "jobTitle": "職業",
+                "description": "自己紹介",
+                "url": "{{ request.url }}",
+                "sameAs": [
+                    "https://twitter.com/username",
+                    "https://github.com/username"
+                ]
+            };
+            break;
+        default:
+            template = {
+                "@context": "https://schema.org",
+                "@type": "WebPage",
+                "name": "ページ名",
+                "description": "ページの説明",
+                "url": "{{ request.url }}"
+            };
+    }
+    
+    document.getElementById('json_ld').value = JSON.stringify(template, null, 2);
+}
+
+// フォーム送信前の処理
+document.getElementById('seo-form').addEventListener('submit', function(e) {
+    // Cropperのデータを確実に保存
+    if (cropper) {
+        const cropData = cropper.getData();
+        document.getElementById('ogp_crop_x').value = cropData.x;
+        document.getElementById('ogp_crop_y').value = cropData.y;
+        document.getElementById('ogp_crop_width').value = cropData.width;
+        document.getElementById('ogp_crop_height').value = cropData.height;
+        document.getElementById('ogp_crop_rotate').value = cropData.rotate || 0;
+        document.getElementById('ogp_crop_scale_x').value = cropData.scaleX || 1;
+        document.getElementById('ogp_crop_scale_y').value = cropData.scaleY || 1;
+    }
+});
+</script>
+{% endblock %}

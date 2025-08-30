@@ -3,6 +3,22 @@
  * 高度な機能・インタラクション用スタイル
  */
 
+/* LLMO関連のスタイル */
+.btn-purple {
+    background: linear-gradient(45deg, #6f42c1, #e83e8c);
+    border: none;
+    color: white;
+}
+
+.btn-purple:hover {
+    background: linear-gradient(45deg, #5a32a3, #d91a72);
+    color: white;
+}
+
+.text-purple {
+    color: #6f42c1;
+}
+
 /* ===========================================
    ファイルアップロード・ドラッグ&ドロップ
    =========================================== */

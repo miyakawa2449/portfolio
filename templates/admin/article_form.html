@@ -474,6 +474,36 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- 構造化データ（JSON-LD） -->
+                            <div class="mb-4">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-code text-purple"></i> 構造化データ（JSON-LD）
+                                    <small class="text-muted">- AI/LLM向けSEO最適化</small>
+                                </h6>
+                                
+                                <div class="mb-3">
+                                    {{ form.json_ld.label(class="form-label") }}
+                                    {{ form.json_ld(class="form-control font-monospace", rows=8, 
+                                       placeholder='{"@context": "https://schema.org", "@type": "Article", ...}') }}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> 
+                                        空欄の場合は記事情報から自動生成されます。カスタマイズする場合はJSON-LD形式で入力してください。
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="generateJsonLdForArticle()">
+                                            <i class="fas fa-magic"></i> 自動生成
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="formatJsonLd('json_ld')">
+                                            <i class="fas fa-code"></i> フォーマット
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-success" onclick="validateJsonLd('json_ld')">
+                                            <i class="fas fa-check-circle"></i> 検証
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- 送信ボタン -->
@@ -1949,4 +1979,94 @@ function showNoImagesMessage() {
 
 <!-- Markdown Processing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+
+<script>
+// JSON-LD関連の関数
+function generateJsonLdForArticle() {
+    const title = document.getElementById('title').value;
+    const summary = document.getElementById('summary').value;
+    const metaDescription = document.getElementById('meta_description').value;
+    const metaKeywords = document.getElementById('meta_keywords').value;
+    
+    if (!title.trim()) {
+        alert('記事タイトルを入力してからJSON-LDを生成してください');
+        return;
+    }
+    
+    const keywords = metaKeywords ? metaKeywords.split(',').map(k => k.trim()).filter(k => k) : [];
+    
+    const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": title,
+        "description": metaDescription || (summary.length > 160 ? summary.substring(0, 160) + '...' : summary) || "",
+        "author": {
+            "@type": "Person",
+            "name": "管理者"
+        },
+        "datePublished": new Date().toISOString(),
+        "dateModified": new Date().toISOString(),
+        "publisher": {
+            "@type": "Organization",
+            "name": "Python 100日チャレンジ",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "{{ url_for('static', filename='images/logo.png', _external=True) }}"
+            }
+        }
+    };
+    
+    if (keywords.length > 0) {
+        structuredData.keywords = keywords;
+    }
+    
+    document.getElementById('json_ld').value = JSON.stringify(structuredData, null, 2);
+    alert('JSON-LD構造化データを生成しました！');
+}
+
+function formatJsonLd(fieldId) {
+    const textarea = document.getElementById(fieldId);
+    try {
+        const json = JSON.parse(textarea.value);
+        textarea.value = JSON.stringify(json, null, 2);
+        alert('JSON-LDをフォーマットしました！');
+    } catch (e) {
+        alert('JSONの形式が正しくありません: ' + e.message);
+    }
+}
+
+function validateJsonLd(fieldId) {
+    const textarea = document.getElementById(fieldId);
+    const jsonText = textarea.value.trim();
+    
+    if (!jsonText) {
+        alert('JSON-LDが入力されていません');
+        return;
+    }
+    
+    try {
+        const json = JSON.parse(jsonText);
+        
+        // 基本的な構造チェック
+        const requiredFields = ['@context', '@type'];
+        const missingFields = requiredFields.filter(field => !json[field]);
+        
+        if (missingFields.length > 0) {
+            alert('必須フィールドが不足しています: ' + missingFields.join(', '));
+            return;
+        }
+        
+        if (json['@context'] !== 'https://schema.org') {
+            if (confirm('@contextが"https://schema.org"ではありません。修正しますか？')) {
+                json['@context'] = 'https://schema.org';
+                textarea.value = JSON.stringify(json, null, 2);
+            }
+        }
+        
+        alert('JSON-LDの構造は正常です！\\n\\nGoogle Rich Results Testで詳細な検証を行うことをお勧めします。');
+    } catch (e) {
+        alert('JSONの形式が正しくありません: ' + e.message);
+    }
+}
+</script>
 {% endblock %}

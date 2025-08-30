@@ -3,7 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Portfolio{% endblock %}</title>
+    <title>{% block title %}{% if page_seo and page_seo.meta_title %}{{ page_seo.meta_title }}{% else %}Portfolio{% endif %}{% endblock %}</title>
+    
+    <!-- SEO・OGP設定 -->
+    <meta name="description" content="{% block description %}{% if page_seo and page_seo.meta_description %}{{ page_seo.meta_description }}{% else %}{{ site_settings.site_description or 'プログラミング、テック、ライフスタイルに関する最新記事をお届けします。' }}{% endif %}{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}{% if page_seo and page_seo.meta_keywords %}{{ page_seo.meta_keywords }}{% else %}{{ site_settings.seo_keywords or 'ブログ,プログラミング,テック' }}{% endif %}{% endblock %}">
+    {% if page_seo and page_seo.robots %}<meta name="robots" content="{{ page_seo.robots }}">{% endif %}
+    
+    <!-- OGP情報 -->
+    <meta property="og:title" content="{% block og_title %}{% if page_seo and page_seo.ogp_title %}{{ page_seo.ogp_title }}{% elif page_seo and page_seo.meta_title %}{{ page_seo.meta_title }}{% else %}{{ self.title() }}{% endif %}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{% if page_seo and page_seo.ogp_description %}{{ page_seo.ogp_description }}{% elif page_seo and page_seo.meta_description %}{{ page_seo.meta_description }}{% else %}{{ self.description() }}{% endif %}{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:site_name" content="{{ site_settings.site_name or 'Tsuyoshi - Python 100 Days' }}">
+    <meta property="og:image" content="{% block og_image %}{% if page_seo and page_seo.ogp_image %}{{ url_for('static', filename=page_seo.ogp_image, _external=True) }}{% else %}{{ url_for('static', filename='images/ogp-default.jpg', _external=True) }}{% endif %}{% endblock %}">
+    {% if page_seo and page_seo.ogp_image_alt %}<meta property="og:image:alt" content="{{ page_seo.ogp_image_alt }}">{% endif %}
     
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -13,6 +27,13 @@
     <link href="{{ url_for('static', filename='css/modern.css') }}?v={{ config.VERSION | default('1') }}" rel="stylesheet">
     <!-- Profile Specific CSS -->
     <link href="{{ url_for('static', filename='css/profile.css') }}?v={{ config.VERSION | default('1') }}" rel="stylesheet">
+    
+    <!-- 構造化データ (JSON-LD) -->
+    {% if page_seo and page_seo.json_ld %}
+    <script type="application/ld+json">
+    {{ page_seo.json_ld|safe }}
+    </script>
+    {% endif %}
     
     {% block head_extra %}{% endblock %}
 </head>
