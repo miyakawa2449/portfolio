@@ -21,10 +21,11 @@
 - **フェーズ13**: SEO・LLMO対策 + UI/UX機能強化 ✅
 
 ### 現在進行中のフェーズ 🚀
-- **フェーズ14**: サイト内検索機能 + 最終調整（準備中）
+- **フェーズ14**: Docker環境構築（2025-08-30午後完了）
+- **フェーズ15**: AWS Lightsail新規サーバー構築・デプロイ（明日実施予定）
 
 ### 完了した作業（2025-08-30 午前） 🎉
-**フェーズ13完了: SEO・LLMO対策 + UI/UX機能強化**
+**フェーズ13完了: SEO・LLMO対策 + サイト内検索機能 + 目次機能**
 
 #### 🔍 SEO・LLMO（AI向け検索）対策の実装
 - ✅ **JSON-LD構造化データ**: 記事ページに完全なJSON-LD実装（Article schema）
@@ -424,7 +425,7 @@ location / {
 - **Docker軽量化**: アプリ部分のみで高速起動
 
 #### 📅 修正スケジュール予測（Docker化後）
-- **フェーズ13**: 1日（SEO・プロジェクトページ・検索）
+- **フェーズ13**: ✅ **完了**（SEO・LLMO対策・目次機能・検索機能）
 - **フェーズ14**: 1日（Docker環境構築・ローカルテスト）
 - **フェーズ15**: 0.5-1日（スナップショット復元→Docker本番デプロイ）
 - **フェーズ16**: 0.5日（本番データ投入・最終公開）
@@ -434,8 +435,8 @@ location / {
 
 ### 📊 作業統計（Docker化後）
 - **総フェーズ数**: 17フェーズ
-- **完了フェーズ**: 12フェーズ（71%）
-- **残りフェーズ**: 5フェーズ（推定8-12時間・Docker化で大幅短縮）
+- **完了フェーズ**: 13フェーズ（76%）
+- **残りフェーズ**: 4フェーズ（推定6-8時間・Docker化で大幅短縮）
 - **AWS月額コスト**: $40（インスタンス$20 + DB$15 + 静的IP$5）
 
 #### 3. **AWS Lightsailデプロイ**
@@ -642,10 +643,137 @@ location / {
 - **管理画面**: http://127.0.0.1:5001/management-panel-2024/
 
 ---
-最終更新: 2025-08-29 17:30
-完了フェーズ: フェーズ1-12完了（12/16フェーズ - 75%完了）
-今日完了: ビジネス戦略変革・サイト構造刷新・UI完全統一・テンプレート同期・進捗バー改善
-次回作業: フェーズ13 - SEO対策・プロジェクト詳細ページ・サイト内検索機能
+最終更新: 2025-08-30 15:50
+完了フェーズ: フェーズ1-14完了（14/17フェーズ - 82%完了）
+今日完了: SEO・LLMO対策・JSON-LD実装・記事目次機能・プロジェクト導線強化・サイト内検索機能・Docker環境構築
+次回作業: フェーズ15 - AWS Lightsail新規サーバー構築・Docker本番デプロイ
+
+## 🐳 フェーズ14完了: Docker環境構築（2025-08-30午後）
+
+### ✅ Docker環境構築完了項目
+- ✅ **Docker Desktop for Mac**: インストール・設定完了（v28.3.3）
+- ✅ **Dockerfile**: Flask アプリケーション用（Python 3.13-slim）
+- ✅ **docker-compose.dev.yml**: 開発環境用（ライブリロード・ログ共有）
+- ✅ **docker-compose.prod.yml**: 本番環境用（Nginx + SSL対応）
+- ✅ **MySQL設定**: docker/mysql/my.cnf（MySQL 8.0対応・文字セット設定）
+- ✅ **Nginx設定**: docker/nginx/nginx.conf（SSL・セキュリティヘッダー）
+- ✅ **環境変数テンプレート**: .env.example（本番用設定）
+- ✅ **デプロイスクリプト**: scripts/deploy.sh（自動化）
+- ✅ **サーバーセットアップスクリプト**: scripts/server-setup.sh（Ubuntu初期設定）
+- ✅ **ローカルテスト**: Docker環境での動作確認完了
+
+## 🚀 フェーズ15: AWS Lightsail新規サーバー構築手順（明日実施）
+
+### **ステップ1: Lightsailインスタンス作成（3分）**
+1. **新しいUbuntu 24.04 LTS**インスタンス作成
+2. **静的IPアタッチ**（既存の miyakawa.codes 用IP）
+3. **ファイアウォール設定**: HTTP (80), HTTPS (443), SSH (22)
+
+### **ステップ2: 初期セットアップ（5-10分）**
+```bash
+# SSH接続後、以下を実行
+sudo apt update && sudo apt upgrade -y
+
+# セキュリティ・運用ツール
+sudo apt install -y fail2ban logwatch htop curl wget nano git
+
+# Docker環境
+sudo apt install -y docker.io docker-compose-plugin
+sudo usermod -aG docker ubuntu
+
+# Web関連
+sudo apt install -y nginx certbot python3-certbot-nginx
+
+# ファイアウォール設定
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp  
+sudo ufw allow 443/tcp
+sudo ufw --force enable
+
+# 再ログイン（Docker権限有効化）
+exit
+```
+
+### **ステップ3: プロジェクトデプロイ（10-15分）**
+```bash
+# プロジェクトクローン
+cd ~
+mkdir -p apps && cd apps
+git clone https://github.com/[your-repo]/portfolio.git
+cd portfolio
+
+# 環境変数設定
+cp .env.example .env
+nano .env  # 以下を編集:
+# SECRET_KEY=（強力なキー生成）
+# MYSQL_ROOT_PASSWORD=（強力なパスワード）
+# DATABASE_URL=mysql+pymysql://root:password@mysql:3306/portfolio_db?charset=utf8mb4
+
+# SSL証明書取得
+sudo certbot --nginx -d miyakawa.codes -d www.miyakawa.codes
+
+# Nginx設定
+sudo cp nginx/miyakawa.codes.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/miyakawa.codes.conf /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+
+# アプリケーション起動
+docker-compose -f docker-compose.prod.yml up -d
+
+# データベース初期化
+docker exec -it portfolio-mysql-1 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS portfolio_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# マイグレーション実行
+docker exec -it portfolio-web-1 flask db upgrade
+
+# 動作確認
+curl -I http://localhost:5001/
+```
+
+### **ステップ4: データ復元（必要に応じて：5-10分）**
+```bash
+# 既存データベースがあれば
+# 1. バックアップファイルをサーバーにアップロード
+# 2. データ復元
+docker exec -i portfolio-mysql-1 mysql -u root -p portfolio_db < backup.sql
+
+# 3. 管理者ユーザー作成（新規の場合）
+docker exec -it portfolio-web-1 python scripts/create_admin.py
+```
+
+### **ステップ5: セキュリティ・監視設定（5分）**
+```bash
+# Fail2ban設定
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+# Logwatch設定
+sudo systemctl enable logwatch
+sudo systemctl start logwatch
+
+# ファイアウォール最終確認
+sudo ufw status verbose
+```
+
+### **📊 推定時間とリスク**
+- **総作業時間**: 25-40分（Docker化により大幅短縮）
+- **成功確率**: 95%以上（環境統一・自動化スクリプト）
+- **失敗時の対処**: 従来方式でのフォールバック可能
+
+### **🔧 Docker環境の利点**
+- **環境統一**: 開発・本番で同じ環境
+- **簡単セットアップ**: docker-compose up だけ
+- **SSL管理**: certbot自動更新（ホスト側）
+- **ログ集約**: docker logs でリアルタイム確認
+- **セキュリティ**: コンテナ内でアプリ隔離
+- **バックアップ**: docker volumeでデータ管理
+
+### **🎯 明日の作業目標**
+✅ **フェーズ15完了**: AWS Lightsail新規サーバー構築・本番デプロイ  
+✅ **https://miyakawa.codes**: 正常アクセス可能  
+✅ **フェーズ16準備**: 最終調整・コンテンツ投入準備
 
 ## 今日（2025-08-24）の主要成果 🎯
 
