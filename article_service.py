@@ -32,6 +32,7 @@ class ArticleService:
                 is_published=form_data.get('is_published', False),
                 published_at=form_data.get('published_at') if form_data.get('is_published', False) else None,
                 allow_comments=form_data.get('allow_comments', True),
+                show_toc=form_data.get('show_toc', True),
                 meta_title=form_data.get('meta_title', ''),
                 meta_description=form_data.get('meta_description', ''),
                 meta_keywords=form_data.get('meta_keywords', ''),
@@ -86,6 +87,7 @@ class ArticleService:
             article.is_published = form_data.get('is_published', False)
             article.published_at = form_data.get('published_at') if form_data.get('is_published', False) else None
             article.allow_comments = form_data.get('allow_comments', True)
+            article.show_toc = form_data.get('show_toc', True)
             article.meta_title = form_data.get('meta_title', '')
             article.meta_description = form_data.get('meta_description', '')
             article.meta_keywords = form_data.get('meta_keywords', '')

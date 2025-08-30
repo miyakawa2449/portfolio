@@ -173,7 +173,7 @@ html {
                     {% endif %}
 
                     <!-- 目次 -->
-                    {% if table_of_contents and table_of_contents|length > 1 %}
+                    {% if article.show_toc and table_of_contents and table_of_contents|length > 1 %}
                     <div class="card mb-4" id="table-of-contents">
                         <div class="card-header">
                             <h5 class="mb-0">

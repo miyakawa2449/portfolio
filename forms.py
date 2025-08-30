@@ -108,6 +108,9 @@ class ArticleForm(FlaskForm):
     published_at = DateTimeField('公開日時', validators=[Optional()], format='%Y-%m-%d %H:%M')
     allow_comments = BooleanField('コメントを許可', validators=[Optional()])
     
+    # UI表示設定
+    show_toc = BooleanField('目次を表示する', default=True, validators=[Optional()])
+    
     # プロジェクト関連（Multiple選択用のFieldListを使用）
     related_projects = SelectMultipleField('関連プロジェクト', coerce=int, validators=[Optional()])
     

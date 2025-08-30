@@ -373,6 +373,9 @@ class Article(db.Model):
     # プロジェクト関連
     project_ids = db.Column(db.Text, nullable=True)  # JSON形式で複数プロジェクトID保存
     
+    # UI表示設定
+    show_toc = db.Column(db.Boolean, default=True, nullable=False)  # 目次表示フラグ
+    
     # 拡張用
     ext_json = db.Column(db.Text, nullable=True)
 
