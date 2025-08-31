@@ -23,7 +23,7 @@ services:
       - portfolio_network
 
   mysql:
-    image: mysql:8.0
+    image: mysql:8.4
     ports:
       - "3307:3306"  # ホストの3306と衝突を避けるため3307を使用
     environment:
