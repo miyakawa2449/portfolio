@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サーバーエラー | Miyakawa Codes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: linear-gradient(135deg, #2c3e50, #3498db); min-height: 100vh; }
+        .error-container { height: 100vh; display: flex; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-body p-5">
+                            <i class="fas fa-exclamation-triangle text-danger mb-4" style="font-size: 5rem;"></i>
+                            <h1 class="display-4 fw-bold text-dark mb-4">サーバーエラー</h1>
+                            <h2 class="h3 text-secondary mb-4">一時的にサービスが利用できません</h2>
+                            <p class="lead text-muted mb-4">申し訳ございませんが、サーバーに問題が発生しています。<br>しばらく時間をおいてから再度お試しください。</p>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <button onclick="window.location.reload()" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sync-alt me-2"></i>再読み込み
+                                </button>
+                                <a href="/" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-home me-2"></i>ホームに戻る
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
