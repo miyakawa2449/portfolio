@@ -2,7 +2,8 @@
 Google Analytics 4 (GA4) 統合管理システム
 プライバシー準拠（GDPR/CCPA）対応を含む高度なアナリティクス機能
 """
-from flask import Markup, current_app
+from markupsafe import Markup
+from flask import current_app
 from models import db, SiteSetting
 
 
