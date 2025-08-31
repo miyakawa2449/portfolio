@@ -207,7 +207,7 @@ html {
                     {% endif %}
 
                     <div class="article-content">
-                        {{ article.body | markdown | safe }}
+                        {{ article.body | markdown | oembed_process | safe }}
                     </div>
 
                     <!-- 関連プロジェクト -->
@@ -572,6 +572,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+});
+
+// Twitter Widget の初期化
+window.addEventListener('load', function() {
+    console.log('Page loaded, checking for Twitter widgets...');
+    
+    if (document.querySelector('.twitter-tweet')) {
+        console.log('Twitter blockquotes found, loading widget script...');
+        
+        if (!window.twttr) {
+            // Twitter Widget スクリプトを読み込み
+            const script = document.createElement('script');
+            script.src = 'https://platform.twitter.com/widgets.js';
+            script.async = true;
+            script.charset = 'utf-8';
+            script.onload = function() {
+                console.log('Twitter widgets script loaded successfully');
+                // 少し待ってからWidget処理を開始
+                setTimeout(function() {
+                    if (window.twttr && window.twttr.widgets) {
+                        console.log('Processing Twitter widgets...');
+                        window.twttr.widgets.load();
+                    }
+                }, 500);
+            };
+            script.onerror = function() {
+                console.error('Failed to load Twitter widgets script');
+            };
+            document.head.appendChild(script);
+        } else {
+            console.log('Twitter widgets already available, processing...');
+            window.twttr.widgets.load();
+        }
+    }
 });
 </script>
 {% endblock %}
