@@ -257,13 +257,18 @@
         <div class="row align-items-center">
             <div class="col-lg-4 text-center mb-4 mb-lg-0">
                 <div class="mb-3">
-                    {% if admin_user %}
-                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center" 
+                    {% if admin_user and admin_user.profile_photo %}
+                    <img src="{{ url_for('static', filename=admin_user.profile_photo) }}" 
+                         alt="{{ admin_user.name or 'Profile' }}"
+                         class="rounded-circle border border-3 border-white shadow"
+                         style="width: 150px; height: 150px; object-fit: cover;">
+                    {% elif admin_user %}
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center border border-3 border-white shadow" 
                          style="width: 150px; height: 150px; font-size: 64px; font-weight: bold;">
                         {{ admin_user.name[0].upper() if admin_user.name else 'T' }}
                     </div>
                     {% else %}
-                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center" 
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center border border-3 border-white shadow" 
                          style="width: 150px; height: 150px; font-size: 64px; font-weight: bold;">
                         T
                     </div>

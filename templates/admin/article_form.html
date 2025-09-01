@@ -97,6 +97,9 @@
                                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="showImageUploadModal()">
                                             <i class="fa fa-upload me-1"></i>画像をアップロード
                                         </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="showContentImageGalleryModal()">
+                                            <i class="fa fa-images me-1"></i>ギャラリーから選択
+                                        </button>
                                     </div>
                                     
                                     <!-- エディタタブ -->
@@ -133,6 +136,9 @@
                                         </button>
                                         <button type="button" class="markdown-button" onclick="showImageUploadModal()" title="画像をアップロード">
                                             <i class="fa fa-image"></i>
+                                        </button>
+                                        <button type="button" class="markdown-button" onclick="showContentImageGalleryModal()" title="ギャラリーから選択">
+                                            <i class="fa fa-images"></i>
                                         </button>
                                         <button type="button" class="markdown-button" onclick="insertMarkdown('`', '`')" title="インラインコード">
                                             <i class="fa fa-code"></i>
@@ -1843,14 +1849,24 @@ function filterImages() {
 // 画像選択確定
 document.getElementById('selectImageBtn').addEventListener('click', function() {
     if (selectedImage) {
-        // 隠しフィールドに選択した画像URLを設定
-        document.getElementById('selectedGalleryImage').value = selectedImage.url;
-        
-        // プレビューを表示
-        showSelectedImagePreview(selectedImage);
-        
-        // モーダルを閉じる
-        bootstrap.Modal.getInstance(document.getElementById('imageGalleryModal')).hide();
+        if (window.isContentMode) {
+            // 本文挿入モード
+            selectImageForContent(selectedImage.url, selectedImage.filename);
+            
+            // モードをリセット
+            window.isContentMode = false;
+            this.textContent = 'この画像を選択';
+        } else {
+            // アイキャッチ画像モード（既存機能）
+            // 隠しフィールドに選択した画像URLを設定
+            document.getElementById('selectedGalleryImage').value = selectedImage.url;
+            
+            // プレビューを表示
+            showSelectedImagePreview(selectedImage);
+            
+            // モーダルを閉じる
+            bootstrap.Modal.getInstance(document.getElementById('imageGalleryModal')).hide();
+        }
     }
 });
 
@@ -2072,6 +2088,56 @@ function validateJsonLd(fieldId) {
     } catch (e) {
         alert('JSONの形式が正しくありません: ' + e.message);
     }
+}
+
+// 本文用ギャラリー選択機能
+function showContentImageGalleryModal() {
+    // 本文挿入モードを設定
+    window.isContentMode = true;
+    
+    // モーダルを表示
+    const modal = new bootstrap.Modal(document.getElementById('imageGalleryModal'));
+    modal.show();
+    
+    // ギャラリーを読み込み
+    loadImageGallery();
+    
+    // 選択ボタンのテキストを変更
+    setTimeout(() => {
+        const selectBtn = document.getElementById('selectImageBtn');
+        selectBtn.textContent = '本文に挿入';
+    }, 100);
+}
+
+// 本文用画像選択関数
+function selectImageForContent(imageUrl, filename) {
+    // 本文挿入処理
+    const altText = filename.split('.')[0]; // ファイル名から拡張子を除去
+    const markdownImage = `![${altText}](${imageUrl})`;
+    
+    // テキストエリアに挿入
+    const textarea = document.getElementById('body');
+    if (!textarea) {
+        alert('本文エリアが見つかりません');
+        return;
+    }
+    
+    const cursorPos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const textAfter = textarea.value.substring(textarea.selectionEnd);
+    
+    textarea.value = textBefore + markdownImage + textAfter;
+    textarea.setSelectionRange(cursorPos + markdownImage.length, cursorPos + markdownImage.length);
+    textarea.focus();
+    
+    // モーダルを閉じる
+    const modal = bootstrap.Modal.getInstance(document.getElementById('imageGalleryModal'));
+    modal.hide();
+    
+    // ボタンテキストをリセット
+    const selectBtn = document.getElementById('selectImageBtn');
+    selectBtn.textContent = 'この画像を選択';
+    selectBtn.onclick = null; // イベントリセット
 }
 </script>
 {% endblock %}
