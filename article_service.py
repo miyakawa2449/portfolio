@@ -79,6 +79,10 @@ class ArticleService:
     def update_article(article, form_data):
         """記事更新"""
         try:
+            # デバッグ用ログ
+            print(f"DEBUG update_article: challenge_id={form_data.get('challenge_id')}, challenge_day={form_data.get('challenge_day')}")
+            print(f"DEBUG update_article: category_id={form_data.get('category_id')}")
+            
             # 基本情報更新
             article.title = form_data['title']
             article.slug = ArticleService.generate_unique_slug(form_data['slug'] or form_data['title'], article.id)
@@ -92,11 +96,23 @@ class ArticleService:
             article.meta_description = form_data.get('meta_description', '')
             article.meta_keywords = form_data.get('meta_keywords', '')
             article.canonical_url = form_data.get('canonical_url', '')
+            
+            # チャレンジ情報更新
+            challenge_id = form_data.get('challenge_id')
+            if challenge_id and challenge_id != 0:
+                article.challenge_id = challenge_id
+                article.challenge_day = form_data.get('challenge_day')
+                print(f"DEBUG: Setting challenge_id={challenge_id}, challenge_day={form_data.get('challenge_day')}")
+            else:
+                article.challenge_id = None
+                article.challenge_day = None
+                print(f"DEBUG: Clearing challenge data (challenge_id was {challenge_id})")
+            
             article.updated_at = datetime.utcnow()
             
             # カテゴリ更新
-            if form_data.get('category_id'):
-                ArticleService.assign_category(article, form_data['category_id'])
+            print(f"DEBUG: About to assign category - category_id={form_data.get('category_id')}")
+            ArticleService.assign_category(article, form_data.get('category_id'))
             
             # アイキャッチ画像処理
             # 新しい画像データがある場合のみ更新
@@ -181,6 +197,10 @@ class ArticleService:
         """記事データのバリデーション"""
         errors = []
         
+        # デバッグ用ログ
+        print(f"DEBUG validate_article_data: challenge_id={form.challenge_id.data}, category_id={form.category_id.data}")
+        print(f"DEBUG form.category_id.data type: {type(form.category_id.data)}")
+        
         # タイトル必須チェック
         if not form.title.data:
             errors.append("タイトルは必須です")
@@ -196,14 +216,23 @@ class ArticleService:
                 errors.append("このスラッグは既に使用されています")
         
         # チャレンジとカテゴリの整合性チェック
-        if form.challenge_id.data and form.category_id.data and form.category_id.data != 0:
+        # カテゴリが「カテゴリを選択」(0)の場合はスキップ
+        if (form.challenge_id.data and 
+            form.category_id.data is not None and 
+            int(form.category_id.data) != 0):
+            
+            print(f"DEBUG: Performing category validation - category_id={form.category_id.data}")
+            
             from models import Category
             category = db.session.execute(
                 select(Category).where(Category.id == form.category_id.data)
             ).scalar_one_or_none()
             
             if category and category.challenge_id and category.challenge_id != form.challenge_id.data:
+                print(f"DEBUG: Category challenge mismatch - category.challenge_id={category.challenge_id}, form.challenge_id={form.challenge_id.data}")
                 errors.append(f"選択されたカテゴリ「{category.name}」は、選択されたチャレンジに対応していません")
+        else:
+            print(f"DEBUG: Skipping category validation - challenge_id={form.challenge_id.data}, category_id={form.category_id.data}")
         
         return errors
     
@@ -279,14 +308,23 @@ class ArticleService:
     @staticmethod
     def assign_category(article, category_id):
         """記事にカテゴリを割り当て"""
+        print(f"DEBUG assign_category: received category_id={category_id}, type={type(category_id)}")
+        
         # 既存のカテゴリをクリア
         article.categories.clear()
+        print(f"DEBUG assign_category: cleared existing categories")
         
         # 新しいカテゴリを追加
         if category_id and category_id != 0:
+            print(f"DEBUG assign_category: attempting to add category {category_id}")
             category = db.session.get(Category, category_id)
             if category:
                 article.categories.append(category)
+                print(f"DEBUG assign_category: added category {category.name}")
+            else:
+                print(f"DEBUG assign_category: category {category_id} not found")
+        else:
+            print(f"DEBUG assign_category: skipping category assignment (category_id={category_id})")
     
     @staticmethod
     def get_article_context(article=None):

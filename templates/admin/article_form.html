@@ -186,7 +186,7 @@
                                         <!-- 公開日時フィールド -->
                                         <div class="mb-3" id="publishDateContainer" style="display: none;">
                                             {{ form.published_at.label(class="form-label") }}
-                                            {{ form.published_at(class="form-control", id="publishedAtPicker") }}
+                                            {{ form.published_at(class="form-control", id="published_at") }}
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle"></i> 
                                                 公開日時を指定できます。空欄の場合は現在日時が設定されます。
@@ -214,7 +214,7 @@
                                         
                                         <div class="mb-3">
                                             {{ form.category_id.label(class="form-label") }}
-                                            {{ form.category_id(class="form-select") }}
+                                            {{ form.category_id(class="form-select", id="category_id") }}
                                         </div>
                                         
                                         <!-- チャレンジ情報 -->
@@ -222,13 +222,13 @@
                                             <div class="col-md-8">
                                                 <div class="mb-3">
                                                     {{ form.challenge_id.label(class="form-label") }}
-                                                    {{ form.challenge_id(class="form-select", id="challengeSelect") }}
+                                                    {{ form.challenge_id(class="form-select", id="challenge_id") }}
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="mb-3">
                                                     {{ form.challenge_day.label(class="form-label") }}
-                                                    {{ form.challenge_day(class="form-control", placeholder="例: 15", id="challengeDay") }}
+                                                    {{ form.challenge_day(class="form-control", placeholder="例: 15", id="challenge_day") }}
                                                     <div class="form-text">チャレンジの何日目かを入力</div>
                                                 </div>
                                             </div>
@@ -237,7 +237,7 @@
                                         <!-- 関連プロジェクト -->
                                         <div class="mb-3">
                                             {{ form.related_projects.label(class="form-label") }}
-                                            {{ form.related_projects(class="form-select", multiple=true, size=5, id="relatedProjects") }}
+                                            {{ form.related_projects(class="form-select", multiple=true, size=5, id="related_projects") }}
                                             <div class="form-text">
                                                 <i class="fas fa-info-circle"></i> 
                                                 Ctrl/Cmdキーを押しながらクリックで複数選択できます
@@ -1583,9 +1583,9 @@ document.getElementById('cropModal').addEventListener('hidden.bs.modal', functio
 });
 
 // チャレンジ選択時にプロジェクトリストとカテゴリリストを更新
-document.getElementById('challengeSelect').addEventListener('change', function() {
+document.getElementById('challenge_id').addEventListener('change', function() {
     const challengeId = this.value;
-    const projectSelect = document.getElementById('relatedProjects');
+    const projectSelect = document.getElementById('related_projects');
     const categorySelect = document.getElementById('category_id');
     
     // 現在選択されているプロジェクトとカテゴリを保存
@@ -1648,13 +1648,14 @@ document.getElementById('challengeSelect').addEventListener('change', function()
                         option.value = category.id;
                         option.textContent = category.name;
                         
-                        // 以前選択されていた場合は選択状態を復元
-                        if (selectedCategory && selectedCategory === String(category.id)) {
-                            option.selected = true;
-                        }
+                        // チャレンジが変更された場合は、カテゴリをリセット
+                        // （以前のカテゴリが新しいチャレンジに対応していない可能性があるため）
                         
                         categorySelect.appendChild(option);
                     });
+                    
+                    // チャレンジ変更時はカテゴリを必ず「カテゴリを選択」にリセット
+                    categorySelect.value = '0';
                     
                     if (data.categories.length === 0) {
                         const option = document.createElement('option');
@@ -1672,9 +1673,28 @@ document.getElementById('challengeSelect').addEventListener('change', function()
 });
 
 // 初期ロード時にもプロジェクトリストとカテゴリリストを更新
-if (document.getElementById('challengeSelect').value) {
-    document.getElementById('challengeSelect').dispatchEvent(new Event('change'));
-}
+// ただし、既存の選択値は保持する
+document.addEventListener('DOMContentLoaded', function() {
+    const challengeSelect = document.getElementById('challenge_id');
+    const categorySelect = document.getElementById('category_id');
+    
+    if (challengeSelect && challengeSelect.value && challengeSelect.value !== '0') {
+        // 現在のカテゴリ選択を保存
+        const currentCategoryValue = categorySelect ? categorySelect.value : null;
+        console.log('Initial category value:', currentCategoryValue);
+        
+        // チャレンジ変更イベントを実行してプロジェクト・カテゴリリストを更新
+        challengeSelect.dispatchEvent(new Event('change'));
+        
+        // カテゴリ選択を復元（少し待ってから実行）
+        setTimeout(() => {
+            if (currentCategoryValue && currentCategoryValue !== '0') {
+                categorySelect.value = currentCategoryValue;
+                console.log('Restored category value:', categorySelect.value);
+            }
+        }, 100);
+    }
+});
 
 // === 画像ギャラリー機能 ===
 let galleryImages = [];
@@ -2139,5 +2159,18 @@ function selectImageForContent(imageUrl, filename) {
     selectBtn.textContent = 'この画像を選択';
     selectBtn.onclick = null; // イベントリセット
 }
+
+// フォーム送信前にデバッグ情報を出力
+document.querySelector('form').addEventListener('submit', function(e) {
+    const challengeSelect = document.getElementById('challenge_id');
+    const categorySelect = document.getElementById('category_id');
+    const challengeDayInput = document.getElementById('challenge_day');
+    
+    console.log('=== フォーム送信デバッグ ===');
+    console.log('Challenge selected:', challengeSelect ? challengeSelect.value : 'null');
+    console.log('Category selected:', categorySelect ? categorySelect.value : 'null');
+    console.log('Challenge day:', challengeDayInput ? challengeDayInput.value : 'null');
+    console.log('=========================');
+});
 </script>
 {% endblock %}

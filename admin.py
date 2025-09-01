@@ -1113,10 +1113,20 @@ def edit_article(article_id):
     # プロジェクト選択肢を設定
     ArticleService.setup_project_choices(form, article.challenge_id)
     
-    # 現在のカテゴリを設定
+    # 現在のカテゴリを設定（カテゴリ選択肢設定後に行う）
     current_category = article.categories[0] if article.categories else None
     if current_category:
-        form.category_id.data = current_category.id
+        # カテゴリ選択肢に現在のカテゴリが含まれているかチェック
+        category_choices = [choice[0] for choice in form.category_id.choices]
+        if current_category.id in category_choices:
+            form.category_id.data = current_category.id
+            print(f"DEBUG: Setting initial category_id={current_category.id} (name={current_category.name})")
+        else:
+            print(f"DEBUG: Current category {current_category.id} ({current_category.name}) not in choices, resetting to 0")
+            form.category_id.data = 0
+    else:
+        print("DEBUG: No initial category set")
+        form.category_id.data = 0
     
     # 現在のチャレンジ情報を設定
     if article.challenge_id:
@@ -1134,6 +1144,19 @@ def edit_article(article_id):
             pass
     
     if form.validate_on_submit():
+        # 重要: HTTPリクエストの値を直接フォームに反映（obj=articleで古い値が設定されている問題を解決）
+        print(f"DEBUG: Raw HTTP data - challenge_id: {request.form.get('challenge_id')}, category_id: {request.form.get('category_id')}, challenge_day: {request.form.get('challenge_day')}")
+        
+        # フォームデータを実際のHTTPリクエスト値で上書き
+        if request.form.get('challenge_id'):
+            form.challenge_id.data = int(request.form.get('challenge_id'))
+        if request.form.get('category_id'):
+            form.category_id.data = int(request.form.get('category_id'))
+        if request.form.get('challenge_day'):
+            form.challenge_day.data = int(request.form.get('challenge_day')) if request.form.get('challenge_day').strip() else None
+        
+        print(f"DEBUG: Updated form object - challenge_id: {form.challenge_id.data}, category_id: {form.category_id.data}, challenge_day: {form.challenge_day.data}")
+        
         # バリデーション
         validation_errors = ArticleService.validate_article_data(form, article_id)
         if validation_errors:
@@ -1156,6 +1179,8 @@ def edit_article(article_id):
                 'canonical_url': form.canonical_url.data,
                 'json_ld': form.json_ld.data,
                 'category_id': form.category_id.data,
+                'challenge_id': form.challenge_id.data,
+                'challenge_day': form.challenge_day.data,
                 'cropped_image_data': request.form.get('cropped_image_data'),
                 'featured_image': request.files.get('featured_image'),
                 'featured_crop_x': request.form.get('featured_crop_x'),
@@ -1176,6 +1201,7 @@ def edit_article(article_id):
                     current_app.logger.info(f"Gallery image processed: {relative_path}")
                 else:
                     current_app.logger.warning(f"Invalid gallery image URL: {selected_image_url}")
+            
             
             # 記事更新
             updated_article, error = ArticleService.update_article(article, form_data)
