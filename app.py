@@ -10,6 +10,9 @@ import time
 from dotenv import load_dotenv
 from sqlalchemy import select, func
 from admin import admin_bp
+from comments import comments_bp
+from articles import articles_bp
+from projects import projects_bp
 
 # .envファイルを読み込み
 load_dotenv()
@@ -778,9 +781,12 @@ def projects(page=1, challenge_id=None):
         traceback.print_exc()
         return f"エラーが発生しました: {str(e)}", 500
 
-# API Blueprint登録
+# Blueprint登録
 from api import api_bp
 app.register_blueprint(api_bp)
+app.register_blueprint(comments_bp)
+app.register_blueprint(articles_bp) 
+app.register_blueprint(projects_bp)
 
 # 環境変数でログインURLをカスタマイズ可能
 LOGIN_URL_PATH = os.environ.get('LOGIN_URL_PATH', 'login')
