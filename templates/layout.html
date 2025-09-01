@@ -242,34 +242,48 @@
                 </div>
                 
                 <div class="col-lg-4 mb-4">
-                    <h5 class="mb-3">クイックリンク</h5>
+                    <h5 class="mb-3">Quick Links</h5>
                     <ul class="list-unstyled">
                         <li class="mb-2">
-                            {% if admin_user and admin_user.handle_name %}
-                            <a href="{{ url_for('profile') }}" class="text-muted text-decoration-none">
-                                <i class="fas fa-user me-2"></i> プロフィール
+                            <a href="{{ url_for('landing') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-home me-2"></i> Home
                             </a>
-                            {% else %}
-                            <a href="{{ url_for('profile') }}" class="text-muted text-decoration-none">
-                                <i class="fas fa-user me-2"></i> プロフィール
-                            </a>
-                            {% endif %}
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('projects') }}" class="text-muted text-decoration-none">
-                                <i class="fas fa-folder-open me-2"></i> プロジェクト
+                            <a href="{{ url_for('services') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-briefcase me-2"></i> Services
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('portfolio') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-code me-2"></i> Portfolio
                             </a>
                         </li>
                         <li class="mb-2">
                             <a href="{{ url_for('blog') }}" class="text-muted text-decoration-none">
-                                <i class="fas fa-book me-2"></i> 学習記録
+                                <i class="fas fa-book me-2"></i> Blog
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('projects') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-folder-open me-2"></i> Projects
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('story') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-book-reader me-2"></i> Story
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('profile') }}" class="text-muted text-decoration-none">
+                                <i class="fas fa-user me-2"></i> About
                             </a>
                         </li>
                     </ul>
                 </div>
                 
                 <div class="col-lg-4 mb-4">
-                    <h5 class="mb-3">ソーシャルメディア</h5>
+                    <h5 class="mb-3">Social Media</h5>
                     {% if admin_user %}
                         <div class="d-flex gap-3 flex-wrap">
                             {% if admin_user.github_username %}
@@ -352,13 +366,7 @@
             
             <div class="text-center">
                 <p class="mb-0 text-muted">
-                    {% if admin_user and admin_user.name_romaji %}
-                        © 2025 {{ admin_user.name_romaji }} - Python 100 Days Challenge Portfolio. All rights reserved.
-                    {% elif admin_user and admin_user.name %}
-                        © 2025 {{ admin_user.name }} - Python 100 Days Challenge Portfolio. All rights reserved.
-                    {% else %}
-                        © 2025 Tsuyoshi Miyakawa - Python 100 Days Challenge Portfolio. All rights reserved.
-                    {% endif %}
+                    {{ site_settings.footer_text or ('© 2025 ' + (admin_user.name_romaji if admin_user and admin_user.name_romaji else admin_user.name if admin_user and admin_user.name else 'Tsuyoshi Miyakawa') + ' - Python 100 Days Challenge Portfolio. All rights reserved.') }}
                 </p>
             </div>
         </div>
