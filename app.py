@@ -366,7 +366,6 @@ def inject_site_settings():
             return admin_user
         except Exception as e:
             current_app.logger.error(f"Error loading admin user: {e}")
-            print(f"DEBUG: Error loading admin user: {e}")
             return None
     
     return dict(
@@ -1108,8 +1107,6 @@ def add_comment(article_id):
     author_website = request.form.get('website', '').strip()  # comment_form.website
     content = request.form.get('content', '').strip()  # comment_form.content
     
-    # デバッグ用ログ
-    print(f"DEBUG comment submission - name: '{author_name}', email: '{author_email}', content: '{content}'")
     
     # バリデーション
     if not author_name or not author_email or not content:

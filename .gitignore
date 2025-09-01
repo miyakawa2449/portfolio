@@ -90,6 +90,9 @@ miniblog/
 admininfo.py
 reports/scrennshot/
 
+# レポートフォルダ（作業記録）
+reports/
+
 # Claude AI専用開発ファイル
 CLAUDE.md
 

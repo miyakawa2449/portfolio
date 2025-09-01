@@ -1120,12 +1120,9 @@ def edit_article(article_id):
         category_choices = [choice[0] for choice in form.category_id.choices]
         if current_category.id in category_choices:
             form.category_id.data = current_category.id
-            print(f"DEBUG: Setting initial category_id={current_category.id} (name={current_category.name})")
         else:
-            print(f"DEBUG: Current category {current_category.id} ({current_category.name}) not in choices, resetting to 0")
             form.category_id.data = 0
     else:
-        print("DEBUG: No initial category set")
         form.category_id.data = 0
     
     # 現在のチャレンジ情報を設定
@@ -1145,7 +1142,6 @@ def edit_article(article_id):
     
     if form.validate_on_submit():
         # 重要: HTTPリクエストの値を直接フォームに反映（obj=articleで古い値が設定されている問題を解決）
-        print(f"DEBUG: Raw HTTP data - challenge_id: {request.form.get('challenge_id')}, category_id: {request.form.get('category_id')}, challenge_day: {request.form.get('challenge_day')}")
         
         # フォームデータを実際のHTTPリクエスト値で上書き
         if request.form.get('challenge_id'):
@@ -1155,7 +1151,6 @@ def edit_article(article_id):
         if request.form.get('challenge_day'):
             form.challenge_day.data = int(request.form.get('challenge_day')) if request.form.get('challenge_day').strip() else None
         
-        print(f"DEBUG: Updated form object - challenge_id: {form.challenge_id.data}, category_id: {form.category_id.data}, challenge_day: {form.challenge_day.data}")
         
         # バリデーション
         validation_errors = ArticleService.validate_article_data(form, article_id)
@@ -1619,14 +1614,11 @@ def comments():
 @admin_required
 def approve_comment(comment_id):
     """コメント承認"""
-    print(f"DEBUG: Approving comment ID: {comment_id}")
     try:
         comment = db.get_or_404(Comment, comment_id)
-        print(f"DEBUG: Comment found - is_approved before: {comment.is_approved}")
         if hasattr(comment, 'is_approved'):
             comment.is_approved = True
             db.session.commit()
-            print(f"DEBUG: Comment approved - is_approved after: {comment.is_approved}")
             flash('コメントを承認しました。', 'success')
         else:
             flash('承認機能は実装されていません。', 'warning')
@@ -3094,7 +3086,6 @@ def send_email_change_confirmation(change_request):
 def send_debug_email(subject, recipient, html_body, confirm_url):
     """開発環境用：デバッグメール送信"""
     print("\n" + "="*80)
-    print("📧 DEBUG: メール送信")
     print("="*80)
     print(f"宛先: {recipient}")
     print(f"件名: {subject}")
