@@ -431,7 +431,7 @@
                                                         </div>
                                                         
                                                         <!-- 画像グリッド -->
-                                                        <div id="imageGalleryGrid" style="display: none;">
+                                                        <div id="imageGalleryGrid" class="row" style="display: none;">
                                                             <!-- JavaScript で動的に生成 -->
                                                         </div>
                                                         
@@ -1745,25 +1745,22 @@ function displayImages(images) {
     
     images.forEach(image => {
         const col = document.createElement('div');
-        col.className = '';
+        col.className = 'col-md-4 col-lg-3 col-xl-2 mb-3';
         
         col.innerHTML = `
             <div class="gallery-card-item" data-url="${image.url}" data-filename="${image.filename}">
-                <div class="gallery-card">
+                <div class="gallery-card h-100">
                     <div class="gallery-card-image">
                         <img src="${image.url}" alt="${image.filename}" class="img-fluid">
                     </div>
-                    <div class="gallery-card-body">
-                        <h6 class="gallery-card-title">${image.filename}</h6>
+                    <div class="gallery-card-body p-2">
+                        <h6 class="gallery-card-title small text-truncate mb-1">${image.filename}</h6>
                         <div class="gallery-card-details">
                             <small class="text-muted d-block">
                                 <i class="fas fa-folder me-1"></i>${image.category}
                             </small>
                             <small class="text-muted d-block">
                                 <i class="fas fa-file-image me-1"></i>${formatFileSize(image.size)}
-                            </small>
-                            <small class="text-muted d-block">
-                                <i class="fas fa-clock me-1"></i>${formatDate(image.modified_at)}
                             </small>
                         </div>
                     </div>
@@ -1774,7 +1771,7 @@ function displayImages(images) {
         grid.appendChild(col);
     });
     
-    grid.style.display = 'block';
+    grid.style.display = 'flex';
     document.getElementById('noImagesMessage').style.display = 'none';
     
     // 画像選択イベントを追加
@@ -1891,8 +1888,7 @@ function showNoImagesMessage() {
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    display: block;
 }
 
 .gallery-card:hover {
@@ -1969,11 +1965,8 @@ function showNoImagesMessage() {
     overflow-y: auto;
 }
 
-/* タイル形式の画像ギャラリー */
+/* Bootstrap Grid ベースの画像ギャラリー */
 #imageGalleryGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
     padding: 1rem 0;
 }
 

@@ -627,11 +627,17 @@ def dashboard():
         'pending_comments': pending_comments
     }
     
+    # チャレンジ一覧を取得
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order, Challenge.id)
+    ).scalars().all()
+    
     return render_template('admin/dashboard.html', 
                          stats=stats,
                          monthly_stats=monthly_stats,
                          recent_data=recent_data,
-                         chart_data=[])
+                         chart_data=[],
+                         challenges=challenges)
 
 # ユーザー管理
 @admin_bp.route('/users/')
@@ -1162,10 +1168,14 @@ def edit_article(article_id):
             # ギャラリーから選択された画像の処理
             if request.form.get('selected_gallery_image'):
                 selected_image_url = request.form.get('selected_gallery_image')
+                current_app.logger.info(f"Gallery image selected: {selected_image_url}")
                 # URLからファイル名を抽出 (/static/uploads/category/filename.ext -> category/filename.ext)
                 if selected_image_url.startswith('/static/uploads/'):
                     relative_path = selected_image_url.replace('/static/uploads/', '')
                     form_data['featured_image'] = relative_path
+                    current_app.logger.info(f"Gallery image processed: {relative_path}")
+                else:
+                    current_app.logger.warning(f"Invalid gallery image URL: {selected_image_url}")
             
             # 記事更新
             updated_article, error = ArticleService.update_article(article, form_data)
@@ -3297,6 +3307,7 @@ def edit_challenge(challenge_id):
             flash(f'チャレンジの更新に失敗しました: {str(e)}', 'error')
     
     return render_template('admin/challenge_form.html', challenge=challenge, action='edit')
+
 
 @admin_bp.route('/challenge/<int:challenge_id>/delete', methods=['POST'])
 @admin_required
