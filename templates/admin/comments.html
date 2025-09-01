@@ -90,7 +90,6 @@
                                 <th>記事</th>
                                 <th>状態</th>
                                 <th>投稿日</th>
-                                <th width="150">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -103,14 +102,14 @@
                                     <div class="comment-content">
                                         {{ comment.content[:100] }}{% if comment.content|length > 100 %}...{% endif %}
                                     </div>
-                                    {% if comment.email %}
-                                        <small class="text-muted">{{ comment.email }}</small>
-                                    {% endif %}
                                 </td>
                                 <td>
-                                    <strong>{{ comment.name if comment.name else 'Anonymous' }}</strong>
-                                    {% if comment.website %}
-                                        <br><small><a href="{{ comment.website }}" target="_blank" class="text-muted">{{ comment.website }}</a></small>
+                                    <strong>{{ comment.decrypted_author_name if comment.decrypted_author_name else 'Anonymous' }}</strong>
+                                    {% if comment.decrypted_author_email %}
+                                        <br><small class="text-muted">{{ comment.decrypted_author_email }}</small>
+                                    {% endif %}
+                                    {% if comment.author_website %}
+                                        <br><small><a href="{{ comment.author_website }}" target="_blank" class="text-muted">{{ comment.author_website }}</a></small>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -135,33 +134,6 @@
                                     <small class="text-muted">
                                         {{ comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else 'N/A' }}
                                     </small>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        {% if comment.is_approved is defined and not comment.is_approved %}
-                                        <form method="POST" action="{{ url_for('admin.approve_comment', comment_id=comment.id) }}" class="d-inline">
-                                            {{ csrf_token() }}
-                                            <button type="submit" class="btn btn-outline-success" title="承認">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                        {% if comment.is_approved is defined and comment.is_approved %}
-                                        <form method="POST" action="{{ url_for('admin.reject_comment', comment_id=comment.id) }}" class="d-inline">
-                                            {{ csrf_token() }}
-                                            <button type="submit" class="btn btn-outline-warning" title="拒否">
-                                                <i class="fa fa-times"></i>
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                        <form method="POST" action="{{ url_for('admin.delete_comment', comment_id=comment.id) }}" class="d-inline">
-                                            {{ csrf_token() }}
-                                            <button type="submit" class="btn btn-outline-danger" 
-                                                    onclick="return confirm('このコメントを削除してもよろしいですか？')" title="削除">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}

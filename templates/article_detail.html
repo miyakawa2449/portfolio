@@ -326,26 +326,23 @@ html {
 </div>
 
 <!-- コメントセクション -->
-{% if comments %}
+{% if approved_comments %}
 <section class="py-5 bg-light">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <h3 class="mb-4">
-                    <i class="fas fa-comments text-primary me-2"></i>コメント ({{ comments|length }})
+                    <i class="fas fa-comments text-primary me-2"></i>コメント ({{ approved_comments|length }})
                 </h3>
                 
-                {% for comment in comments %}
+                {% for comment in approved_comments %}
                 <div class="card mb-3 shadow-sm border-0">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <h5 class="mb-1">{{ comment.name }}</h5>
+                                <h5 class="mb-1">{{ comment.decrypted_author_name }}</h5>
                                 <small class="text-muted">{{ comment.created_at.strftime('%Y年%m月%d日 %H:%M') }}</small>
                             </div>
-                            {% if comment.email %}
-                            <small class="text-muted">{{ comment.email }}</small>
-                            {% endif %}
                         </div>
                         <p class="mb-0">{{ comment.content }}</p>
                     </div>

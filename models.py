@@ -485,8 +485,28 @@ class Comment(db.Model):
     article = db.relationship('Article', back_populates='comments')
     parent = db.relationship('Comment', remote_side=[id], backref=db.backref('replies', lazy='selectin'))
     
+    @property
+    def decrypted_author_name(self):
+        """復号化された投稿者名を取得"""
+        try:
+            from encryption_utils import EncryptionService
+            return EncryptionService.decrypt(self.author_name)
+        except:
+            # 復号化に失敗した場合は元の値を返す（後方互換性）
+            return self.author_name
+    
+    @property
+    def decrypted_author_email(self):
+        """復号化されたメールアドレスを取得"""
+        try:
+            from encryption_utils import EncryptionService
+            return EncryptionService.decrypt(self.author_email)
+        except:
+            # 復号化に失敗した場合は元の値を返す（後方互換性）
+            return self.author_email
+    
     def __repr__(self):
-        return f'<Comment {self.id}: {self.author_name} on Article {self.article_id}>'
+        return f'<Comment {self.id}: {self.decrypted_author_name} on Article {self.article_id}>'
 
 class StaticPageSEO(db.Model):
     """静的ページのSEO設定を管理するモデル"""

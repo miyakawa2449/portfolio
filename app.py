@@ -85,6 +85,7 @@ def after_request(response):
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_default_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///portfolio.db')
+app.config['ENCRYPTION_KEY'] = os.environ.get('ENCRYPTION_KEY')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads' # staticフォルダ内のuploadsを基本とする
 app.config['CATEGORY_OGP_UPLOAD_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'category_ogp')
@@ -1102,10 +1103,13 @@ def add_comment(article_id):
         return redirect(url_for('article_detail', slug=article.slug))
     
     # フォームデータを取得
-    author_name = request.form.get('author_name', '').strip()
-    author_email = request.form.get('author_email', '').strip()
-    author_website = request.form.get('author_website', '').strip()
-    content = request.form.get('content', '').strip()
+    author_name = request.form.get('name', '').strip()  # comment_form.name
+    author_email = request.form.get('email', '').strip()  # comment_form.email
+    author_website = request.form.get('website', '').strip()  # comment_form.website
+    content = request.form.get('content', '').strip()  # comment_form.content
+    
+    # デバッグ用ログ
+    print(f"DEBUG comment submission - name: '{author_name}', email: '{author_email}', content: '{content}'")
     
     # バリデーション
     if not author_name or not author_email or not content:
@@ -1121,10 +1125,16 @@ def add_comment(article_id):
         return redirect(url_for('article_detail', slug=article.slug))
     
     # コメントを作成
+    from encryption_utils import EncryptionService
+    
+    # 個人情報を暗号化
+    encrypted_name = EncryptionService.encrypt(author_name)
+    encrypted_email = EncryptionService.encrypt(author_email)
+    
     comment = Comment(
         article_id=article.id,
-        author_name=author_name,
-        author_email=author_email,
+        author_name=encrypted_name,
+        author_email=encrypted_email,
         author_website=author_website if author_website else None,
         content=content,
         is_approved=False,  # デフォルトは承認待ち

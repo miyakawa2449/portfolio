@@ -1619,11 +1619,14 @@ def comments():
 @admin_required
 def approve_comment(comment_id):
     """コメント承認"""
+    print(f"DEBUG: Approving comment ID: {comment_id}")
     try:
         comment = db.get_or_404(Comment, comment_id)
+        print(f"DEBUG: Comment found - is_approved before: {comment.is_approved}")
         if hasattr(comment, 'is_approved'):
             comment.is_approved = True
             db.session.commit()
+            print(f"DEBUG: Comment approved - is_approved after: {comment.is_approved}")
             flash('コメントを承認しました。', 'success')
         else:
             flash('承認機能は実装されていません。', 'warning')
