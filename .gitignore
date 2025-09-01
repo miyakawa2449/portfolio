@@ -93,6 +93,9 @@ reports/scrennshot/
 # レポートフォルダ（作業記録）
 reports/
 
+# 仕様書フォルダ（開発用ドキュメント）
+spec/
+
 # Claude AI専用開発ファイル
 CLAUDE.md
 
