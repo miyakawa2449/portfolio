@@ -34,7 +34,7 @@ def blog(page=1, challenge_id=None):
     # ページング（公開日順でソート）
     per_page = 10
     articles = query.order_by(
-        Article.published_at.desc().nullslast(),
+        Article.published_at.desc(),
         Article.created_at.desc()
     ).paginate(
         page=page, 
@@ -49,8 +49,9 @@ def blog(page=1, challenge_id=None):
     from seo import get_static_page_seo
     seo_data = get_static_page_seo('blog')
     
-    return render_template('blog.html', 
-                         articles=articles, 
+    return render_template('home.html', 
+                         articles=articles.items,
+                         pagination=articles,
                          challenges=challenges,
                          current_challenge=challenge,
                          seo_data=seo_data)
@@ -84,7 +85,7 @@ def article_detail(slug):
     ogp_data = generate_ogp_data(
         title=article.meta_title or article.title,
         description=article.meta_description or article.summary,
-        image=article.featured_image,
+        image_url=article.featured_image,
         url=request.url
     )
     
@@ -114,7 +115,7 @@ def category_page(slug):
         Article.is_published == True,
         Article.categories.contains(category)
     ).order_by(
-        Article.published_at.desc().nullslast(),
+        Article.published_at.desc(),
         Article.created_at.desc()
     ).paginate(
         page=page, 
@@ -165,7 +166,7 @@ class ArticleService:
                 query = query.filter(Article.categories.contains(category))
         
         query = query.order_by(
-            Article.published_at.desc().nullslast(),
+            Article.published_at.desc(),
             Article.created_at.desc()
         )
         
@@ -287,5 +288,5 @@ class ArticleService:
             search_query = search_query.filter(Article.challenge_id == challenge_id)
         
         return search_query.order_by(
-            Article.published_at.desc().nullslast()
+            Article.published_at.desc()
         ).limit(limit).all()

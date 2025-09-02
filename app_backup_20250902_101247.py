@@ -1,8 +1,9 @@
 from flask import Flask, render_template, redirect, url_for, flash, session, request, current_app, abort, jsonify
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
-from flask_mail import Mail
-from flask_login import LoginManager, current_user, login_required
+from flask_mail import Mail, Message
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from datetime import datetime, timedelta
 import os
 import time
@@ -17,6 +18,9 @@ from projects import projects_bp
 load_dotenv()
 import logging
 import bleach
+import qrcode
+import io
+import base64
 import markdown
 from markupsafe import Markup
 import re
@@ -36,7 +40,7 @@ from datetime import datetime, timedelta
 # models.py から db インスタンスとモデルクラスをインポートします
 from models import db, User, Article, Category, Comment, EmailChangeRequest, article_categories, Challenge, Project
 # forms.py からフォームクラスをインポート
-from forms import CommentForm
+from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm, PasswordResetRequestForm, PasswordResetForm, CommentForm
 
 app = Flask(__name__)
 
@@ -237,9 +241,9 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))  # SQLAlchemy 2.0 対応
 
 # ユーティリティ関数のインポート
-from utils import sanitize_html, generate_table_of_contents, add_heading_anchors, perform_search
+from utils import sanitize_html, generate_table_of_contents, add_heading_anchors, generate_article_structured_data, perform_search
 # SEO/OGP関数のインポート  
-from seo import process_sns_auto_embed, process_general_url_embeds, fetch_ogp_data, generate_ogp_card, generate_article_structured_data
+from seo import process_sns_auto_embed, process_general_url_embeds, fetch_ogp_data, generate_ogp_card
 
 
 
@@ -649,26 +653,342 @@ def story():
                          total_projects=total_projects,
                          page_seo=page_seo)
 
+@app.route('/blog')
+@app.route('/blog/page/<int:page>')
+@app.route('/blog/challenge/<int:challenge_id>')
+@app.route('/blog/challenge/<int:challenge_id>/page/<int:page>')
+def blog(page=1, challenge_id=None):
+    """ブログ記事一覧ページ（旧ホームページ）"""
+    from models import SiteSetting, Challenge
+    
+    # 1ページあたりの記事数をサイト設定から取得
+    def get_int_setting(key, default_value):
+        """サイト設定から整数値を安全に取得"""
+        setting_value = SiteSetting.get_setting(key, str(default_value))
+        try:
+            return int(setting_value) if setting_value and setting_value.strip() else default_value
+        except (ValueError, TypeError):
+            return default_value
+    
+    per_page = get_int_setting('posts_per_page', 5)
+    
+    # 基本クエリ：公開済み記事
+    articles_query = select(Article).where(Article.is_published.is_(True))
+    
+    # 検索機能
+    search_query = request.args.get('q', '').strip()
+    if search_query:
+        # タイトル、概要、本文で検索
+        articles_query = articles_query.where(
+            Article.title.like(f'%{search_query}%') |
+            Article.summary.like(f'%{search_query}%') |
+            Article.body.like(f'%{search_query}%')
+        )
+    
+    # チャレンジフィルター
+    current_challenge = None
+    if challenge_id:
+        current_challenge = db.session.get(Challenge, challenge_id)
+        if current_challenge:
+            articles_query = articles_query.where(Article.challenge_id == challenge_id)
+    
+    # 公開日でソート（公開日がない場合は作成日を使用）
+    articles_query = articles_query.order_by(
+        db.case(
+            (Article.published_at.isnot(None), Article.published_at),
+            else_=Article.created_at
+        ).desc()
+    )
+    
+    # チャレンジ一覧を取得（フィルター用）
+    challenges = db.session.execute(
+        select(Challenge).order_by(Challenge.display_order)
+    ).scalars().all()
+    
+    # SQLAlchemy 2.0のpaginateを使用
+    articles_pagination = db.paginate(
+        articles_query,
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    
+    return render_template('home.html', 
+                         articles=articles_pagination.items,
+                         pagination=articles_pagination,
+                         challenges=challenges,
+                         current_challenge=current_challenge,
+                         search_query=search_query)
 
+@app.route('/projects')
+@app.route('/projects/page/<int:page>')
+@app.route('/projects/challenge/<int:challenge_id>')
+@app.route('/projects/challenge/<int:challenge_id>/page/<int:page>')
+def projects(page=1, challenge_id=None):
+    """プロジェクト一覧ページ"""
+    try:
+        per_page = 12  # プロジェクトは3x4のグリッド表示
+        
+        # チャレンジ一覧を取得
+        challenges = Challenge.query.order_by(Challenge.display_order).all()
+        
+        # 現在のチャレンジを取得
+        current_challenge = None
+        if challenge_id:
+            current_challenge = Challenge.query.get(challenge_id)
+        
+        # プロジェクトクエリを構築
+        query = Project.query.filter(Project.status == 'active')
+        
+        # チャレンジフィルター
+        if current_challenge:
+            query = query.filter(Project.challenge_id == challenge_id)
+        
+        # 並び順：注目プロジェクト優先、その後作成日順
+        query = query.order_by(Project.is_featured.desc(), Project.created_at.desc())
+        
+        # ページネーション
+        projects_pagination = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        # 注目プロジェクト（ページネーション外で全件取得）
+        featured_projects = Project.query.filter(
+            Project.status == 'active',
+            Project.is_featured == True
+        ).order_by(Project.display_order, Project.created_at.desc()).all()
+        
+        # 使用技術の集計
+        all_projects = Project.query.filter(Project.status == 'active').all()
+        technologies = set()
+        for project in all_projects:
+            technologies.update(project.technology_list)
+        technologies = sorted(list(technologies))
+        
+        return render_template('projects.html',
+                             projects=projects_pagination.items,
+                             pagination=projects_pagination,
+                             challenges=challenges,
+                             current_challenge=current_challenge,
+                             featured_projects=featured_projects,
+                             technologies=technologies)
+                             
+    except Exception as e:
+        print(f"Projects route error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"エラーが発生しました: {str(e)}", 500
 
 # Blueprint登録
 from api import api_bp
-from auth import auth_bp
 app.register_blueprint(api_bp)
-app.register_blueprint(auth_bp)
 app.register_blueprint(comments_bp)
-app.register_blueprint(articles_bp)
+app.register_blueprint(articles_bp) 
 app.register_blueprint(projects_bp)
 
+# 環境変数でログインURLをカスタマイズ可能
+LOGIN_URL_PATH = os.environ.get('LOGIN_URL_PATH', 'login')
+
+@app.route(f'/{LOGIN_URL_PATH}/', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('landing'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+        user = db.session.execute(select(User).where(User.email == email)).scalar_one_or_none()
+        if user and check_password_hash(user.password_hash, password):
+            # 2段階認証が有効な場合はTOTP画面へ
+            if user.totp_enabled:
+                session['temp_user_id'] = user.id
+                return redirect(url_for('totp_verify'))
+            else:
+                login_user(user)
+                session['user_id'] = user.id
+                flash('ログインしました。', 'success')
+                next_page = request.args.get('next')
+                return redirect(next_page or url_for('landing'))
+        else:
+            # ログイン失敗をログに記録（セキュリティ監視用）
+            current_app.logger.warning(f"Failed login attempt for email: {email}")
+            flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
+    
+    return render_template('login.html', form=form)
 
 # Flask-LoginManagerの設定（ルート定義後）
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'login'
 login_manager.login_message = "このページにアクセスするにはログインが必要です。"
 login_manager.login_message_category = "info"
 
+@app.route('/totp_verify/', methods=['GET', 'POST'])
+def totp_verify():
+    if current_user.is_authenticated:
+        return redirect(url_for('landing'))
+    
+    temp_user_id = session.get('temp_user_id')
+    if not temp_user_id:
+        flash('不正なアクセスです。', 'danger')
+        return redirect(url_for('login'))
+    
+    user = db.session.get(User, temp_user_id)
+    if not user or not user.totp_enabled:
+        flash('2段階認証が設定されていません。', 'danger')
+        return redirect(url_for('login'))
+    
+    form = TOTPVerificationForm()
+    if form.validate_on_submit():
+        totp_code = form.totp_code.data
+        if user.verify_totp(totp_code):
+            login_user(user)
+            session['user_id'] = user.id
+            session.pop('temp_user_id', None)
+            flash('ログインしました。', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('landing'))
+        else:
+            flash('認証コードが正しくありません。', 'danger')
+    
+    return render_template('totp_verify.html', form=form)
 
+@app.route('/logout/')
+@login_required
+def logout():
+    logout_user()
+    session.pop('user_id', None)
+    session.pop('temp_user_id', None)
+    flash('ログアウトしました。', 'info')
+    return redirect(url_for('login'))
 
+@app.route('/totp_setup/', methods=['GET', 'POST'])
+@login_required
+def totp_setup():
+    if current_user.totp_enabled:
+        flash('2段階認証は既に有効になっています。', 'info')
+        return redirect(url_for('admin.dashboard'))
+    
+    form = TOTPSetupForm()
+    
+    # QRコード生成
+    if not current_user.totp_secret:
+        current_user.generate_totp_secret()
+        db.session.commit()
+    
+    totp_uri = current_user.get_totp_uri()
+    
+    # QRコード画像をBase64エンコードで生成
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(totp_uri)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG')
+    img_buffer.seek(0)
+    
+    qr_code_base64 = base64.b64encode(img_buffer.getvalue()).decode()
+    
+    if form.validate_on_submit():
+        totp_code = form.totp_code.data
+        if current_user.verify_totp(totp_code):
+            current_user.totp_enabled = True
+            db.session.commit()
+            flash('2段階認証が有効になりました。', 'success')
+            return redirect(url_for('admin.dashboard'))
+        else:
+            flash('認証コードが正しくありません。', 'danger')
+    
+    return render_template('totp_setup.html', form=form, qr_code=qr_code_base64, secret=current_user.totp_secret)
 
+@app.route('/totp_disable/', methods=['GET', 'POST'])
+@login_required
+def totp_disable():
+    if not current_user.totp_enabled:
+        flash('2段階認証は有効になっていません。', 'info')
+        return redirect(url_for('admin.dashboard'))
+    
+    if request.method == 'POST':
+        # 確認のためパスワード入力を要求
+        password = request.form.get('password')
+        if password and check_password_hash(current_user.password_hash, password):
+            current_user.totp_enabled = False
+            current_user.totp_secret = None
+            db.session.commit()
+            flash('2段階認証を無効にしました。', 'success')
+            return redirect(url_for('admin.dashboard'))
+        else:
+            flash('パスワードが正しくありません。', 'danger')
+    
+    return render_template('totp_disable.html')
+
+@app.route('/password_reset_request/', methods=['GET', 'POST'])
+def password_reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('landing'))
+    
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = db.session.execute(select(User).where(User.email == form.email.data)).scalar_one_or_none()
+        if user:
+            token = user.generate_reset_token()
+            db.session.commit()
+            send_password_reset_email(user, token)
+            flash('パスワードリセット用のメールを送信しました。', 'info')
+        else:
+            flash('そのメールアドレスは登録されていません。', 'danger')
+        return redirect(url_for('login'))
+    
+    return render_template('password_reset_request.html', form=form)
+
+@app.route('/password_reset/<token>/', methods=['GET', 'POST'])
+def password_reset(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('landing'))
+    
+    user = db.session.execute(select(User).where(User.reset_token == token)).scalar_one_or_none()
+    if not user or not user.verify_reset_token(token):
+        flash('無効または期限切れのトークンです。', 'danger')
+        return redirect(url_for('password_reset_request'))
+    
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        user.password_hash = generate_password_hash(form.password.data)
+        user.clear_reset_token()
+        db.session.commit()
+        flash('パスワードが変更されました。', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('password_reset.html', form=form, token=token)
+
+def send_password_reset_email(user, token):
+    """パスワードリセットメール送信"""
+    try:
+        reset_url = url_for('password_reset', token=token, _external=True)
+        msg = Message(
+            subject='パスワードリセット - MiniBlog',
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[user.email]
+        )
+        msg.body = f"""パスワードをリセットするには、以下のリンクをクリックしてください：
+
+{reset_url}
+
+このリンクは1時間で期限切れになります。
+
+もしこのメールに心当たりがない場合は、無視してください。
+
+MiniBlog システム
+"""
+        mail.send(msg)
+        app.logger.info(f"Password reset email sent to {user.email}")
+    except Exception as e:
+        app.logger.error(f"Failed to send password reset email: {e}")
+        # 開発環境ではコンソールにリンクを表示
+        if app.debug:
+            print(f"パスワードリセットURL (開発環境): {reset_url}")
 
 @app.route('/admin/article/upload_image/', methods=['POST'])
 def upload_image():
@@ -725,6 +1045,116 @@ def category_page(slug):
 
     return render_template('category_page.html', category=category, articles_pagination=articles_pagination)
 
+@app.route('/article/<slug>/')
+def article_detail(slug):
+    article = db.session.execute(select(Article).where(Article.slug == slug)).scalar_one_or_none()
+    if not article:
+        abort(404)
+    
+    # 下書き記事の場合、管理者のみアクセス可能
+    if not article.is_published:
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('この記事は公開されていません。', 'warning')
+            return redirect(url_for('landing'))
+    
+    # 承認済みコメントを取得（親コメントのみ）
+    approved_comments = []
+    if hasattr(article, 'comments') and article.allow_comments:
+        # eager loadingで返信も一緒に取得してN+1問題を解決
+        from sqlalchemy.orm import selectinload
+        approved_comments = db.session.execute(
+            select(Comment)
+            .options(selectinload(Comment.replies))
+            .where(
+                Comment.article_id == article.id,
+                Comment.is_approved.is_(True),
+                Comment.parent_id.is_(None)
+            ).order_by(Comment.created_at.asc())
+        ).scalars().all()
+        
+        # 承認済みの返信のみをフィルタリング
+        for comment in approved_comments:
+            comment.approved_replies = [
+                reply for reply in comment.replies 
+                if reply.is_approved
+            ]
+    
+    # コメントフォームを作成
+    comment_form = CommentForm()
+    
+    # 構造化データ（JSON-LD）を生成
+    structured_data = generate_article_structured_data(article)
+    
+    # 目次を生成
+    table_of_contents = generate_table_of_contents(article.body) if article.body else None
+    
+    return render_template('article_detail.html', 
+                         article=article, 
+                         approved_comments=approved_comments, 
+                         comment_form=comment_form,
+                         structured_data=structured_data,
+                         table_of_contents=table_of_contents)
+
+@app.route('/add_comment/<int:article_id>', methods=['POST'])
+def add_comment(article_id):
+    """コメントを追加"""
+    from models import Article, Comment, db
+    from flask import request, flash, redirect, url_for
+    
+    article = db.get_or_404(Article, article_id)
+    
+    if not article.allow_comments:
+        flash('このページではコメントが無効になっています。', 'error')
+        return redirect(url_for('article_detail', slug=article.slug))
+    
+    # フォームデータを取得
+    author_name = request.form.get('name', '').strip()  # comment_form.name
+    author_email = request.form.get('email', '').strip()  # comment_form.email
+    author_website = request.form.get('website', '').strip()  # comment_form.website
+    content = request.form.get('content', '').strip()  # comment_form.content
+    
+    
+    # バリデーション
+    if not author_name or not author_email or not content:
+        flash('必須項目を入力してください。', 'error')
+        return redirect(url_for('article_detail', slug=article.slug))
+    
+    if len(author_name) > 100:
+        flash('お名前は100文字以内で入力してください。', 'error')
+        return redirect(url_for('article_detail', slug=article.slug))
+    
+    if len(content) > 1000:
+        flash('コメントは1000文字以内で入力してください。', 'error')
+        return redirect(url_for('article_detail', slug=article.slug))
+    
+    # コメントを作成
+    from encryption_utils import EncryptionService
+    
+    # 個人情報を暗号化
+    encrypted_name = EncryptionService.encrypt(author_name)
+    encrypted_email = EncryptionService.encrypt(author_email)
+    
+    comment = Comment(
+        article_id=article.id,
+        author_name=encrypted_name,
+        author_email=encrypted_email,
+        author_website=author_website if author_website else None,
+        content=content,
+        is_approved=False,  # デフォルトは承認待ち
+        ip_address=request.environ.get('REMOTE_ADDR'),
+        user_agent=request.environ.get('HTTP_USER_AGENT', '')[:500]
+    )
+    
+    try:
+        db.session.add(comment)
+        db.session.commit()
+        flash('コメントを投稿しました。承認後に表示されます。', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Comment submission error: {e}')
+        flash('コメントの投稿に失敗しました。', 'error')
+    
+    return redirect(url_for('article_detail', slug=article.slug))
 
 @app.route('/about/')
 def profile():

@@ -48,6 +48,10 @@ def projects_list(page=1, challenge_id=None):
         Project.is_featured == True
     ).order_by(Project.display_order.asc()).limit(6).all()
     
+    # 最新記事を取得（portfolio.htmlテンプレート用）
+    from articles import ArticleService
+    latest_articles = ArticleService.get_published_articles(limit=5)
+    
     # SEO設定
     from seo import get_static_page_seo
     seo_data = get_static_page_seo('portfolio')
@@ -57,6 +61,7 @@ def projects_list(page=1, challenge_id=None):
                          challenges=challenges,
                          current_challenge=challenge,
                          featured_projects=featured_projects,
+                         latest_articles=latest_articles,
                          seo_data=seo_data)
 
 @projects_bp.route('/project/<slug>/')
