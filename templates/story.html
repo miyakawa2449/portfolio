@@ -231,10 +231,10 @@
                                 </p>
                                 
                                 <div class="d-flex gap-3">
-                                    <a href="{{ url_for('portfolio') }}" class="btn btn-outline-primary">
+                                    <a href="{{ url_for('landing.portfolio') }}" class="btn btn-outline-primary">
                                         <i class="fas fa-trophy me-2"></i> チャレンジを見る
                                     </a>
-                                    <a href="{{ url_for('blog') }}" class="btn btn-outline-secondary">
+                                    <a href="{{ url_for('articles.blog') }}" class="btn btn-outline-secondary">
                                         <i class="fas fa-book-open me-2"></i> 学習記録
                                     </a>
                                 </div>
@@ -351,7 +351,7 @@
         </p>
         
         <div class="d-flex flex-wrap justify-content-center gap-3">
-            <a href="{{ url_for('services') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('landing.services') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-briefcase me-2"></i> サービス詳細
             </a>
             <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="btn btn-outline-light btn-lg">

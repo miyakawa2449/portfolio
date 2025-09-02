@@ -41,7 +41,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('landing') }}">
+            <a class="navbar-brand" href="{{ url_for('landing.landing') }}">
                 <i class="fas fa-code"></i> {{ admin_user.name_romaji if admin_user and admin_user.name_romaji else (admin_user.name if admin_user and admin_user.name else site_settings.site_name or 'Tsuyoshi Miyakawa') }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,27 +64,27 @@
                 
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'landing' else '' }}" href="{{ url_for('landing') }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'landing' else '' }}" href="{{ url_for('landing.landing') }}">
                             <i class="fas fa-home me-1"></i> Home
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'services' else '' }}" href="{{ url_for('services') }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'services' else '' }}" href="{{ url_for('landing.services') }}">
                             <i class="fas fa-briefcase me-1"></i> Services
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'portfolio' else '' }}" href="{{ url_for('portfolio') }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'portfolio' else '' }}" href="{{ url_for('landing.portfolio') }}">
                             <i class="fas fa-code me-1"></i> Portfolio
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'story' else '' }}" href="{{ url_for('story') }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'story' else '' }}" href="{{ url_for('landing.story') }}">
                             <i class="fas fa-book-reader me-1"></i> Story
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('profile') }}">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'profile' else '' }}" href="{{ url_for('landing.profile') }}">
                             <i class="fas fa-user me-1"></i> About
                         </a>
                     </li>
@@ -154,7 +154,7 @@
                     </div>
                 </div>
                 <div class="col-lg-4 text-center text-lg-end">
-                    <a href="{{ url_for('portfolio') }}" class="btn btn-warning btn-lg fw-bold">
+                    <a href="{{ url_for('landing.portfolio') }}" class="btn btn-warning btn-lg fw-bold">
                         <i class="fas fa-chart-line me-2"></i>
                         進捗を見る
                     </a>
@@ -202,17 +202,17 @@
                     <h5 class="mb-3">Quick Links</h5>
                     <ul class="list-unstyled">
                         <li class="mb-2">
-                            <a href="{{ url_for('landing') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('landing.landing') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-home me-2"></i> Home
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('services') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('landing.services') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-briefcase me-2"></i> Services
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('portfolio') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('landing.portfolio') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-code me-2"></i> Portfolio
                             </a>
                         </li>
@@ -227,12 +227,12 @@
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('story') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('landing.story') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-book-reader me-2"></i> Story
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('profile') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('landing.profile') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-user me-2"></i> About
                             </a>
                         </li>

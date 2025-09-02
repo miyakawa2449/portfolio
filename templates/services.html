@@ -314,7 +314,7 @@
         
         {% if all_projects|length > 6 %}
         <div class="text-center mt-5">
-            <a href="{{ url_for('projects') }}" class="btn btn-outline-primary btn-lg">
+            <a href="{{ url_for('projects.projects_list') }}" class="btn btn-outline-primary btn-lg">
                 すべての実績を見る ({{ all_projects|length }}件)
             </a>
         </div>
@@ -360,7 +360,7 @@
                     <a href="mailto:{{ site_settings.contact_email or 'contact@miyakawa.codes' }}" class="btn btn-light btn-lg">
                         <i class="fas fa-envelope me-2"></i> メールで相談
                     </a>
-                    <a href="{{ url_for('portfolio') }}" class="btn btn-outline-light btn-lg">
+                    <a href="{{ url_for('landing.portfolio') }}" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-trophy me-2"></i> 技術力を詳しく見る
                     </a>
                 </div>
