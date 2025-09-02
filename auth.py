@@ -10,7 +10,9 @@ from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.security import check_password_hash
 from sqlalchemy import select
 from models import db, User
-from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm
+from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm, PasswordResetRequestForm, PasswordResetForm
+from werkzeug.security import generate_password_hash
+from flask_mail import Mail, Message
 
 # 認証ブループリント作成
 auth_bp = Blueprint('auth', __name__)
@@ -145,3 +147,70 @@ def totp_disable():
             flash('認証コードが正しくありません。', 'danger')
     
     return render_template('totp_disable.html', form=form)
+
+@auth_bp.route('/password_reset_request/', methods=['GET', 'POST'])
+def password_reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('landing'))
+    
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = db.session.execute(select(User).where(User.email == form.email.data)).scalar_one_or_none()
+        if user:
+            token = user.generate_reset_token()
+            db.session.commit()
+            send_password_reset_email(user, token)
+            flash('パスワードリセット用のメールを送信しました。', 'info')
+        else:
+            flash('そのメールアドレスは登録されていません。', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('password_reset_request.html', form=form)
+
+@auth_bp.route('/password_reset/<token>/', methods=['GET', 'POST'])
+def password_reset(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('landing'))
+    
+    user = db.session.execute(select(User).where(User.reset_token == token)).scalar_one_or_none()
+    if not user or not user.verify_reset_token(token):
+        flash('無効または期限切れのトークンです。', 'danger')
+        return redirect(url_for('auth.password_reset_request'))
+    
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        user.password_hash = generate_password_hash(form.password.data)
+        user.clear_reset_token()
+        db.session.commit()
+        flash('パスワードが変更されました。', 'success')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('password_reset.html', form=form, token=token)
+
+def send_password_reset_email(user, token):
+    """パスワードリセットメール送信"""
+    try:
+        reset_url = url_for('auth.password_reset', token=token, _external=True)
+        mail = Mail(current_app)
+        msg = Message(
+            subject='パスワードリセット - MiniBlog',
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[user.email]
+        )
+        msg.body = f"""パスワードをリセットするには、以下のリンクをクリックしてください：
+
+{reset_url}
+
+このリンクは1時間で期限切れになります。
+
+もしこのメールに心当たりがない場合は、無視してください。
+
+MiniBlog システム
+"""
+        mail.send(msg)
+        current_app.logger.info(f"Password reset email sent to {user.email}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send password reset email: {e}")
+        # 開発環境ではコンソールにリンクを表示
+        if current_app.debug:
+            print(f"パスワードリセットURL (開発環境): {reset_url}")
