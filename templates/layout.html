@@ -133,7 +133,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
                                 <i class="fas fa-sign-out-alt me-1"></i> Logout
                             </a>
                         </li>
@@ -260,12 +260,12 @@
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('blog') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('articles.blog') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-book me-2"></i> Blog
                             </a>
                         </li>
                         <li class="mb-2">
-                            <a href="{{ url_for('projects') }}" class="text-muted text-decoration-none">
+                            <a href="{{ url_for('projects.projects_list') }}" class="text-muted text-decoration-none">
                                 <i class="fas fa-folder-open me-2"></i> Projects
                             </a>
                         </li>

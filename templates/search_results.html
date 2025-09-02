@@ -85,10 +85,10 @@
                         別のキーワードで検索してみてください。
                     </p>
                     <div class="d-flex justify-content-center gap-3">
-                        <a href="{{ url_for('blog') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('articles.blog') }}" class="btn btn-outline-primary">
                             <i class="fas fa-book me-2"></i>記事一覧
                         </a>
-                        <a href="{{ url_for('projects') }}" class="btn btn-outline-info">
+                        <a href="{{ url_for('projects.projects_list') }}" class="btn btn-outline-info">
                             <i class="fas fa-folder-open me-2"></i>プロジェクト一覧
                         </a>
                     </div>
@@ -140,7 +140,7 @@
                                                 <i class="fas fa-calendar-alt me-1"></i>
                                                 {{ article.published_at.strftime('%Y年%m月%d日') if article.published_at else article.created_at.strftime('%Y年%m月%d日') }}
                                             </small>
-                                            <a href="{{ url_for('article_detail', slug=article.slug) }}" class="btn btn-primary btn-sm">
+                                            <a href="{{ url_for('articles.article_detail', slug=article.slug) }}" class="btn btn-primary btn-sm">
                                                 詳細を見る
                                             </a>
                                         </div>
@@ -321,10 +321,10 @@
                         キーワードを入力して検索してみてください。
                     </p>
                     <div class="d-flex justify-content-center gap-3">
-                        <a href="{{ url_for('blog') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('articles.blog') }}" class="btn btn-outline-primary">
                             <i class="fas fa-book me-2"></i>記事一覧を見る
                         </a>
-                        <a href="{{ url_for('projects') }}" class="btn btn-outline-info">
+                        <a href="{{ url_for('projects.projects_list') }}" class="btn btn-outline-info">
                             <i class="fas fa-folder-open me-2"></i>プロジェクト一覧を見る
                         </a>
                     </div>

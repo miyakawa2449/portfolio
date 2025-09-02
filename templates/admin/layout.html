@@ -176,11 +176,11 @@
                     </a>
                     <ul class="submenu">
                         {% if current_user.totp_enabled %}
-                        <li><a href="{{ url_for('totp_disable') }}">
+                        <li><a href="{{ url_for('auth.totp_disable') }}">
                             <i class="fa fa-times text-danger"></i>無効化
                         </a></li>
                         {% else %}
-                        <li><a href="{{ url_for('totp_setup') }}">
+                        <li><a href="{{ url_for('auth.totp_setup') }}">
                             <i class="fa fa-plus text-success"></i>有効化
                         </a></li>
                         {% endif %}
@@ -249,7 +249,7 @@
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
                                     <i class="fa fa-sign-out"></i> ログアウト
                                 </a></li>
                             </ul>

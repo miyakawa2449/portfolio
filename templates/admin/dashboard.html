@@ -175,7 +175,7 @@
                         <i class="fa fa-check-circle me-1"></i>
                         アカウントは2段階認証で保護されています
                     </div>
-                    <a href="{{ url_for('totp_disable') }}" class="btn btn-outline-danger btn-sm w-100">
+                    <a href="{{ url_for('auth.totp_disable') }}" class="btn btn-outline-danger btn-sm w-100">
                         <i class="fa fa-times me-1"></i>2段階認証を無効化
                     </a>
                 {% else %}
@@ -183,7 +183,7 @@
                         <i class="fa fa-exclamation-triangle me-1"></i>
                         セキュリティ向上のため、2段階認証の有効化をお勧めします
                     </div>
-                    <a href="{{ url_for('totp_setup') }}" class="btn btn-success btn-sm w-100">
+                    <a href="{{ url_for('auth.totp_setup') }}" class="btn btn-success btn-sm w-100">
                         <i class="fa fa-shield-alt me-1"></i>2段階認証を有効化
                     </a>
                 {% endif %}

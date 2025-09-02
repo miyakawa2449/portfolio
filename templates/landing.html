@@ -232,7 +232,7 @@
         </div>
         
         <div class="text-center mt-5">
-            <a href="{{ url_for('projects') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('projects.projects_list') }}" class="btn btn-light btn-lg">
                 すべての実績を見る ({{ total_projects }}件)
             </a>
         </div>
@@ -276,7 +276,7 @@
                         <a href="{{ url_for('portfolio') }}" class="btn btn-outline-primary">
                             <i class="fas fa-trophy me-2"></i> チャレンジの詳細
                         </a>
-                        <a href="{{ url_for('blog') }}" class="btn btn-outline-secondary">
+                        <a href="{{ url_for('articles.blog') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-book-open me-2"></i> 学習記録
                         </a>
                     </div>
