@@ -15,6 +15,7 @@ from projects import projects_bp
 from search import search_bp
 from categories import categories_bp
 from landing import landing_bp
+from debug import debug_bp
 
 # .envファイルを読み込み
 load_dotenv()
@@ -527,6 +528,8 @@ app.register_blueprint(projects_bp)
 app.register_blueprint(search_bp)
 app.register_blueprint(categories_bp)
 app.register_blueprint(landing_bp)
+if app.debug:
+    app.register_blueprint(debug_bp)
 
 
 # Flask-LoginManagerの設定（ルート定義後）
@@ -770,139 +773,7 @@ https://www.threads.com/@nasubi8848/post/DMPx1RkT3wp
 </body>
 </html>"""
 
-@app.route('/debug_ogp')
-def debug_ogp():
-    """開発用：OGP取得のデバッグテスト"""
-    if not app.debug:
-        return "Not available in production", 404
-    
-    url = request.args.get('url', 'https://docs.python.org/')
-    force_refresh = request.args.get('force_refresh', 'false').lower() == 'true'
-    
-    try:
-        current_app.logger.info(f"🔍 Debug OGP test for URL: {url}")
-        ogp_data = fetch_ogp_data(url, force_refresh=force_refresh)
-        
-        # OGPカード生成も試す
-        if url.startswith('http'):
-            card_html = generate_ogp_card(url)
-        else:
-            card_html = "Invalid URL"
-        
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-    <title>OGP Debug Test</title>
-    <meta charset="utf-8">
-    <style>
-        body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
-        .debug-info {{ background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; }}
-        .content {{ line-height: 1.6; }}
-        pre {{ background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }}
-    </style>
-</head>
-<body>
-    <h1>OGP Debug Test</h1>
-    
-    <div class="debug-info">
-        <h3>Test Parameters:</h3>
-        <p><strong>URL:</strong> {url}</p>
-        <p><strong>Force Refresh:</strong> {force_refresh}</p>
-    </div>
-    
-    <div class="debug-info">
-        <h3>Raw OGP Data:</h3>
-        <pre>{ogp_data}</pre>
-    </div>
-    
-    <div class="debug-info">
-        <h3>Generated Card:</h3>
-        {card_html}
-    </div>
-    
-    <div class="debug-info">
-        <h3>Test Different URLs:</h3>
-        <ul>
-            <li><a href="/debug_ogp?url=https://docs.python.org/&force_refresh=true">Python Docs (force refresh)</a></li>
-            <li><a href="/debug_ogp?url=https://github.com/&force_refresh=true">GitHub (force refresh)</a></li>
-            <li><a href="/debug_ogp?url=https://www.threads.com/@nasubi8848/post/DMPx1RkT3wp&force_refresh=true">Threads Post (force refresh)</a></li>
-            <li><a href="/debug_ogp?url=https://invalid-url-test.com&force_refresh=true">Invalid URL Test</a></li>
-        </ul>
-    </div>
-</body>
-</html>"""
-    except Exception as e:
-        current_app.logger.error(f"🚨 OGP Debug Error: {str(e)}")
-        return f"""<!DOCTYPE html>
-<html>
-<head><title>OGP Debug Error</title></head>
-<body>
-    <h1>OGP Debug Error</h1>
-    <p><strong>URL:</strong> {url}</p>
-    <p><strong>Error:</strong> {str(e)}</p>
-    <p><a href="/debug_ogp">Try Again</a></p>
-</body>
-</html>"""
 
-@app.route('/debug_filter')
-def debug_filter():
-    """テンプレートフィルターのデバッグ用エンドポイント"""
-    if not app.debug:
-        return "Not available in production", 404
-    
-    test_text = """これはテストです。
-https://www.threads.com/@nasubi8848/post/DMPx1RkT3wp
-普通のテキスト
-https://miyakawa.me/2018/09/13/3865/
-最後のテキスト"""
-    
-    app.logger.info("🔍 Debug Filter: フィルターテスト開始")
-    try:
-        processed_text = sns_embed_filter(test_text)
-        app.logger.info(f"✅ Debug Filter: 処理完了、結果の長さ {len(processed_text)} 文字")
-        
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-    <title>Template Filter Debug Test</title>
-    <meta charset="utf-8">
-    <style>
-        body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
-        .debug-info {{ background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; }}
-        .content {{ line-height: 1.6; }}
-        pre {{ background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }}
-    </style>
-</head>
-<body>
-    <h1>Template Filter Debug Test</h1>
-    
-    <div class="debug-info">
-        <h3>元のテキスト:</h3>
-        <pre>{test_text}</pre>
-    </div>
-    
-    <div class="debug-info">
-        <h3>処理後のテキスト:</h3>
-        <div class="content">{processed_text}</div>
-    </div>
-    
-    <div class="debug-info">
-        <h3>処理後のHTMLソース:</h3>
-        <pre>{processed_text.replace('<', '&lt;').replace('>', '&gt;')}</pre>
-    </div>
-</body>
-</html>"""
-    except Exception as e:
-        app.logger.error(f"🚨 Debug Filter Error: {str(e)}")
-        return f"""<!DOCTYPE html>
-<html>
-<head><title>Filter Debug Error</title></head>
-<body>
-    <h1>Filter Debug Error</h1>
-    <p><strong>Error:</strong> {str(e)}</p>
-    <p><a href="/debug_filter">Try Again</a></p>
-</body>
-</html>"""
 
 # === メールアドレス変更確認処理 ===
 
@@ -915,13 +786,13 @@ def confirm_email_change(token):
         
         if not change_request:
             flash('無効または期限切れの確認リンクです。', 'danger')
-            return redirect(url_for('landing'))
+            return redirect(url_for('landing.landing'))
         
         # ユーザー取得
         user = db.session.get(User, change_request.user_id)
         if not user:
             flash('ユーザーが見つかりません。', 'danger')
-            return redirect(url_for('landing'))
+            return redirect(url_for('landing.landing'))
         
         # メールアドレス重複チェック（再確認）
         existing_user = db.session.execute(
@@ -930,7 +801,7 @@ def confirm_email_change(token):
         
         if existing_user:
             flash('そのメールアドレスは既に使用されています。', 'danger')
-            return redirect(url_for('landing'))
+            return redirect(url_for('landing.landing'))
         
         # メールアドレス変更実行
         old_email = user.email
@@ -955,35 +826,9 @@ def confirm_email_change(token):
         db.session.rollback()
         current_app.logger.error(f'Email change confirmation error: {e}')
         flash('メールアドレス変更中にエラーが発生しました。', 'danger')
-        return redirect(url_for('landing'))
+        return redirect(url_for('landing.landing'))
 
 
-@app.route('/debug/sns-test')
-def debug_sns_test():
-    """SNS埋込のデバッグテスト"""
-    # OGPキャッシュをクリア
-    from seo import ogp_cache
-    ogp_cache.clear()
-    current_app.logger.debug("🗑️ OGP cache cleared")
-    
-    test_content = """TwitterのURL:
-https://x.com/miyakawa2449/status/1953377889820561624
-
-ブログのURL:
-https://miyakawa.me/2023/03/27/9324/
-
-YouTubeのURL:
-https://www.youtube.com/watch?v=xvFZjo5PgG0"""
-    
-    current_app.logger.debug(f"🔍 SNS test input: {test_content}")
-    result = process_sns_auto_embed(test_content)
-    current_app.logger.debug(f"✅ SNS test output length: {len(result)}")
-    
-    return f"""<html><head><title>SNS Test</title></head><body>
-    <h1>SNS Embed Test (Cache Cleared)</h1>
-    <h2>Original:</h2><pre>{test_content}</pre>
-    <h2>Processed:</h2><div>{result}</div>
-    </body></html>"""
 
 if __name__ == '__main__':
     # 本番環境では通常WSGI サーバー（Gunicorn等）を使用

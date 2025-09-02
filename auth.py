@@ -23,7 +23,7 @@ LOGIN_URL_PATH = os.environ.get('LOGIN_URL_PATH', 'login')
 @auth_bp.route(f'/{LOGIN_URL_PATH}/', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('landing'))
+        return redirect(url_for('landing.landing'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -40,7 +40,7 @@ def login():
                 session['user_id'] = user.id
                 flash('ログインしました。', 'success')
                 next_page = request.args.get('next')
-                return redirect(next_page or url_for('landing'))
+                return redirect(next_page or url_for('landing.landing'))
         else:
             # ログイン失敗をログに記録（セキュリティ監視用）
             current_app.logger.warning(f"Failed login attempt for email: {email}")
@@ -51,7 +51,7 @@ def login():
 @auth_bp.route('/totp_verify/', methods=['GET', 'POST'])
 def totp_verify():
     if current_user.is_authenticated:
-        return redirect(url_for('landing'))
+        return redirect(url_for('landing.landing'))
     
     temp_user_id = session.get('temp_user_id')
     if not temp_user_id:
@@ -72,7 +72,7 @@ def totp_verify():
             session.pop('temp_user_id', None)
             flash('ログインしました。', 'success')
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('landing'))
+            return redirect(next_page or url_for('landing.landing'))
         else:
             flash('認証コードが正しくありません。', 'danger')
     
@@ -151,7 +151,7 @@ def totp_disable():
 @auth_bp.route('/password_reset_request/', methods=['GET', 'POST'])
 def password_reset_request():
     if current_user.is_authenticated:
-        return redirect(url_for('landing'))
+        return redirect(url_for('landing.landing'))
     
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
@@ -170,7 +170,7 @@ def password_reset_request():
 @auth_bp.route('/password_reset/<token>/', methods=['GET', 'POST'])
 def password_reset(token):
     if current_user.is_authenticated:
-        return redirect(url_for('landing'))
+        return redirect(url_for('landing.landing'))
     
     user = db.session.execute(select(User).where(User.reset_token == token)).scalar_one_or_none()
     if not user or not user.verify_reset_token(token):
