@@ -9,10 +9,11 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.security import check_password_hash
 from sqlalchemy import select
-from models import db, User
+from models import db, User, EmailChangeRequest
 from forms import LoginForm, TOTPVerificationForm, TOTPSetupForm, PasswordResetRequestForm, PasswordResetForm
 from werkzeug.security import generate_password_hash
 from flask_mail import Mail, Message
+from datetime import datetime
 
 # 認証ブループリント作成
 auth_bp = Blueprint('auth', __name__)
@@ -186,6 +187,57 @@ def password_reset(token):
         return redirect(url_for('auth.login'))
     
     return render_template('password_reset.html', form=form, token=token)
+
+@auth_bp.route('/confirm_email_change/<token>')
+def confirm_email_change(token):
+    """メールアドレス変更確認処理"""
+    try:
+        # トークン検証
+        change_request = EmailChangeRequest.verify_token(token)
+        
+        if not change_request:
+            flash('無効または期限切れの確認リンクです。', 'danger')
+            return redirect(url_for('landing.landing'))
+        
+        # ユーザー取得
+        user = db.session.get(User, change_request.user_id)
+        if not user:
+            flash('ユーザーが見つかりません。', 'danger')
+            return redirect(url_for('landing.landing'))
+        
+        # メールアドレス重複チェック（再確認）
+        existing_user = db.session.execute(
+            select(User).where(User.email == change_request.new_email)
+        ).scalar_one_or_none()
+        
+        if existing_user:
+            flash('そのメールアドレスは既に使用されています。', 'danger')
+            return redirect(url_for('landing.landing'))
+        
+        # メールアドレス変更実行
+        old_email = user.email
+        user.email = change_request.new_email
+        
+        # 変更要求を確認済みにマーク
+        change_request.is_verified = True
+        change_request.verified_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # ログ記録
+        current_app.logger.info(f'Email changed from {old_email} to {user.email} for user {user.id}')
+        
+        # 成功メッセージ
+        flash(f'メールアドレスを {user.email} に変更しました。', 'success')
+        
+        # ログインページにリダイレクト（セキュリティのため再ログインを促す）
+        return redirect(url_for('auth.login'))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Email change confirmation error: {e}')
+        flash('メールアドレス変更中にエラーが発生しました。', 'danger')
+        return redirect(url_for('landing.landing'))
 
 def send_password_reset_email(user, token):
     """パスワードリセットメール送信"""

@@ -18,6 +18,7 @@ from landing import landing_bp
 from debug import debug_bp
 from filters import register_filters
 from errors import errors_bp
+from context import register_context_processors
 
 # .envファイルを読み込み
 load_dotenv()
@@ -177,134 +178,6 @@ from seo import process_sns_auto_embed, process_general_url_embeds, fetch_ogp_da
 
 
 
-# CSRF トークンをテンプレートで利用可能にする
-@app.context_processor
-def inject_csrf_token():
-    from flask_wtf.csrf import generate_csrf
-    from markupsafe import Markup
-    
-    def csrf_token():
-        token = generate_csrf()
-        return Markup(f'<input type="hidden" name="csrf_token" value="{token}"/>')
-    
-    def csrf_token_value():
-        return generate_csrf()
-    
-    return dict(csrf_token=csrf_token, csrf_token_value=csrf_token_value)
-
-# Google Analytics統合
-@app.context_processor
-def inject_analytics():
-    """Google Analyticsの設定をテンプレートに注入"""
-    from models import SiteSetting
-    from markupsafe import Markup
-    
-    def google_analytics_code():
-        """Enhanced Google Analytics トラッキングコードを生成"""
-        from ga4_analytics import GA4AnalyticsManager
-        
-        analytics_manager = GA4AnalyticsManager()
-        
-        # ユーザーを追跡すべきかチェック
-        user = current_user if current_user.is_authenticated else None
-        
-        # トラッキングコードを生成
-        tracking_code = analytics_manager.generate_tracking_code(user)
-        
-        # カスタムアナリティクスコード
-        custom_code = SiteSetting.get_setting('custom_analytics_code', '')
-        if custom_code:
-            tracking_code = Markup(str(tracking_code) + f'\n<!-- Custom Analytics Code -->\n{custom_code}')
-        
-        return tracking_code
-    
-    def google_tag_manager_noscript():
-        """Enhanced Google Tag Manager noscript 部分"""
-        from ga4_analytics import GA4AnalyticsManager
-        
-        analytics_manager = GA4AnalyticsManager()
-        
-        # ユーザーを追跡すべきかチェック
-        user = current_user if current_user.is_authenticated else None
-        
-        # GTM noscript部分を生成
-        return analytics_manager.generate_gtm_noscript(user)
-    
-    return dict(
-        google_analytics_code=google_analytics_code,
-        google_tag_manager_noscript=google_tag_manager_noscript
-    )
-
-# サイト設定をテンプレートに注入
-@app.context_processor
-def inject_site_settings():
-    """サイト設定をすべてのテンプレートで利用可能にする"""
-    from models import SiteSetting
-    import json
-    
-    def get_site_settings():
-        """公開設定のみを取得（キャッシュ機能付き）"""
-        try:
-            # 公開設定のみを取得
-            public_settings = db.session.execute(
-                select(SiteSetting).where(SiteSetting.is_public == True)
-            ).scalars().all()
-            
-            settings = {}
-            for setting in public_settings:
-                value = setting.value
-                
-                # 設定タイプに応じて値を変換
-                if setting.setting_type == 'boolean':
-                    value = value.lower() == 'true'
-                elif setting.setting_type == 'number':
-                    try:
-                        value = float(value) if '.' in value else int(value)
-                    except ValueError:
-                        value = 0
-                elif setting.setting_type == 'json':
-                    try:
-                        value = json.loads(value) if value else {}
-                    except json.JSONDecodeError:
-                        value = {}
-                
-                settings[setting.key] = value
-            
-            return settings
-        except Exception as e:
-            current_app.logger.error(f"Error loading site settings: {e}")
-            return {}
-    
-    def get_setting(key, default=None):
-        """個別設定値を取得"""
-        try:
-            return SiteSetting.get_setting(key, default)
-        except Exception as e:
-            current_app.logger.error(f"Error getting setting {key}: {e}")
-            return default
-    
-    def get_admin_user():
-        """管理者ユーザー情報を取得"""
-        try:
-            from sqlalchemy import select
-            from models import User
-            admin_user = db.session.execute(
-                select(User).where(User.role == 'admin').limit(1)
-            ).scalar_one_or_none()
-            if admin_user:
-                pass
-            else:
-                current_app.logger.warning("No admin user found")
-            return admin_user
-        except Exception as e:
-            current_app.logger.error(f"Error loading admin user: {e}")
-            return None
-    
-    return dict(
-        site_settings=get_site_settings(),
-        get_setting=get_setting,
-        admin_user=get_admin_user()
-    )
 
 
 
@@ -430,8 +303,9 @@ if app.debug:
     app.register_blueprint(debug_bp)
 app.register_blueprint(errors_bp)
 
-# テンプレートフィルターを登録
+# テンプレートフィルターとコンテキストプロセッサーを登録
 register_filters(app)
+register_context_processors(app)
 
 
 # Flask-LoginManagerの設定（ルート定義後）
@@ -676,59 +550,6 @@ https://www.threads.com/@nasubi8848/post/DMPx1RkT3wp
 </html>"""
 
 
-
-# === メールアドレス変更確認処理 ===
-
-@app.route('/confirm_email_change/<token>')
-def confirm_email_change(token):
-    """メールアドレス変更確認処理"""
-    try:
-        # トークン検証
-        change_request = EmailChangeRequest.verify_token(token)
-        
-        if not change_request:
-            flash('無効または期限切れの確認リンクです。', 'danger')
-            return redirect(url_for('landing.landing'))
-        
-        # ユーザー取得
-        user = db.session.get(User, change_request.user_id)
-        if not user:
-            flash('ユーザーが見つかりません。', 'danger')
-            return redirect(url_for('landing.landing'))
-        
-        # メールアドレス重複チェック（再確認）
-        existing_user = db.session.execute(
-            select(User).where(User.email == change_request.new_email)
-        ).scalar_one_or_none()
-        
-        if existing_user:
-            flash('そのメールアドレスは既に使用されています。', 'danger')
-            return redirect(url_for('landing.landing'))
-        
-        # メールアドレス変更実行
-        old_email = user.email
-        user.email = change_request.new_email
-        
-        # 変更要求を確認済みにマーク
-        change_request.is_verified = True
-        change_request.verified_at = datetime.utcnow()
-        
-        db.session.commit()
-        
-        # ログ記録
-        current_app.logger.info(f'Email changed from {old_email} to {user.email} for user {user.id}')
-        
-        # 成功メッセージ
-        flash(f'メールアドレスを {user.email} に変更しました。', 'success')
-        
-        # ログインページにリダイレクト（セキュリティのため再ログインを促す）
-        return redirect(url_for('login'))
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Email change confirmation error: {e}')
-        flash('メールアドレス変更中にエラーが発生しました。', 'danger')
-        return redirect(url_for('landing.landing'))
 
 
 
