@@ -45,31 +45,34 @@ def perform_search(query, search_type='all', page=1, per_page=10):
         'total_count': 0
     }
     
-    # 記事検索
+    # 記事検索（ArticleServiceを使用）
     if search_type in ['all', 'articles']:
-        article_query = Article.query.filter(
-            Article.is_published == True,
-            or_(
-                Article.title.contains(query),
-                Article.summary.contains(query),
-                Article.body.contains(query)
-            )
-        ).order_by(Article.published_at.desc())
+        challenge_id = request.args.get('challenge_id', type=int)
+        search_results = ArticleService.search_articles(query, challenge_id)
         
         if search_type == 'all':
             # 全体検索の場合は5件まで
-            results['articles'] = article_query.limit(5).all()
+            results['articles'] = search_results[:5]
+            results['total_count'] += len(search_results)
         else:
-            # 記事のみ検索の場合はページング
-            pagination = article_query.paginate(
-                page=page,
-                per_page=per_page,
-                error_out=False
-            )
-            results['articles'] = pagination.items
-            results['article_pagination'] = pagination
-        
-        results['total_count'] += article_query.count()
+            # 記事のみ検索の場合はページング処理
+            total_articles = len(search_results)
+            start = (page - 1) * per_page
+            end = start + per_page
+            results['articles'] = search_results[start:end]
+            
+            # 簡易ページング情報
+            results['article_pagination'] = {
+                'page': page,
+                'per_page': per_page,
+                'total': total_articles,
+                'has_prev': page > 1,
+                'has_next': end < total_articles,
+                'prev_num': page - 1 if page > 1 else None,
+                'next_num': page + 1 if end < total_articles else None,
+                'pages': list(range(1, (total_articles // per_page) + 2))
+            }
+            results['total_count'] += total_articles
     
     # プロジェクト検索
     if search_type in ['all', 'projects']:

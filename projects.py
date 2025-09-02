@@ -49,8 +49,8 @@ def projects_list(page=1, challenge_id=None):
     ).order_by(Project.display_order.asc()).limit(6).all()
     
     # 最新記事を取得（portfolio.htmlテンプレート用）
-    from articles import ArticleService
-    latest_articles = ArticleService.get_published_articles(limit=5)
+    from article_service import ArticleService
+    latest_articles = ArticleService.get_latest_articles(limit=5)
     
     # SEO設定
     from seo import get_static_page_seo
