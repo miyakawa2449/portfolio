@@ -367,13 +367,14 @@ html {
                         </h4>
                     </div>
                     <div class="card-body p-4">
-                        <form method="POST" action="{{ url_for('comments.add_comment', article_id=article.id) }}">
+                        <form method="POST" action="{{ url_for('comments.add_comment', article_id=article.id) }}" id="comment-form" novalidate>
                             {{ comment_form.hidden_tag() }}
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         {{ comment_form.name.label(class="form-label") }}
-                                        {{ comment_form.name(class="form-control") }}
+                                        {{ comment_form.name(class="form-control", id="comment-name") }}
+                                        <div class="invalid-feedback" id="name-error"></div>
                                         {% for error in comment_form.name.errors %}
                                             <div class="text-danger small">{{ error }}</div>
                                         {% endfor %}
@@ -382,7 +383,8 @@ html {
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         {{ comment_form.email.label(class="form-label") }}
-                                        {{ comment_form.email(class="form-control") }}
+                                        {{ comment_form.email(class="form-control", id="comment-email") }}
+                                        <div class="invalid-feedback" id="email-error"></div>
                                         {% for error in comment_form.email.errors %}
                                             <div class="text-danger small">{{ error }}</div>
                                         {% endfor %}
@@ -391,13 +393,14 @@ html {
                             </div>
                             <div class="mb-3">
                                 {{ comment_form.content.label(class="form-label") }}
-                                {{ comment_form.content(class="form-control", rows="4", placeholder="あなたのコメントをここに入力してください...") }}
+                                {{ comment_form.content(class="form-control", rows="4", placeholder="あなたのコメントをここに入力してください...", id="comment-content") }}
+                                <div class="invalid-feedback" id="content-error"></div>
                                 {% for error in comment_form.content.errors %}
                                     <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="text-end">
-                                {{ comment_form.submit(class="btn btn-primary btn-lg") }}
+                                {{ comment_form.submit(class="btn btn-primary btn-lg", id="comment-submit") }}
                             </div>
                         </form>
                         <div class="mt-3">
@@ -604,6 +607,122 @@ window.addEventListener('load', function() {
             console.log('Twitter widgets already available, processing...');
             window.twttr.widgets.load();
         }
+    }
+});
+
+// コメントフォームのバリデーション
+document.addEventListener('DOMContentLoaded', function() {
+    const commentForm = document.getElementById('comment-form');
+    if (commentForm) {
+        const nameInput = document.getElementById('comment-name');
+        const emailInput = document.getElementById('comment-email');
+        const contentInput = document.getElementById('comment-content');
+        
+        // エラーメッセージ要素
+        const nameError = document.getElementById('name-error');
+        const emailError = document.getElementById('email-error');
+        const contentError = document.getElementById('content-error');
+        
+        // バリデーション関数
+        function validateName() {
+            const name = nameInput.value.trim();
+            if (name === '') {
+                nameInput.classList.add('is-invalid');
+                nameError.textContent = 'お名前を入力してください';
+                nameError.style.display = 'block';
+                return false;
+            } else {
+                nameInput.classList.remove('is-invalid');
+                nameError.style.display = 'none';
+                return true;
+            }
+        }
+        
+        function validateEmail() {
+            const email = emailInput.value.trim();
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            
+            if (email === '') {
+                emailInput.classList.add('is-invalid');
+                emailError.textContent = 'メールアドレスを入力してください';
+                emailError.style.display = 'block';
+                return false;
+            } else if (!emailPattern.test(email)) {
+                emailInput.classList.add('is-invalid');
+                emailError.textContent = '有効なメールアドレスを入力してください（例: user@example.com）';
+                emailError.style.display = 'block';
+                return false;
+            } else {
+                emailInput.classList.remove('is-invalid');
+                emailError.style.display = 'none';
+                return true;
+            }
+        }
+        
+        function validateContent() {
+            const content = contentInput.value.trim();
+            if (content === '') {
+                contentInput.classList.add('is-invalid');
+                contentError.textContent = 'コメント内容を入力してください';
+                contentError.style.display = 'block';
+                return false;
+            } else if (content.length > 5000) {
+                contentInput.classList.add('is-invalid');
+                contentError.textContent = 'コメントは5000文字以内で入力してください';
+                contentError.style.display = 'block';
+                return false;
+            } else {
+                contentInput.classList.remove('is-invalid');
+                contentError.style.display = 'none';
+                return true;
+            }
+        }
+        
+        // リアルタイムバリデーション（フォーカスアウト時）
+        nameInput.addEventListener('blur', validateName);
+        emailInput.addEventListener('blur', validateEmail);
+        contentInput.addEventListener('blur', validateContent);
+        
+        // 入力時にエラーをクリア
+        nameInput.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                this.classList.remove('is-invalid');
+                nameError.style.display = 'none';
+            }
+        });
+        
+        emailInput.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                this.classList.remove('is-invalid');
+                emailError.style.display = 'none';
+            }
+        });
+        
+        contentInput.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                this.classList.remove('is-invalid');
+                contentError.style.display = 'none';
+            }
+        });
+        
+        // フォーム送信時のバリデーション
+        commentForm.addEventListener('submit', function(e) {
+            const isNameValid = validateName();
+            const isEmailValid = validateEmail();
+            const isContentValid = validateContent();
+            
+            if (!isNameValid || !isEmailValid || !isContentValid) {
+                e.preventDefault();
+                // 最初のエラーフィールドにフォーカス
+                if (!isNameValid) {
+                    nameInput.focus();
+                } else if (!isEmailValid) {
+                    emailInput.focus();
+                } else if (!isContentValid) {
+                    contentInput.focus();
+                }
+            }
+        });
     }
 });
 </script>

@@ -150,6 +150,29 @@ python scripts/create_admin.py
 
 When making architectural changes (Blueprint creation, endpoint modifications, etc.), update the relevant specification files to maintain documentation accuracy.
 
+### Testing and Specification Maintenance Rule
+
+**IMPORTANT**: 仕様書の正確性を保つため、以下のルールを厳守すること：
+
+1. **機能追加・編集前**
+   - 必ず関連する仕様書を確認
+   - 仕様と実装の差異がある場合は作業前に報告
+
+2. **ユーザテスト実施後**
+   - テスト結果を確認
+   - 仕様と実装に差異が発生した場合、即座に仕様書を更新
+   - 更新内容を明確にコミットメッセージに記載
+
+3. **仕様書更新対象**
+   - `spec/database_specification.md` - テーブル構造、リレーション変更時
+   - `spec/api_specification.md` - エンドポイント、Blueprint変更時
+   - `spec/environment_configuration.md` - 環境変数追加・変更時
+   - `spec/system_architecture.md` - システム構成変更時
+
+4. **コミットルール**
+   - 仕様書更新は独立したコミットとして実行
+   - コミットメッセージ例: `仕様書更新: [機能名]の実装に合わせて[仕様書名]を修正`
+
 ## Debugging Memories
 
 - **Twitter oEmbed Debugging**: Captured Twitter HTML embedding process with debug logs showing successful retrieval and processing of tweet URLs

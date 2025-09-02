@@ -35,7 +35,7 @@ Python 100日チャレンジポートフォリオサイトのシステム全体�
 ### 1. Flask Blueprint アーキテクチャ
 
 ```python
-app.py (Main Application - 994行)
+app.py (Main Application - 336行)
 ├── admin_bp      # 管理画面 (/{ADMIN_URL_PREFIX}/)
 ├── api_bp        # RESTful API (/api/)
 ├── auth_bp       # 認証システム (/{LOGIN_URL_PATH}/)
@@ -114,7 +114,33 @@ portfolio/
 ### 2. ビジネスロジック層（Services）
 
 ```python
-# 記事サービス（app.py内の関数）
+# 記事サービス (article_service.py)
+class ArticleService:
+    ├── create_article()              # 記事作成
+    ├── update_article()              # 記事更新
+    ├── generate_unique_slug()        # スラッグ生成
+    ├── validate_article_data()       # バリデーション
+    ├── process_article_image()       # 画像処理
+    └── assign_category()             # カテゴリ割当
+
+# コメントサービス (comment_service.py)
+class CommentService:
+    ├── create_comment()              # コメント作成（暗号化含む）
+    ├── approve_comment()             # コメント承認
+    ├── reject_comment()              # コメント拒否
+    ├── delete_comment()              # コメント削除
+    ├── bulk_approve_comments()       # 一括承認
+    ├── bulk_reject_comments()        # 一括拒否
+    ├── bulk_delete_comments()        # 一括削除
+    ├── get_approved_comments()       # 承認済み取得
+    ├── get_pending_comments()        # 未承認取得
+    ├── get_comment_stats()           # 統計情報
+    ├── validate_comment_data()       # バリデーション
+    ├── sanitize_content()            # サニタイゼーション
+    ├── get_decrypted_comment_data()  # 復号化
+    └── search_comments()             # コメント検索
+
+# その他の処理（app.py内の関数）
 def get_article_data(slug)         # 記事データ取得
 def process_article_content(body)  # Markdown処理・SNS埋込
 
@@ -331,18 +357,26 @@ app.py → projects.py    # プロジェクト機能分離
 ### 2. サービス層強化
 
 ```python
-# 今後実装予定のサービス層
-class ArticleService:
-    ├── create_article()
-    ├── update_article()
-    ├── publish_article()
-    └── generate_seo_data()
+# 実装済みのサービス層
+class ArticleService (article_service.py):
+    ├── 記事CRUD操作
+    ├── バリデーション
+    ├── 画像処理
+    └── カテゴリ管理
 
-class CommentService:
-    ├── create_comment()
-    ├── approve_comment()
-    ├── encrypt_personal_data()
-    └── get_approved_comments()
+class CommentService (comment_service.py):
+    ├── コメントCRUD操作
+    ├── 暗号化・復号化
+    ├── 一括操作
+    └── 統計・検索
+
+class CategoryService (article_service.py):
+    ├── カテゴリCRUD操作
+    └── OGP画像処理
+
+class UserService (article_service.py):
+    ├── ユーザーCRUD操作
+    └── パスワード管理
 ```
 
 ## デプロイアーキテクチャ

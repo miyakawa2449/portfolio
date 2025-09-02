@@ -69,7 +69,8 @@
 |-------------|--------|------|-----------|------|
 | `/category/<slug>/` | GET | カテゴリページ | categories_bp | slug: str |
 | `/search` | GET | サイト内検索 | search_bp | q, type, challenge_id |
-| `/download/resume/<user_id>` | GET | 履歴書PDF | - | PDF生成・ダウンロード |
+| `/download/resume/<user_id>` | GET | 履歴書PDF | landing_bp | PDF生成・ダウンロード |
+| `/add_comment/<article_id>` | POST | コメント投稿 | comments_bp | 要バリデーション |
 
 ### 2. 認証API
 
