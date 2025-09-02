@@ -54,9 +54,11 @@
 - **Markdownエディター**: リアルタイムプレビュー付き
 - **画像ギャラリー**: アップロード・ギャラリー選択・検索・フィルタ
 - **スキル管理UI**: ドラッグ&ドロップによる並び替え
-- **コメントシステム**: 承認制・個人情報暗号化
+- **コメントシステム**: 承認制・個人情報暗号化・JSバリデーション
 - **SEO最適化**: メタタグ、OGP設定、JSON-LD構造化データ
 - **サイト内検索**: 記事・プロジェクト横断検索
+- **関連記事**: カテゴリ・チャレンジベースの自動推薦
+- **統計情報**: 記事・コメント・チャレンジ別統計
 
 ### API機能
 - **RESTful API**: チャレンジ別プロジェクト・カテゴリ取得
@@ -67,7 +69,7 @@
 
 ### 要件
 - Python 3.13+
-- MySQL 8.0+
+- MySQL 8.4+
 - 仮想環境（venv/conda推奨）
 
 ### 1. リポジトリのクローン
@@ -131,13 +133,13 @@ portfolio/
 ├── app.py                 # メインアプリケーション（336行）
 ├── Blueprint分離アーキテクチャ
 │   ├── admin.py           # 管理画面
-│   ├── articles.py        # 記事機能
+│   ├── articles.py        # 記事機能（サービス層統合済み）
 │   ├── projects.py        # プロジェクト機能
-│   ├── search.py          # 検索機能
+│   ├── search.py          # 検索機能（サービス層統合済み）
 │   ├── categories.py      # カテゴリ機能
 │   ├── landing.py         # ランディングページ
 │   ├── auth.py           # 認証機能
-│   ├── comments.py       # コメント機能
+│   ├── comments.py       # コメント機能（ルート処理のみ）
 │   ├── api.py            # REST API
 │   ├── filters.py        # テンプレートフィルター
 │   ├── errors.py         # エラーハンドラー
@@ -146,7 +148,10 @@ portfolio/
 ├── forms.py               # WTForms定義
 ├── utils.py               # ユーティリティ関数
 ├── seo.py                 # SEO・OGP機能
-├── article_service.py     # ビジネスロジック
+├── Service層（ビジネスロジック分離）
+│   ├── article_service.py # 記事関連サービス
+│   ├── comment_service.py # コメント関連サービス
+│   └── encryption_utils.py # 暗号化サービス
 ├── templates/             # Jinja2テンプレート
 ├── static/                # CSS・JS・画像
 ├── migrations/            # データベースマイグレーション
@@ -232,9 +237,14 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## 開発状況
 
-**最新更新**: 2025年9月2日  
-**現在のフェーズ**: コードリファクタリング完了・開発ツール導入準備  
-**次回実装予定**: サービス層拡張・型ヒント追加・Linting導入
+**最新更新**: 2025年9月2日（夜間作業完了）  
+**現在のフェーズ**: サービス層統合完了・開発ツール導入準備  
+**主要成果**: 
+- Blueprint分離アーキテクチャ完成（app.py 336行）
+- CommentService・ArticleService実装完了
+- ビジネスロジック完全分離
+
+**次回実装予定**: 型ヒント追加・Linting導入・基本テスト追加
 
 詳細な進捗・計画は `DEVELOPMENT_PLAN_2025-09.md` を参照してください。
 
