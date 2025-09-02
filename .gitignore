@@ -96,6 +96,9 @@ reports/
 # 仕様書フォルダ（開発用ドキュメント）
 spec/
 
+# スクリプトフォルダ（メンテナンス・開発用ツール）
+scripts/
+
 # Claude AI専用開発ファイル
 CLAUDE.md
 
