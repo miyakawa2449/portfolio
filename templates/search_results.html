@@ -27,7 +27,7 @@
         <!-- 検索フォーム -->
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <form method="GET" action="{{ url_for('search') }}" class="mb-4">
+                <form method="GET" action="{{ url_for('search.search') }}" class="mb-4">
                     <div class="input-group input-group-lg">
                         <input type="text" class="form-control" name="q" 
                                value="{{ query }}" 
@@ -41,15 +41,15 @@
                 
                 <!-- 検索フィルター -->
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    <a href="{{ url_for('search', q=query, type='all') }}" 
+                    <a href="{{ url_for('search.search', q=query, type='all') }}" 
                        class="btn btn-sm {{ 'btn-light' if search_type == 'all' else 'btn-outline-light' }}">
                         すべて
                     </a>
-                    <a href="{{ url_for('search', q=query, type='articles') }}" 
+                    <a href="{{ url_for('search.search', q=query, type='articles') }}" 
                        class="btn btn-sm {{ 'btn-light' if search_type == 'articles' else 'btn-outline-light' }}">
                         記事のみ
                     </a>
-                    <a href="{{ url_for('search', q=query, type='projects') }}" 
+                    <a href="{{ url_for('search.search', q=query, type='projects') }}" 
                        class="btn btn-sm {{ 'btn-light' if search_type == 'projects' else 'btn-outline-light' }}">
                         プロジェクトのみ
                     </a>
@@ -102,7 +102,7 @@
                             記事
                             <span class="badge bg-primary ms-2">{{ articles|length }}件</span>
                             {% if search_type == 'all' and article_pagination is none %}
-                            <a href="{{ url_for('search', q=query, type='articles') }}" class="btn btn-sm btn-outline-primary ms-auto">
+                            <a href="{{ url_for('search.search', q=query, type='articles') }}" class="btn btn-sm btn-outline-primary ms-auto">
                                 すべて見る
                             </a>
                             {% endif %}
@@ -156,7 +156,7 @@
                             <ul class="pagination justify-content-center">
                                 {% if article_pagination.has_prev %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=article_pagination.prev_num) }}">前へ</a>
+                                    <a class="page-link" href="{{ url_for('search.search', q=query, type=search_type, page=article_pagination.prev_num) }}">前へ</a>
                                 </li>
                                 {% endif %}
                                 
@@ -164,7 +164,7 @@
                                     {% if page_num %}
                                         {% if page_num != article_pagination.page %}
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=page_num) }}">{{ page_num }}</a>
+                                            <a class="page-link" href="{{ url_for('search.search', q=query, type=search_type, page=page_num) }}">{{ page_num }}</a>
                                         </li>
                                         {% else %}
                                         <li class="page-item active">
@@ -180,7 +180,7 @@
                                 
                                 {% if article_pagination.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=article_pagination.next_num) }}">次へ</a>
+                                    <a class="page-link" href="{{ url_for('search.search', q=query, type=search_type, page=article_pagination.next_num) }}">次へ</a>
                                 </li>
                                 {% endif %}
                             </ul>
@@ -197,7 +197,7 @@
                             プロジェクト
                             <span class="badge bg-success ms-2">{{ projects|length }}件</span>
                             {% if search_type == 'all' and project_pagination is none %}
-                            <a href="{{ url_for('search', q=query, type='projects') }}" class="btn btn-sm btn-outline-success ms-auto">
+                            <a href="{{ url_for('search.search', q=query, type='projects') }}" class="btn btn-sm btn-outline-success ms-auto">
                                 すべて見る
                             </a>
                             {% endif %}
@@ -272,7 +272,7 @@
                             <ul class="pagination justify-content-center">
                                 {% if project_pagination.has_prev %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=project_pagination.prev_num) }}">前へ</a>
+                                    <a class="page-link" href="{{ url_for('search.search', q=query, type=search_type, page=project_pagination.prev_num) }}">前へ</a>
                                 </li>
                                 {% endif %}
                                 
@@ -280,7 +280,7 @@
                                     {% if page_num %}
                                         {% if page_num != project_pagination.page %}
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=page_num) }}">{{ page_num }}</a>
+                                            <a class="page-link" href="{{ url_for('search.search', q=query, type=search_type, page=page_num) }}">{{ page_num }}</a>
                                         </li>
                                         {% else %}
                                         <li class="page-item active">
@@ -296,7 +296,7 @@
                                 
                                 {% if project_pagination.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('search', q=query, type=search_type, page=project_pagination.next_num) }}">次へ</a>
+                                    <a class="page-link" href="{{ url_for('search.search', q=query, type=search_type, page=project_pagination.next_num) }}">次へ</a>
                                 </li>
                                 {% endif %}
                             </ul>
