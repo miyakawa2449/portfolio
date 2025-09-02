@@ -102,7 +102,7 @@ html {
                 {% if article.categories %}
                     {% for category in article.categories %}
                         <li class="breadcrumb-item">
-                            <a href="{{ url_for('category_page', slug=category.slug) }}" class="text-white text-decoration-none">
+                            <a href="{{ url_for('categories.category_page', slug=category.slug) }}" class="text-white text-decoration-none">
                                 {{ category.name }}
                             </a>
                         </li>
@@ -118,7 +118,7 @@ html {
         {% if article.categories %}
         <div class="mb-3">
             {% for category in article.categories %}
-            <a href="{{ url_for('category_page', slug=category.slug) }}" class="category-badge text-decoration-none me-2">
+            <a href="{{ url_for('categories.category_page', slug=category.slug) }}" class="category-badge text-decoration-none me-2">
                 {{ category.name }}
             </a>
             {% endfor %}

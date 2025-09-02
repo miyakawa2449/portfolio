@@ -97,7 +97,7 @@
                         {% if article.categories %}
                         <div class="d-flex flex-wrap gap-1">
                             {% for category in article.categories %}
-                            <a href="{{ url_for('category_page', slug=category.slug) }}" 
+                            <a href="{{ url_for('categories.category_page', slug=category.slug) }}" 
                                class="badge bg-primary text-decoration-none">{{ category.name }}</a>
                             {% endfor %}
                         </div>
@@ -279,7 +279,7 @@
         <div class="row g-4">
             {% for category in categories %}
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <a href="{{ url_for('category_page', slug=category.slug) }}" 
+                <a href="{{ url_for('categories.category_page', slug=category.slug) }}" 
                    class="card border-0 shadow-sm h-100 text-decoration-none animate-fade-in-up">
                     <div class="card-body text-center">
                         <i class="fas fa-folder-open fa-2x text-primary mb-3"></i>

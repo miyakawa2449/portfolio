@@ -13,6 +13,7 @@ from comments import comments_bp
 from articles import articles_bp
 from projects import projects_bp
 from search import search_bp
+from categories import categories_bp
 
 # .envファイルを読み込み
 load_dotenv()
@@ -661,6 +662,7 @@ app.register_blueprint(comments_bp)
 app.register_blueprint(articles_bp)
 app.register_blueprint(projects_bp)
 app.register_blueprint(search_bp)
+app.register_blueprint(categories_bp)
 
 
 # Flask-LoginManagerの設定（ルート定義後）
@@ -694,38 +696,6 @@ def upload_image():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-@app.route('/category/<slug>/')
-def category_page(slug):
-    category = db.session.execute(select(Category).where(Category.slug == slug)).scalar_one_or_none()
-    if not category:
-        abort(404)
-    
-    page = request.args.get('page', 1, type=int)
-    per_page = 10
-    
-    # SQLAlchemy 2.0対応: カテゴリーの公開記事を取得（eager loading追加）
-    from sqlalchemy.orm import joinedload, selectinload
-    articles_query = select(Article).options(
-        joinedload(Article.author),
-        selectinload(Article.categories)
-    ).join(article_categories).where(
-        article_categories.c.category_id == category.id,
-        Article.is_published.is_(True)
-    ).order_by(
-        db.case(
-            (Article.published_at.isnot(None), Article.published_at),
-            else_=Article.created_at
-        ).desc()
-    )
-    
-    articles_pagination = db.paginate(
-        articles_query,
-        page=page,
-        per_page=per_page,
-        error_out=False
-    )
-
-    return render_template('category_page.html', category=category, articles_pagination=articles_pagination)
 
 
 @app.route('/about/')

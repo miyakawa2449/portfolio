@@ -137,7 +137,7 @@
                         {% if category.description %}
                         <p class="card-text">{{ category.description }}</p>
                         {% endif %}
-                        <a href="{{ url_for('category_page', slug=category.slug) }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('categories.category_page', slug=category.slug) }}" class="btn btn-outline-primary">
                             記事を見る
                         </a>
                     </div>

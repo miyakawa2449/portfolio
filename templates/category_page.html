@@ -8,7 +8,7 @@
 {% block og_description %}{{ category.meta_description or category.description or (category.name + 'に関する記事一覧') }}{% endblock %}
 {% block og_image %}{% if category.ogp_image %}{{ url_for('static', filename=category.ogp_image, _external=True) }}{% else %}{{ url_for('static', filename='images/ogp-default.jpg', _external=True) }}{% endif %}{% endblock %}
 
-{% block canonical %}{{ url_for('category_page', slug=category.slug, _external=True) }}{% endblock %}
+{% block canonical %}{{ url_for('categories.category_page', slug=category.slug, _external=True) }}{% endblock %}
 
 {% block content %}
 <!-- ヒーローセクション -->
@@ -18,7 +18,7 @@
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb justify-content-center">
                 <li class="breadcrumb-item">
-                    <a href="{{ url_for('blog') }}" class="text-white text-decoration-none">
+                    <a href="{{ url_for('articles.blog') }}" class="text-white text-decoration-none">
                         <i class="fas fa-book me-1"></i> ブログ
                     </a>
                 </li>
@@ -48,20 +48,10 @@
         
         <!-- 統計情報 -->
         <div class="row justify-content-center mb-4">
-            <div class="col-lg-6">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="bg-white bg-opacity-10 backdrop-blur p-3 rounded">
-                            <div class="h4 mb-1">{{ articles_pagination.total if articles_pagination else 0 }}</div>
-                            <small>記事数</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="bg-white bg-opacity-10 backdrop-blur p-3 rounded">
-                            <div class="h4 mb-1">{{ category.article_count or 0 }}</div>
-                            <small>公開記事</small>
-                        </div>
-                    </div>
+            <div class="col-lg-4">
+                <div class="bg-white bg-opacity-10 backdrop-blur p-4 rounded text-center">
+                    <div class="h3 mb-1">{{ articles_pagination.total if articles_pagination else 0 }}</div>
+                    <small>公開記事</small>
                 </div>
             </div>
         </div>
@@ -115,7 +105,7 @@
                     
                     <!-- タイトル -->
                     <h5 class="card-title">
-                        <a href="{{ url_for('article_detail', slug=article.slug) }}" 
+                        <a href="{{ url_for('articles.article_detail', slug=article.slug) }}" 
                            class="text-decoration-none text-dark">{{ article.title }}</a>
                     </h5>
                     
@@ -151,7 +141,7 @@
                     
                     <!-- アクション -->
                     <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
-                        <a href="{{ url_for('article_detail', slug=article.slug) }}" 
+                        <a href="{{ url_for('articles.article_detail', slug=article.slug) }}" 
                            class="btn btn-primary btn-sm">続きを読む</a>
                         
                         <div class="d-flex align-items-center">
@@ -175,7 +165,7 @@
             <!-- 前のページ -->
             {% if articles_pagination.has_prev %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('category_page', slug=category.slug, page=articles_pagination.prev_num) }}">
+                <a class="page-link" href="{{ url_for('categories.category_page', slug=category.slug, page=articles_pagination.prev_num) }}">
                     <i class="fas fa-chevron-left me-1"></i>前
                 </a>
             </li>
@@ -190,7 +180,7 @@
                 {% if page_num %}
                     {% if page_num != articles_pagination.page %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('category_page', slug=category.slug, page=page_num) }}">{{ page_num }}</a>
+                        <a class="page-link" href="{{ url_for('categories.category_page', slug=category.slug, page=page_num) }}">{{ page_num }}</a>
                     </li>
                     {% else %}
                     <li class="page-item active">
@@ -207,7 +197,7 @@
             <!-- 次のページ -->
             {% if articles_pagination.has_next %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('category_page', slug=category.slug, page=articles_pagination.next_num) }}">
+                <a class="page-link" href="{{ url_for('categories.category_page', slug=category.slug, page=articles_pagination.next_num) }}">
                     次<i class="fas fa-chevron-right ms-1"></i>
                 </a>
             </li>
@@ -241,7 +231,7 @@
         </p>
         
         <div class="d-flex flex-wrap justify-content-center gap-3">
-            <a href="{{ url_for('blog') }}" class="btn btn-primary">
+            <a href="{{ url_for('articles.blog') }}" class="btn btn-primary">
                 <i class="fas fa-book me-2"></i>すべての記事を見る
             </a>
             <a href="{{ url_for('landing') }}" class="btn btn-outline-primary">
@@ -260,7 +250,7 @@
         <div class="row g-4">
             {% for related_category in related_categories %}
             <div class="col-lg-3 col-md-4 col-sm-6">
-                <a href="{{ url_for('category_page', slug=related_category.slug) }}" 
+                <a href="{{ url_for('categories.category_page', slug=related_category.slug) }}" 
                    class="card border-0 shadow-sm h-100 text-decoration-none animate-fade-in-up">
                     <div class="card-body text-center">
                         <i class="fas fa-folder-open fa-2x text-primary mb-3"></i>
