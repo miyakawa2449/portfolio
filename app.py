@@ -17,6 +17,7 @@ from categories import categories_bp
 from landing import landing_bp
 from debug import debug_bp
 from filters import register_filters
+from errors import errors_bp
 
 # .envファイルを読み込み
 load_dotenv()
@@ -427,6 +428,7 @@ app.register_blueprint(categories_bp)
 app.register_blueprint(landing_bp)
 if app.debug:
     app.register_blueprint(debug_bp)
+app.register_blueprint(errors_bp)
 
 # テンプレートフィルターを登録
 register_filters(app)
