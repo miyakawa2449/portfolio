@@ -4,6 +4,7 @@ SEO/OGP Functions - SEO最適化とOpen Graph Protocol関連機能
 import re
 import time
 import hashlib
+import json
 import requests
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, parse_qs
@@ -511,3 +512,98 @@ def generate_ogp_card(url):
     except Exception as e:
         current_app.logger.error(f"Error generating OGP card: {e}")
         return f'<a href="{url}" target="_blank" class="simple-link">{url}</a>'
+
+def generate_article_structured_data(article):
+    """記事用のJSON-LD構造化データを生成"""
+    try:
+        # 作成者情報を安全に取得
+        author_name = "Unknown Author"  # デフォルト値
+        if hasattr(article, 'user') and article.user:
+            if hasattr(article.user, 'display_name') and article.user.display_name:
+                author_name = article.user.display_name
+            elif hasattr(article.user, 'email') and article.user.email:
+                author_name = article.user.email
+        
+        # カテゴリ情報を取得
+        categories = []
+        if hasattr(article, 'categories') and article.categories:
+            categories = [cat.name for cat in article.categories if hasattr(cat, 'name')]
+        
+        # 記事の文字数を計算
+        word_count = len(article.body) if article.body else 0
+        
+        # 公開日の処理
+        published_date = article.published_at if article.published_at else article.created_at
+        if published_date:
+            published_iso = published_date.isoformat()
+        else:
+            from datetime import datetime
+            published_iso = datetime.now().isoformat()
+        
+        # JSON-LD構造化データ
+        structured_data = {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "headline": article.title or "Untitled",
+            "description": article.summary or article.title or "No description available",
+            "author": {
+                "@type": "Person",
+                "name": author_name
+            },
+            "datePublished": published_iso,
+            "dateModified": article.updated_at.isoformat() if article.updated_at else published_iso,
+            "wordCount": word_count,
+            "articleSection": categories,
+            "keywords": categories,
+            "publisher": {
+                "@type": "Organization",
+                "name": "Miyakawa.codes",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://miyakawa.codes/static/images/logo.png"
+                }
+            }
+        }
+        
+        # アイキャッチ画像が設定されている場合
+        if hasattr(article, 'featured_image_url') and article.featured_image_url:
+            structured_data["image"] = {
+                "@type": "ImageObject",
+                "url": f"https://miyakawa.codes{article.featured_image_url}"
+            }
+        
+        return json.dumps(structured_data, ensure_ascii=False, indent=2)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error generating structured data: {e}")
+        return None
+
+def get_static_page_seo(page_name):
+    """静的ページ用のSEO設定を取得"""
+    seo_configs = {
+        'home': {
+            'title': 'Miyakawa.codes - Python 100 Days Challenge Portfolio',
+            'description': 'Python 100日チャレンジの学習記録とプロジェクト成果をまとめたポートフォリオサイトです。',
+            'keywords': 'Python, プログラミング, 100日チャレンジ, ポートフォリオ, 学習記録',
+            'og_type': 'website'
+        },
+        'blog': {
+            'title': 'ブログ - Python学習記録',
+            'description': 'Python 100日チャレンジの日々の学習記録とプログラミングの成長過程を記録しています。',
+            'keywords': 'Python, プログラミング学習, ブログ, 100日チャレンジ',
+            'og_type': 'blog'
+        },
+        'projects': {
+            'title': 'プロジェクト - 作品ギャラリー',
+            'description': 'Python 100日チャレンジで作成したプロジェクトと作品のギャラリーです。',
+            'keywords': 'Python, プロジェクト, 作品, ギャラリー, ポートフォリオ',
+            'og_type': 'website'
+        }
+    }
+    
+    return seo_configs.get(page_name, {
+        'title': 'Miyakawa.codes',
+        'description': 'Python学習とプログラミングの記録',
+        'keywords': 'Python, プログラミング',
+        'og_type': 'website'
+    })

@@ -2,6 +2,9 @@
 Utility Functions - 一般的なユーティリティ関数
 """
 import bleach
+import markdown
+import re
+from markupsafe import Markup
 from flask import current_app
 
 def sanitize_html(content):
@@ -66,6 +69,71 @@ def perform_search(query, search_filter='all'):
         results = {'articles': [], 'projects': [], 'total': 0, 'error': str(e)}
     
     return results
+
+def process_markdown(text):
+    """MarkdownテキストをHTMLに変換する関数（SNS埋込自動検出付き）"""
+    if not text:
+        return ''
+    
+    # Markdownの拡張機能を設定
+    md = markdown.Markdown(
+        extensions=['extra', 'codehilite', 'toc', 'nl2br'],
+        extension_configs={
+            'codehilite': {
+                'css_class': 'highlight',
+                'use_pygments': False
+            }
+        },
+        tab_length=2  # タブ長を短く設定
+    )
+    
+    # MarkdownをHTMLに変換
+    html = md.convert(text)
+    
+    # セキュリティのためHTMLをサニタイズ（SNS埋込用タグを追加）
+    allowed_tags = [
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'p', 'br', 'strong', 'em', 'u', 'del',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+        'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        # SNS埋込用タグ
+        'div', 'iframe', 'script', 'blockquote', 'noscript'
+    ]
+    allowed_attributes = {
+        'a': ['href', 'title', 'target', 'rel'],
+        'img': ['src', 'alt', 'title', 'width', 'height'],
+        'code': ['class'],
+        'pre': ['class'],
+        'h1': ['id'], 'h2': ['id'], 'h3': ['id'], 'h4': ['id'], 'h5': ['id'], 'h6': ['id'],
+        # SNS埋込用属性
+        'div': ['class', 'id', 'style', 'data-href', 'data-width', 'data-instgrm-permalink'],
+        'iframe': ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title', 'style'],
+        'script': ['src', 'async', 'defer', 'charset', 'crossorigin'],
+        'blockquote': ['class', 'style', 'data-instgrm-permalink'],
+        'noscript': []
+    }
+    
+    # SNS埋込HTMLがある場合はbleachを適用しない（安全なHTMLのため）
+    if any(cls in html for cls in ['sns-embed', 'youtube-embed', 'twitter-embed', 'instagram-embed', 'facebook-embed', 'threads-embed']):
+        clean_html = html
+    else:
+        # 通常のMarkdownコンテンツのみサニタイズ
+        clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attributes)
+    
+    # 見出しにアンカーIDを追加
+    clean_html = add_heading_anchors(clean_html)
+    
+    return Markup(clean_html)
+
+def generate_ogp_data(title, description=None, image_url=None, url=None):
+    """OGPデータを生成する関数"""
+    ogp_data = {
+        'title': title,
+        'description': description or '記事の詳細はこちらをご覧ください',
+        'image': image_url,
+        'url': url
+    }
+    return ogp_data
 
 def generate_table_of_contents(markdown_content):
     """Markdownから目次を生成"""
@@ -132,69 +200,3 @@ def add_heading_anchors(html_content):
         current_app.logger.error(f"Error adding heading anchors: {e}")
         return html_content
 
-def generate_article_structured_data(article):
-    """記事用のJSON-LD構造化データを生成"""
-    import json
-    from datetime import datetime
-    
-    try:
-        # 作成者情報を安全に取得
-        author_name = "Unknown Author"  # デフォルト値
-        if hasattr(article, 'user') and article.user:
-            if hasattr(article.user, 'display_name') and article.user.display_name:
-                author_name = article.user.display_name
-            elif hasattr(article.user, 'email') and article.user.email:
-                author_name = article.user.email
-        
-        # カテゴリ情報を取得
-        categories = []
-        if hasattr(article, 'categories') and article.categories:
-            categories = [cat.name for cat in article.categories if hasattr(cat, 'name')]
-        
-        # 記事の文字数を計算
-        word_count = len(article.content) if article.content else 0
-        
-        # 公開日の処理
-        published_date = article.published_at if article.published_at else article.created_at
-        if published_date:
-            published_iso = published_date.isoformat()
-        else:
-            published_iso = datetime.now().isoformat()
-        
-        # JSON-LD構造化データ
-        structured_data = {
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": article.title or "Untitled",
-            "description": article.summary or article.title or "No description available",
-            "author": {
-                "@type": "Person",
-                "name": author_name
-            },
-            "datePublished": published_iso,
-            "dateModified": article.updated_at.isoformat() if article.updated_at else published_iso,
-            "wordCount": word_count,
-            "articleSection": categories,
-            "keywords": categories,
-            "publisher": {
-                "@type": "Organization",
-                "name": "Miyakawa.codes",
-                "logo": {
-                    "@type": "ImageObject",
-                    "url": "https://miyakawa.codes/static/images/logo.png"
-                }
-            }
-        }
-        
-        # アイキャッチ画像が設定されている場合
-        if hasattr(article, 'featured_image_url') and article.featured_image_url:
-            structured_data["image"] = {
-                "@type": "ImageObject",
-                "url": f"https://miyakawa.codes{article.featured_image_url}"
-            }
-        
-        return json.dumps(structured_data, ensure_ascii=False, indent=2)
-        
-    except Exception as e:
-        current_app.logger.error(f"Error generating structured data: {e}")
-        return None
