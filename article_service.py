@@ -337,6 +337,230 @@ class ArticleService:
             'submit_text': '更新' if article else '作成',
             'form_action': url_for('admin.edit_article', article_id=article.id) if article else url_for('admin.create_article')
         }
+    
+    @staticmethod
+    def get_published_articles(page=1, per_page=10, challenge_id=None):
+        """公開記事を取得（ページング対応）"""
+        query = Article.query.filter_by(is_published=True)
+        
+        if challenge_id:
+            query = query.filter_by(challenge_id=challenge_id)
+        
+        query = query.order_by(Article.published_at.desc())
+        return query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    @staticmethod
+    def get_article_by_slug(slug):
+        """スラッグから記事を取得"""
+        return Article.query.filter_by(slug=slug, is_published=True).first()
+    
+    @staticmethod
+    def search_articles(query_string, challenge_id=None):
+        """記事検索"""
+        search_filter = db.or_(
+            Article.title.contains(query_string),
+            Article.body.contains(query_string),
+            Article.summary.contains(query_string)
+        )
+        
+        query = Article.query.filter(search_filter, Article.is_published == True)
+        
+        if challenge_id:
+            query = query.filter_by(challenge_id=challenge_id)
+        
+        return query.order_by(Article.published_at.desc()).all()
+    
+    @staticmethod
+    def get_related_articles(article, limit=5):
+        """関連記事を取得"""
+        # 同じカテゴリの記事を取得
+        if article.categories:
+            category_ids = [c.id for c in article.categories]
+            related = Article.query.join(
+                article_categories
+            ).filter(
+                article_categories.c.category_id.in_(category_ids),
+                Article.id != article.id,
+                Article.is_published == True
+            ).order_by(
+                Article.published_at.desc()
+            ).limit(limit).all()
+            
+            if related:
+                return related
+        
+        # カテゴリがない場合は同じチャレンジの記事
+        if article.challenge_id:
+            return Article.query.filter(
+                Article.challenge_id == article.challenge_id,
+                Article.id != article.id,
+                Article.is_published == True
+            ).order_by(
+                Article.published_at.desc()
+            ).limit(limit).all()
+        
+        # それもない場合は最新記事
+        return Article.query.filter(
+            Article.id != article.id,
+            Article.is_published == True
+        ).order_by(
+            Article.published_at.desc()
+        ).limit(limit).all()
+    
+    @staticmethod
+    def get_article_stats():
+        """記事統計情報を取得"""
+        try:
+            total = Article.query.count()
+            published = Article.query.filter_by(is_published=True).count()
+            draft = Article.query.filter_by(is_published=False).count()
+            
+            # 今日の記事数
+            today = datetime.utcnow().date()
+            today_count = Article.query.filter(
+                func.date(Article.created_at) == today
+            ).count()
+            
+            # チャレンジ別統計
+            from models import Challenge
+            challenge_stats = db.session.query(
+                Challenge.name,
+                func.count(Article.id).label('count')
+            ).join(
+                Article, Article.challenge_id == Challenge.id
+            ).group_by(
+                Challenge.name
+            ).all()
+            
+            return {
+                'total': total,
+                'published': published,
+                'draft': draft,
+                'today': today_count,
+                'by_challenge': {name: count for name, count in challenge_stats}
+            }
+        except Exception as e:
+            current_app.logger.error(f"統計取得エラー: {str(e)}")
+            return {
+                'total': 0,
+                'published': 0,
+                'draft': 0,
+                'today': 0,
+                'by_challenge': {}
+            }
+    
+    @staticmethod
+    def delete_article(article_id):
+        """記事削除"""
+        try:
+            article = db.session.get(Article, article_id)
+            if not article:
+                return False, "記事が見つかりません"
+            
+            # 関連画像の削除
+            if article.featured_image:
+                ImageProcessingService.delete_old_image(article.featured_image)
+            
+            db.session.delete(article)
+            db.session.commit()
+            return True, None
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"記事削除エラー: {str(e)}")
+            return False, "記事の削除中にエラーが発生しました"
+    
+    @staticmethod
+    def bulk_delete_articles(article_ids):
+        """記事一括削除"""
+        try:
+            deleted = 0
+            for article_id in article_ids:
+                article = db.session.get(Article, article_id)
+                if article:
+                    if article.featured_image:
+                        ImageProcessingService.delete_old_image(article.featured_image)
+                    db.session.delete(article)
+                    deleted += 1
+            
+            db.session.commit()
+            return deleted, None
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"一括削除エラー: {str(e)}")
+            return 0, "一括削除中にエラーが発生しました"
+    
+    @staticmethod
+    def update_article_status(article_id, is_published):
+        """記事の公開状態を更新"""
+        try:
+            article = db.session.get(Article, article_id)
+            if not article:
+                return False, "記事が見つかりません"
+            
+            article.is_published = is_published
+            if is_published and not article.published_at:
+                article.published_at = datetime.utcnow()
+            
+            db.session.commit()
+            return True, None
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"ステータス更新エラー: {str(e)}")
+            return False, "ステータス更新中にエラーが発生しました"
+    
+    @staticmethod
+    def get_latest_articles(limit=5, exclude_id=None):
+        """最新記事を取得"""
+        query = Article.query.filter_by(is_published=True)
+        
+        if exclude_id:
+            query = query.filter(Article.id != exclude_id)
+        
+        return query.order_by(Article.published_at.desc()).limit(limit).all()
+    
+    @staticmethod
+    def get_articles_by_category(category_id, page=1, per_page=10):
+        """カテゴリ別記事を取得"""
+        return Article.query.join(
+            article_categories
+        ).filter(
+            article_categories.c.category_id == category_id,
+            Article.is_published == True
+        ).order_by(
+            Article.published_at.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+    
+    @staticmethod
+    def generate_article_seo_data(article):
+        """記事のSEOデータを生成"""
+        from seo import generate_article_structured_data
+        
+        # メタタイトル（空の場合はデフォルト）
+        meta_title = article.meta_title or f"{article.title} - Python 100 Days Challenge"
+        
+        # メタ説明（空の場合は要約または本文から生成）
+        if article.meta_description:
+            meta_description = article.meta_description
+        elif article.summary:
+            meta_description = article.summary[:160]
+        else:
+            # Markdownを除去して説明を生成
+            from utils import strip_markdown
+            meta_description = strip_markdown(article.body)[:160] if article.body else ""
+        
+        # 構造化データ
+        structured_data = generate_article_structured_data(article)
+        
+        return {
+            'title': meta_title,
+            'description': meta_description,
+            'keywords': article.meta_keywords or "",
+            'canonical_url': article.canonical_url or "",
+            'structured_data': structured_data
+        }
 
 
 class CategoryService:
