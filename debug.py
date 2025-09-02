@@ -148,3 +148,41 @@ https://www.youtube.com/watch?v=xvFZjo5PgG0"""
     <h2>Original:</h2><pre>{test_content}</pre>
     <h2>Processed:</h2><div>{result}</div>
     </body></html>"""
+
+@debug_bp.route('/test_ogp')
+def test_ogp():
+    """開発用：OGPカード表示のテスト"""
+    if not current_app.debug:
+        return "Not available in production", 404
+    
+    test_content = """テスト記事
+
+一般的なWebサイトのOGPカード表示をテスト：
+
+https://docs.python.org/
+
+Threadsの投稿も表示：
+
+https://www.threads.com/@nasubi8848/post/DMPx1RkT3wp
+
+終了。"""
+    
+    processed_content = process_sns_auto_embed(test_content)
+    
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>OGP Test</title>
+    <meta charset="utf-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
+        .content {{ line-height: 1.6; }}
+    </style>
+</head>
+<body>
+    <h1>OGP Card Test</h1>
+    <div class="content">
+        {processed_content.replace(chr(10), '<br>')}
+    </div>
+</body>
+</html>"""

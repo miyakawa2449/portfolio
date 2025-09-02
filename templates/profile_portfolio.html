@@ -70,7 +70,7 @@
                             <i class="fab fa-github"></i>GitHub
                         </a>
                     {% endif %}
-                    <a href="{{ url_for('download_resume', user_id=user.id) }}" class="profile-contact-btn">
+                    <a href="{{ url_for('landing.download_resume', user_id=user.id) }}" class="profile-contact-btn">
                         <i class="fas fa-download"></i>Resume PDF
                     </a>
                 </div>
@@ -430,7 +430,7 @@
 </div>
 
 <!-- Floating PDF Download Button -->
-<a href="{{ url_for('download_resume', user_id=user.id) }}" 
+<a href="{{ url_for('landing.download_resume', user_id=user.id) }}" 
    class="profile-pdf-download" 
    title="Download Resume PDF">
     <i class="fas fa-download"></i>

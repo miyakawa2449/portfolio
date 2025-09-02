@@ -57,11 +57,11 @@
         <!-- CTAボタン -->
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
             {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('landing.profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('landing.profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
@@ -107,11 +107,11 @@
         
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-3">
             {% if admin_user and admin_user.handle_name %}
-            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('landing.profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% else %}
-            <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
+            <a href="{{ url_for('landing.profile') }}" class="btn btn-light btn-lg">
                 <i class="fas fa-user me-2"></i> プロフィール
             </a>
             {% endif %}
@@ -333,11 +333,11 @@
                     
                     <div class="d-flex flex-wrap gap-3">
                         {% if admin_user and admin_user.handle_name %}
-                        <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
+                        <a href="{{ url_for('landing.profile') }}" class="btn btn-light btn-lg">
                             <i class="fas fa-user me-2"></i> 詳しいプロフィール
                         </a>
                         {% else %}
-                        <a href="{{ url_for('profile') }}" class="btn btn-light btn-lg">
+                        <a href="{{ url_for('landing.profile') }}" class="btn btn-light btn-lg">
                             <i class="fas fa-user me-2"></i> 詳しいプロフィール
                         </a>
                         {% endif %}

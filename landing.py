@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, abort
+from flask import Blueprint, render_template, abort, make_response
+from flask_login import current_user, login_required
 from sqlalchemy import select, func
 from models import Article, Project, Category, Challenge, SiteSetting, User, db
 from seo import get_static_page_seo
+from datetime import datetime
 
 landing_bp = Blueprint('landing', __name__)
 
@@ -184,3 +186,141 @@ def profile():
                            featured_projects=featured_projects,
                            challenges=challenges,
                            page_seo=page_seo)
+
+@landing_bp.route('/download/resume/<int:user_id>')
+@login_required
+def download_resume(user_id):
+    """履歴書PDFダウンロード（動的日付生成）"""
+    from io import BytesIO
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    
+    # 日本語フォント設定
+    pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))
+    
+    # ユーザー情報取得
+    user = User.query.get_or_404(user_id)
+    
+    # アクセス権限チェック（本人または管理者のみ）
+    if current_user.id != user.id and current_user.role != 'admin':
+        abort(403)
+    
+    # PDFバッファー作成
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    
+    # スタイル設定
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#333333'),
+        spaceAfter=30,
+        alignment=TA_CENTER,
+        fontName='HeiseiKakuGo-W5'
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#667eea'),
+        spaceAfter=12,
+        fontName='HeiseiKakuGo-W5'
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        fontName='HeiseiKakuGo-W5'
+    )
+    
+    # ドキュメント要素
+    elements = []
+    
+    # タイトル
+    elements.append(Paragraph("履歴書", title_style))
+    elements.append(Spacer(1, 12))
+    
+    # 日付（動的生成）
+    today = datetime.now().strftime('%Y年%m月%d日')
+    elements.append(Paragraph(f"{today} 現在", normal_style))
+    elements.append(Spacer(1, 20))
+    
+    # 基本情報テーブル
+    basic_info = [
+        ['氏名', user.handle_name or user.name],
+        ['メールアドレス', user.portfolio_email or user.email],
+        ['職種', user.job_title or '未設定']
+    ]
+    
+    if user.birthplace:
+        basic_info.append(['出身地', user.birthplace])
+    
+    basic_table = Table(basic_info, colWidths=[4*cm, 10*cm])
+    basic_table.setStyle(TableStyle([
+        ('FONT', (0, 0), (-1, -1), 'HeiseiKakuGo-W5'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f0f0f0')),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#333333')),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 0), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    
+    elements.append(basic_table)
+    elements.append(Spacer(1, 30))
+    
+    # スキル情報
+    if user.skills:
+        elements.append(Paragraph("スキル・技術", heading_style))
+        if isinstance(user.skills, dict):
+            for category, skills_list in user.skills.items():
+                skill_names = [f"{skill['name']} ({skill.get('years', 'N/A')}年)" for skill in skills_list]
+                elements.append(Paragraph(f"<b>{category}:</b> {', '.join(skill_names)}", normal_style))
+                elements.append(Spacer(1, 6))
+        else:
+            # リスト形式の場合の処理
+            skill_names = [str(skill) for skill in user.skills]
+            elements.append(Paragraph(f"<b>スキル:</b> {', '.join(skill_names)}", normal_style))
+            elements.append(Spacer(1, 6))
+        elements.append(Spacer(1, 20))
+    
+    # 職歴
+    if user.career_history:
+        elements.append(Paragraph("職歴", heading_style))
+        try:
+            for i, job in enumerate(user.career_history):
+                if isinstance(job, dict):
+                    elements.append(Paragraph(f"<b>{job.get('company', '未設定')}</b> - {job.get('position', '未設定')}", normal_style))
+                    elements.append(Paragraph(f"期間: {job.get('period', '未設定')}", normal_style))
+                    if job.get('description'):
+                        elements.append(Paragraph(job['description'], normal_style))
+                else:
+                    elements.append(Paragraph(str(job), normal_style))
+                if i < len(user.career_history) - 1:
+                    elements.append(Spacer(1, 12))
+        except Exception as e:
+            elements.append(Paragraph(f"職歴情報の読み込みエラー: {str(e)}", normal_style))
+    
+    # PDF生成
+    doc.build(elements)
+    
+    # レスポンス作成
+    buffer.seek(0)
+    response = make_response(buffer.read())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename=resume_{user.id}_{datetime.now().strftime("%Y%m%d")}.pdf'
+    
+    return response
